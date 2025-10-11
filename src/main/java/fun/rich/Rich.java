@@ -1,0 +1,182 @@
+package fun.rich;
+
+import fun.rich.commands.manager.CommandRepository;
+import fun.rich.utils.client.managers.file.exception.FileProcessingException;
+import fun.rich.utils.client.chat.ChatMessage;
+import fun.rich.utils.client.logs.Logger;
+import fun.rich.utils.client.managers.file.impl.AutoBuySettingsFile;
+import fun.rich.utils.connection.irc.IRCManager;
+import fun.rich.utils.connection.tps.TPSCalculate;
+import fun.rich.utils.display.scissor.ScissorAssist;
+import net.fabricmc.api.ModInitializer;
+import fun.rich.common.repository.box.BoxESPRepository;
+import fun.rich.common.repository.rct.RCTRepository;
+import fun.rich.common.repository.way.WayRepository;
+import fun.rich.common.discord.DiscordManager;
+import fun.rich.utils.client.managers.api.draggable.DraggableRepository;
+import fun.rich.utils.client.managers.file.*;
+import fun.rich.common.repository.macro.MacroRepository;
+import fun.rich.utils.client.managers.event.EventManager;
+import fun.rich.features.module.ModuleProvider;
+import fun.rich.features.module.ModuleRepository;
+import fun.rich.features.module.ModuleSwitcher;
+import fun.rich.utils.client.sound.SoundManager;
+import fun.rich.display.screens.clickgui.MenuScreen;
+import fun.rich.utils.connection.cloud.CloudConfigWebSocketClient;
+import fun.rich.main.client.ClientInfo;
+import fun.rich.main.client.ClientInfoProvider;
+import fun.rich.main.listener.ListenerRepository;
+import fun.rich.commands.CommandDispatcher;
+import fun.rich.utils.features.aura.striking.StrikerConstructor;
+import com.google.common.eventbus.EventBus;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.FieldDefaults;
+import net.minecraft.client.MinecraftClient;
+import java.io.File;
+import java.net.URI;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import fun.rich.utils.client.managers.file.impl.account.AccountRepository;
+import fun.rich.utils.client.managers.file.impl.AccountFile;
+import fun.rich.utils.client.managers.file.impl.AutoBuyConfigFile;
+
+@Getter
+@Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class Rich implements ModInitializer {
+    @Getter
+    static Rich instance;
+    EventManager eventManager = new EventManager();
+    EventBus eventBus = new EventBus();
+    ModuleRepository moduleRepository;
+    ModuleSwitcher moduleSwitcher;
+    CommandRepository commandRepository;
+    CommandDispatcher commandDispatcher;
+    BoxESPRepository boxESPRepository = new BoxESPRepository(eventManager);
+    MacroRepository macroRepository = new MacroRepository(eventManager);
+    WayRepository wayRepository = new WayRepository(eventManager);
+    RCTRepository RCTRepository = new RCTRepository(eventManager);
+    ModuleProvider moduleProvider;
+    DraggableRepository draggableRepository;
+    DiscordManager discordManager;
+    FileRepository fileRepository;
+    FileController fileController;
+    ScissorAssist scissorManager = new ScissorAssist();
+    ClientInfoProvider clientInfoProvider;
+    ListenerRepository listenerRepository;
+    StrikerConstructor attackPerpetrator = new StrikerConstructor();
+    CloudConfigWebSocketClient cloudConfigClient;
+    IRCManager ircManager = new IRCManager();
+    AccountRepository accountRepository;
+    TPSCalculate tpsCalculate;
+    boolean initialized;
+    boolean showIrcMessages = false;
+    ScheduledExecutorService reconnectScheduler;
+    boolean reconnecting = false;
+
+    @Override
+    public void onInitialize() {
+        instance = this;
+        initClientInfoProvider();
+        initModules();
+        initDraggable();
+        initFileManager();
+        initCommands();
+        initListeners();
+        initDiscordRPC();
+        initWebSocketClient();
+        ircManager.connect();
+        startReconnectTask();
+        SoundManager.init();
+
+        MenuScreen menuScreen = new MenuScreen();
+        menuScreen.initialize();
+        initialized = true;
+    }
+
+    private void initWebSocketClient() {
+        try {
+            cloudConfigClient = new CloudConfigWebSocketClient(new URI("ws://45.155.205.202:8080"));
+            cloudConfigClient.connect();
+        } catch (Exception e) {
+            Logger.error("Failed to initialize WebSocket client: " + e.getMessage());
+        }
+    }
+
+    private void initDraggable() {
+        draggableRepository = new DraggableRepository();
+        draggableRepository.setup();
+    }
+
+    private void initModules() {
+        moduleRepository = new ModuleRepository();
+        moduleRepository.setup();
+        moduleProvider = new ModuleProvider(moduleRepository.modules());
+        moduleSwitcher = new ModuleSwitcher(moduleRepository.modules(), eventManager);
+    }
+
+    private void initCommands() {
+        commandRepository = new CommandRepository();
+        commandDispatcher = new CommandDispatcher(eventManager);
+    }
+
+    private void initDiscordRPC() {
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("linux")) {
+            return;
+        }
+        discordManager = new DiscordManager();
+        discordManager.init();
+    }
+
+    private void initClientInfoProvider() {
+        File clientDirectory = new File(MinecraftClient.getInstance().runDirectory, "\\Rich\\");
+        File filesDirectory = new File(clientDirectory, "\\files\\");
+        File moduleFilesDirectory = new File(filesDirectory, "\\config\\");
+        clientInfoProvider = new ClientInfo("Rich", "HZeed", "Developer", clientDirectory, filesDirectory, moduleFilesDirectory);
+    }
+
+    private void initFileManager() {
+        DirectoryCreator directoryCreator = new DirectoryCreator();
+        directoryCreator.createDirectories(clientInfoProvider.clientDir(), clientInfoProvider.filesDir(), clientInfoProvider.configsDir());
+        fileRepository = new FileRepository();
+        fileRepository.setup(this);
+        accountRepository = new AccountRepository();
+        fileRepository.getClientFiles().add(new AccountFile(accountRepository));
+        fileRepository.getClientFiles().add(new AutoBuyConfigFile());
+        fileRepository.getClientFiles().add(new AutoBuySettingsFile());
+        fileController = new FileController(fileRepository.getClientFiles(), clientInfoProvider.filesDir(), clientInfoProvider.configsDir());
+        try {
+            fileController.loadFiles();
+        } catch (FileProcessingException e) {
+            Logger.error("Failed to load files: " + e.getMessage());
+        }
+    }
+
+    private void initListeners() {
+        listenerRepository = new ListenerRepository();
+        listenerRepository.setup();
+        tpsCalculate = new TPSCalculate();
+    }
+
+    private void startReconnectTask() {
+        reconnectScheduler = Executors.newSingleThreadScheduledExecutor();
+        reconnectScheduler.scheduleAtFixedRate(() -> {
+            if ((ircManager.getClient() == null || !ircManager.getClient().isOpen()) && !reconnecting) {
+                reconnecting = true;
+                try {
+                    ircManager.connect();
+                } catch (Exception e) {
+                    if (showIrcMessages) {
+                        ChatMessage.ircmessageWithRed("Переподключение к серверу IRC не удалось");
+                    }
+                } finally {
+                    reconnecting = false;
+                }
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+    }
+}
