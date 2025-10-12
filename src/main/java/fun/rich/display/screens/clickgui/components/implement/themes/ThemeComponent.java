@@ -50,10 +50,6 @@ public class ThemeComponent extends AbstractComponent {
 
         renderControls(context, matrix, mouseX, mouseY);
 
-        if (dropdownOpen) {
-            renderDropdown(context, matrix, mouseX, mouseY);
-        }
-
         Matrix4f positionMatrix = matrix.peek().getPositionMatrix();
         ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
         float listX = x + 43f;
@@ -86,12 +82,15 @@ public class ThemeComponent extends AbstractComponent {
         if (maxScrollAmount > 0) {
             drawScrollbar(context, viewHeight, contentHeight, maxScrollAmount);
         }
+
+        if (dropdownOpen) {
+            renderDropdown(context, matrix, mouseX, mouseY);
+        }
     }
 
     private void renderControls(DrawContext context, MatrixStack matrix, int mouseX, int mouseY) {
         rectangle.render(ShapeProperties.create(matrix, x + 43F, y + 60, width - 43F, 0.5F)
-                .color(new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB(),
-                        new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB()).build());
+                .color(ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines()).build());
 
         rectangle.render(ShapeProperties.create(matrix, x + 55F, y + 38, 200, 15)
                 .round(3).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
@@ -109,8 +108,8 @@ public class ThemeComponent extends AbstractComponent {
         rectangle.render(ShapeProperties.create(matrix, x + 262F, y + 38, 55, 15)
                 .round(3).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
                         new Color(31, 27, 35, 75).getRGB()).build());
-        Fonts.getSize(20, Fonts.Type.GUIICONS).drawString(matrix, "M", x + 266F, y + 42f, ColorAssist.getText(1f));
-        Fonts.getSize(16, Fonts.Type.REGULAR).drawString(matrix, "Save", x + 277F, y + 43.5f, ColorAssist.getText(1f));
+        Fonts.getSize(22, Fonts.Type.GUIICONS).drawString(matrix, "M", x + 266F, y + 42f, ColorAssist.getText(1f));
+        Fonts.getSize(16, Fonts.Type.REGULAR).drawString(matrix, "Save", x + 283F, y + 43.5f, ColorAssist.getText(1f));
 
         rectangle.render(ShapeProperties.create(matrix, x + 55F, y + 70, 140, 15)
                 .round(3).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
@@ -119,24 +118,22 @@ public class ThemeComponent extends AbstractComponent {
         String selectedTheme = themeList.isEmpty() ? "Нет тем" : (selectedThemeIndex < themeList.size() ? themeList.get(selectedThemeIndex) : "Нет тем");
         String displayTheme = selectedTheme.length() > 18 ? selectedTheme.substring(0, 18) : selectedTheme;
         Fonts.getSize(15, Fonts.Type.REGULAR).drawString(matrix, displayTheme, x + 58F, y + 75.5f, ColorAssist.getText(0.6f));
-        Fonts.getSize(20, Fonts.Type.ICONS).drawString(matrix, dropdownOpen ? "W" : "V", x + 182F, y + 74f, ColorAssist.getText(0.6f));
+        Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, dropdownOpen ? "opened" : "closed", x + 169F, y + 76.5f, ColorAssist.getText(0.15f));
 
         rectangle.render(ShapeProperties.create(matrix, x + 202F, y + 70, 55, 15)
                 .round(3).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
                         new Color(31, 27, 35, 75).getRGB()).build());
-        Fonts.getSize(21, Fonts.Type.GUIICONS).drawString(matrix, "P", x + 206F, y + 71f, ColorAssist.getText(1f));
-        Fonts.getSize(16, Fonts.Type.REGULAR).drawString(matrix, "Load", x + 217F, y + 75.5f, ColorAssist.getText(1f));
+        Fonts.getSize(26, Fonts.Type.GUIICONS).drawString(matrix, "P", x + 206F, y + 73f, ColorAssist.getText(1f));
+        Fonts.getSize(16, Fonts.Type.REGULAR).drawString(matrix, "Load", x + 222.5F, y + 75.5f, ColorAssist.getText(1f));
 
         rectangle.render(ShapeProperties.create(matrix, x + 262F, y + 70, 55, 15)
                 .round(3).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
                         new Color(31, 27, 35, 75).getRGB()).build());
-        Fonts.getSize(24, Fonts.Type.GUIICONS).drawString(matrix, "O", x + 266F, y + 72f, ColorAssist.getText(1f));
-        Fonts.getSize(16, Fonts.Type.REGULAR).drawString(matrix, "Del", x + 280F, y + 75.5f, ColorAssist.getText(1f));
+        Fonts.getSize(21, Fonts.Type.GUIICONS).drawString(matrix, "O", x + 266F, y + 74.5f, ColorAssist.getText(1f));
+        Fonts.getSize(16, Fonts.Type.REGULAR).drawString(matrix, "Delete", x + 280F, y + 75.5f, ColorAssist.getText(1f));
 
         rectangle.render(ShapeProperties.create(matrix, x + 43F, y + 94f, width - 43F, 1F)
-                .color(new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB(),
-                        new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB()).build());
-
+                .color(ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines()).build());
     }
 
     private void renderDropdown(DrawContext context, MatrixStack matrix, int mouseX, int mouseY) {
@@ -145,27 +142,32 @@ public class ThemeComponent extends AbstractComponent {
         int maxVisible = Math.min(5, themeList.size());
         float dropdownHeight = maxVisible * 20f;
 
-        rectangle.render(ShapeProperties.create(matrix, x + 55F, y + 87, 140, dropdownHeight)
-                .round(3).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
-                        new Color(23, 23, 25, 255).getRGB()).build());
+        blur.render(ShapeProperties.create(matrix, x + 55F, y + 87, 140, dropdownHeight + 4).round(4).quality(16)
+                .color(new Color(0, 0, 0, 200).getRGB())
+                .build());
+
+        rectangle.render(ShapeProperties.create(matrix, x + 55F, y + 87, 140, dropdownHeight + 4)
+                .round(4).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
+                        new Color(31, 27, 35, 75).getRGB()).build());
+
 
         Matrix4f positionMatrix = matrix.peek().getPositionMatrix();
         ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
-        scissorManager.push(positionMatrix, x + 55F, y + 87, 140, dropdownHeight);
+        scissorManager.push(positionMatrix, x + 55F, y + 89, 140, dropdownHeight);
 
-        float itemY = y + 87 + dropdownScroll;
+        float itemY = y + 90 + dropdownScroll;
         for (int i = 0; i < themeList.size(); i++) {
             String theme = themeList.get(i);
             boolean hovered = Calculate.isHovered(mouseX, mouseY, x + 55F, itemY, 140, 20);
             boolean selected = i == selectedThemeIndex;
 
             if (hovered || selected) {
-                rectangle.render(ShapeProperties.create(matrix, x + 55F, itemY, 140, 20)
-                        .color(new Color(45, 45, 47, 255).getRGB()).build());
+                rectangle.render(ShapeProperties.create(matrix, x + 57F, itemY, 131, 18)
+                        .round(3).color(new Color(35, 35, 37, 155).getRGB()).build());
             }
 
             String displayTheme = theme.length() > 18 ? theme.substring(0, 18) : theme;
-            Fonts.getSize(14, Fonts.Type.DEFAULT).drawString(matrix, displayTheme, x + 60F, itemY + 7,
+            Fonts.getSize(14, Fonts.Type.DEFAULT).drawString(matrix, displayTheme, x + 62F, itemY + 7.5f,
                     selected ? ColorAssist.getText(1f) : ColorAssist.getText(0.7f));
 
             itemY += 20;
@@ -177,9 +179,9 @@ public class ThemeComponent extends AbstractComponent {
             float scrollbarHeight = dropdownHeight * ((float)maxVisible / themeList.size());
             float maxScroll = (themeList.size() - maxVisible) * 20f;
             float scrollRatio = maxScroll > 0 ? (-dropdownScroll) / maxScroll : 0;
-            float scrollbarY = y + 87 + (dropdownHeight - scrollbarHeight) * scrollRatio;
+            float scrollbarY = y + 89 + (dropdownHeight - scrollbarHeight) * scrollRatio;
 
-            rectangle.render(ShapeProperties.create(matrix, x + 192F, scrollbarY, 2, scrollbarHeight)
+            rectangle.render(ShapeProperties.create(matrix, x + 190F, scrollbarY + 1.5f, 2, scrollbarHeight - 3)
                     .round(1).color(new Color(100, 100, 100, 150).getRGB()).build());
         }
     }
@@ -187,9 +189,8 @@ public class ThemeComponent extends AbstractComponent {
     private void drawSection(DrawContext context, String title, List<ColorSetting> colors, float startY, int mouseX, int mouseY) {
         MatrixStack matrix = context.getMatrices();
 
-        rectangle.render(ShapeProperties.create(matrix, x + 43F, startY - 12, width - 43F, 1F)
-                .color(new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 0).getRGB(),
-                        new Color(55, 55, 70, 0).getRGB(), new Color(55, 55, 70, 0).getRGB()).build());
+        rectangle.render(ShapeProperties.create(matrix, x + 43F, startY - 12, width - 43F, 0.5F)
+                .color(ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines()).build());
 
         Fonts.getSize(16, Fonts.Type.DEFAULT).drawString(matrix, title, x + 58F, startY, ColorAssist.getText(1f));
 
@@ -269,7 +270,7 @@ public class ThemeComponent extends AbstractComponent {
             }
 
             if (dropdownOpen && !Calculate.isHovered(mouseX, mouseY, x + 55F, y + 70, 140, 15)
-                    && !Calculate.isHovered(mouseX, mouseY, x + 55F, y + 87, 140, Math.min(5, themeList.size()) * 20f)) {
+                    && !Calculate.isHovered(mouseX, mouseY, x + 55F, y + 87, 140, Math.min(5, themeList.size()) * 20f + 4)) {
                 dropdownOpen = false;
                 return true;
             }
@@ -288,8 +289,8 @@ public class ThemeComponent extends AbstractComponent {
                 return true;
             }
 
-            if (dropdownOpen && Calculate.isHovered(mouseX, mouseY, x + 55F, y + 87, 140, Math.min(5, themeList.size()) * 20f)) {
-                float itemY = y + 87 + dropdownScroll;
+            if (dropdownOpen && Calculate.isHovered(mouseX, mouseY, x + 55F, y + 87, 140, Math.min(5, themeList.size()) * 20f + 4)) {
+                float itemY = y + 89 + dropdownScroll;
                 for (int i = 0; i < themeList.size(); i++) {
                     if (Calculate.isHovered(mouseX, mouseY, x + 55F, itemY, 140, 20)) {
                         selectedThemeIndex = i;
@@ -298,6 +299,7 @@ public class ThemeComponent extends AbstractComponent {
                     }
                     itemY += 20;
                 }
+                return true;
             }
 
             if (Calculate.isHovered(mouseX, mouseY, x + 262, y + 38, 55, 15)) {
@@ -403,7 +405,7 @@ public class ThemeComponent extends AbstractComponent {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (MenuScreen.INSTANCE.getCategory() == ModuleCategory.THEME) {
-            if (dropdownOpen && Calculate.isHovered(mouseX, mouseY, x + 55F, y + 87, 140, Math.min(5, themeList.size()) * 20f)) {
+            if (dropdownOpen && Calculate.isHovered(mouseX, mouseY, x + 55F, y + 87, 140, Math.min(5, themeList.size()) * 20f + 4)) {
                 int maxVisible = 5;
                 float maxScroll = Math.max(0, (themeList.size() - maxVisible) * 20f);
                 dropdownScroll += amount * 10;

@@ -1,5 +1,6 @@
 package fun.rich.display.screens.clickgui.components.implement.other;
 
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.DrawContext;
@@ -72,14 +73,11 @@ public class BackgroundComponent extends AbstractComponent {
         DiscordManager discord = Rich.getInstance().getDiscordManager();
 
         blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(8)
-                .color(new Color(0, 0, 0, 200).getRGB())
+                .color(ThemeColorsGetter.getGuiBackground())
                 .build());
 
         rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(8)
-                .softness(1)
-                .thickness(2)
-                .outlineColor(new Color(33, 33, 33, 155).getRGB())
-                .color(new Color(18, 19, 20, 175).getRGB())
+                .color(ThemeColorsGetter.getGuiBackground())
                 .build());
 
         List<Map<String, Object>> displayedConfigs = new ArrayList<>();
@@ -251,10 +249,10 @@ public class BackgroundComponent extends AbstractComponent {
             loadedConfigs = false;
         }
         rectangle.render(ShapeProperties.create(context.getMatrices(), x + 42.5f, y, 0.5F, height)
-                .color(new Color(55, 55, 70, 15).getRGB(), new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB(), new Color(55, 55, 70, 250).getRGB()).build());
+                .color(ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines()).build());
 
         rectangle.render(ShapeProperties.create(context.getMatrices(), x + 43F, y + 28, width - 43F, 0.5F)
-                .color(new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB(), new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB()).build());
+                .color(ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines()).build());
 
         rectangle.render(ShapeProperties.create(matrix, x + 10.5f, y + 10f, 20, 20).round(4)
                 .softness(1)
@@ -268,39 +266,39 @@ public class BackgroundComponent extends AbstractComponent {
         switch (MenuScreen.INSTANCE.getCategory()) {
             case COMBAT -> {
                 icon = "A";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 55f, y + 14.5f, ColorAssist.getText(1F));
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 55f, y + 14.5f, ThemeColorsGetter.getText());
             }
             case MOVEMENT -> {
                 icon = "B";
-                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
             }
             case RENDER -> {
                 icon = "C";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
             }
             case PLAYER -> {
                 icon = "D";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
             }
             case MISC -> {
                 icon = "E";
-                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
             }
             case CONFIGS -> {
                 icon = "F";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
             }
             case AUTOBUY -> {
                 icon = "H";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
             }
             case THEME -> {
                 icon = "G";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
             }
             default -> {
                 icon = MenuScreen.INSTANCE.getCategory().getReadableName().substring(0, 1);
-                Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 50f, y + 13.5f, ColorAssist.getText(1F));
+                Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 50f, y + 13.5f, ThemeColorsGetter.getText());
             }
         }
 
@@ -321,9 +319,9 @@ public class BackgroundComponent extends AbstractComponent {
         }
 
         if (MenuScreen.INSTANCE.getCategory() == ModuleCategory.CONFIGS) {
-            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName() + " | Beta", x + 63, y + 13.5f, ColorAssist.getText(1F), ColorAssist.getText(1F));
+            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName() + " | Beta", x + 63, y + 13.5f, ThemeColorsGetter.getText(), ThemeColorsGetter.getText());
         } else {
-            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName(), x + 63, y + 13.5f, ColorAssist.getText(1F), ColorAssist.getText(1F));
+            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName(), x + 63, y + 13.5f, ThemeColorsGetter.getText(), ThemeColorsGetter.getText());
 
         }
 

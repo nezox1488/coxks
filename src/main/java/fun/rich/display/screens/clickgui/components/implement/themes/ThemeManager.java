@@ -1,6 +1,7 @@
 package fun.rich.display.screens.clickgui.components.implement.themes;
 
 import fun.rich.features.module.setting.implement.ColorSetting;
+import fun.rich.utils.display.color.ColorAssist;
 import lombok.Getter;
 
 import java.awt.*;
@@ -36,9 +37,9 @@ public class ThemeManager {
     }
 
     private void initializeClickGuiColors() {
-        clickGuiColors.add(new ColorSetting("Background", "Background").value(new Color(18, 19, 20, 255).getRGB()));
-        clickGuiColors.add(new ColorSetting("Outline", "Outline").value(0xFF363638));
-        clickGuiColors.add(new ColorSetting("Hover", "Hover effect").value(0xFF414141));
+        clickGuiColors.add(new ColorSetting("Background", "Background").value(new Color(18, 19, 20, 175).getRGB()));
+        clickGuiColors.add(new ColorSetting("Lines", "Lines").value(new Color(55, 55, 70, 250).getRGB()));
+        clickGuiColors.add(new ColorSetting("Text", "Text").value(new Color(255, 255, 255, 185).getRGB()));
     }
 
     public ColorSetting getColor(String name) {
@@ -56,5 +57,68 @@ public class ThemeManager {
         all.addAll(interfaceColors);
         all.addAll(clickGuiColors);
         return all;
+    }
+
+    public int getPrimary() {
+        ColorSetting color = getColor("Primary");
+        return color != null ? color.getColor() : 0xFF6565FF;
+    }
+
+    public int getSecondary() {
+        ColorSetting color = getColor("Secondary");
+        return color != null ? color.getColor() : 0xFF8B8BFF;
+    }
+
+    public int getAccent() {
+        ColorSetting color = getColor("Accent");
+        return color != null ? color.getColor() : 0xFFFF6539;
+    }
+
+    public int getText() {
+        ColorSetting color = getColor("Text");
+        return color != null ? color.getColor() : 0xFFD4D6E1;
+    }
+
+    public int getTextDim() {
+        ColorSetting color = getColor("TextDim");
+        return color != null ? color.getColor() : 0xFF878894;
+    }
+
+    public int getBackground() {
+        ColorSetting interfaceColor = interfaceColors.stream()
+                .filter(c -> c.getName().equals("Background"))
+                .findFirst()
+                .orElse(null);
+        return interfaceColor != null ? interfaceColor.getColor() : 0xFF121314;
+    }
+
+    public int getGuiBackground() {
+        ColorSetting guiColor = clickGuiColors.stream()
+                .filter(c -> c.getName().equals("Background"))
+                .findFirst()
+                .orElse(null);
+        return guiColor != null ? guiColor.getColor() : new Color(18, 19, 20, 255).getRGB();
+    }
+
+    public int getLines() {
+        ColorSetting color = getColor("Lines");
+        return color != null ? color.getColor() : new Color(55, 55, 70, 250).getRGB();
+    }
+
+    public int getHover() {
+        ColorSetting color = getColor("Hover");
+        return color != null ? color.getColor() : 0xFF414141;
+    }
+
+    public int getTextWithAlpha(float alpha) {
+        int baseColor = getText();
+        int a = (int) (alpha * 255);
+        return (baseColor & 0x00FFFFFF) | (a << 24);
+    }
+
+    public int getTextDimWithAlpha(float alpha) {
+        int baseColor = getTextDim();
+        int a = (int) (alpha * 255);
+        return (baseColor & 0x00FFFFFF) | (a << 24);
     }
 }

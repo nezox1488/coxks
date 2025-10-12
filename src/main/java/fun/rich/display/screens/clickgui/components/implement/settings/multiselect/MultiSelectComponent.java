@@ -98,12 +98,12 @@ public class MultiSelectComponent extends AbstractSettingComponent {
         scissor.push(matrix.peek().getPositionMatrix(), x1 - 2, (float) window.getScaledHeight() / 2 - 1012, 64, 800);
         font.drawStringWithScroll(matrix, selectedName, x1, y + 13, offset, new Color(225, 225, 225, 225).getRGB());
         scissor.pop();
-        if (font.getStringWidth(selectedName) - offset > 0) {
-            rectangle.render(ShapeProperties.create(matrix, x + width - 13F, y + 7, 6, 14)
-                    .round(2.5f).softness(11).color(new Color(15, 15, 15, 90).getRGB()).build());
-            rectangle.render(ShapeProperties.create(matrix, x1 - 4.5F, y + 7, 6, 14)
-                    .round(2.5f).softness(11).color(new Color(15, 15, 15, 90).getRGB()).build());
-        }
+//        if (font.getStringWidth(selectedName) - offset > 0) {
+//            rectangle.render(ShapeProperties.create(matrix, x + width - 13F, y + 7, 6, 14)
+//                    .round(2.5f).softness(1).color(new Color(115, 115, 115, 190).getRGB()).build());
+//            rectangle.render(ShapeProperties.create(matrix, x1 - 2.5F, y + 7, 6, 14)
+//                    .round(0,0,2.5f,2.5f).softness(12).color(new Color(115, 115, 115, 190).getRGB()).build());
+//        }
     }
 
     private void renderSelectList(DrawContext context, int mouseX, int mouseY, float delta) {
