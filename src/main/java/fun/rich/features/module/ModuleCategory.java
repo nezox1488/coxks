@@ -12,8 +12,8 @@ public enum ModuleCategory {
     PLAYER("Player"),
     MISC("Misc"),
     CONFIGS("Configs"),
-    AUTOBUY("AutoBuy");
-//    THEME("Theme");
+    AUTOBUY("AutoBuy"),
+    THEME("Theme");
 
     final String readableName;
 }

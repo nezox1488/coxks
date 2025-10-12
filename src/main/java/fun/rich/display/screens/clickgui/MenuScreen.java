@@ -1,6 +1,7 @@
 package fun.rich.display.screens.clickgui;
 
 import fun.rich.display.screens.clickgui.components.implement.autobuy.autobuyui.AutoBuyGuiComponent;
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeComponent;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.gui.DrawContext;
@@ -37,6 +38,7 @@ public class MenuScreen extends Screen implements QuickImports {
     private final SearchComponent searchComponent = new SearchComponent();
     private final CategoryContainerComponent categoryContainerComponent = new CategoryContainerComponent();
     private final AutoBuyGuiComponent autoBuyGuiComponent = new AutoBuyGuiComponent();
+    private final ThemeComponent themeComponent = new ThemeComponent();
     public final EaseBackIn animation = new EaseBackIn(400, 1f, 1.5f);
     public ModuleCategory category = ModuleCategory.COMBAT;
     public int x, y, width, height;
@@ -44,7 +46,7 @@ public class MenuScreen extends Screen implements QuickImports {
     public void initialize() {
         animation.setDirection(FORWARDS);
         categoryContainerComponent.initializeCategoryComponents();
-        components.addAll(Arrays.asList(backgroundComponent, userComponent, searchComponent, categoryContainerComponent, autoBuyGuiComponent));
+        components.addAll(Arrays.asList(backgroundComponent, userComponent, searchComponent, categoryContainerComponent, autoBuyGuiComponent, themeComponent));
     }
 
     public MenuScreen() {
@@ -69,6 +71,8 @@ public class MenuScreen extends Screen implements QuickImports {
         backgroundComponent.position(x - 20, y - 15).size(width + 40, height + 30);
         userComponent.position(x + 165, y + height + 45);
         autoBuyGuiComponent.position(x - 20, y - 15).size(width + 40, height + 30);
+        themeComponent.position(x - 20, y - 15).size(width + 40, height + 30);
+
         if (category == ModuleCategory.COMBAT || category == ModuleCategory.MOVEMENT || category == ModuleCategory.RENDER || category == ModuleCategory.PLAYER || category == ModuleCategory.MISC) {
             searchComponent.position(x + 330, y - 7.5f);
         } else {

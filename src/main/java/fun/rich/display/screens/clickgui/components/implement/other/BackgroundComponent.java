@@ -71,11 +71,15 @@ public class BackgroundComponent extends AbstractComponent {
         String point = " • ";
         DiscordManager discord = Rich.getInstance().getDiscordManager();
 
+        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(8)
+                .color(new Color(0, 0, 0, 200).getRGB())
+                .build());
+
         rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(8)
                 .softness(1)
                 .thickness(2)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(new Color(18, 19, 20, 255).getRGB())
+                .outlineColor(new Color(33, 33, 33, 155).getRGB())
+                .color(new Color(18, 19, 20, 175).getRGB())
                 .build());
 
         List<Map<String, Object>> displayedConfigs = new ArrayList<>();
@@ -290,10 +294,10 @@ public class BackgroundComponent extends AbstractComponent {
                 icon = "H";
                 Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
             }
-//            case THEME -> {
-//                icon = "G";
-//                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
-//            }
+            case THEME -> {
+                icon = "G";
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ColorAssist.getText(1F));
+            }
             default -> {
                 icon = MenuScreen.INSTANCE.getCategory().getReadableName().substring(0, 1);
                 Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 50f, y + 13.5f, ColorAssist.getText(1F));
