@@ -401,7 +401,7 @@ public class ServerHelper extends Module {
                                         .filter(c -> c.item().equals(info.item))
                                         .findFirst()
                                         .ifPresent(coolDown -> {
-                                            int time = -coolDown.time().elapsedTime() / 1000;
+                                            int time = Math.toIntExact(-coolDown.time().elapsedTime() / 1000);
                                             java.lang.String duration = StringHelper.getDuration(time);
                                             MutableText text = Text.empty()
                                                     .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
@@ -443,7 +443,7 @@ public class ServerHelper extends Module {
                                 .filter(c -> c.item().equals(info.item))
                                 .findFirst()
                                 .ifPresent(coolDown -> {
-                                    int time = -coolDown.time().elapsedTime() / 1000;
+                                    int time = Math.toIntExact(-coolDown.time().elapsedTime() / 1000);
                                     java.lang.String duration = StringHelper.getDuration(time);
                                     MutableText text = Text.empty()
                                             .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))

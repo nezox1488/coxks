@@ -25,8 +25,8 @@ public class StopWatch {
         this.startTime = System.currentTimeMillis();
     }
 
-    public int elapsedTime() {
-        return Math.toIntExact(System.currentTimeMillis() - this.startTime);
+    public long elapsedTime() {
+        return System.currentTimeMillis() - this.startTime;
     }
 
     public StopWatch setMs(long ms) {

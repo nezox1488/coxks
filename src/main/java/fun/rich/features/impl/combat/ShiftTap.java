@@ -28,7 +28,7 @@ public class ShiftTap extends Module {
     }
 
     private void startShiftTap() {
-        shiftTapEndTime = System.currentTimeMillis() + 35;
+        shiftTapEndTime = System.currentTimeMillis() + 25;
         if (!isModuleControllingSneak) {
             mc.options.sneakKey.setPressed(true);
             isModuleControllingSneak = true;
