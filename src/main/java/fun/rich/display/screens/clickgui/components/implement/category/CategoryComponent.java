@@ -1,5 +1,6 @@
 package fun.rich.display.screens.clickgui.components.implement.category;
 
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -269,37 +270,30 @@ public class CategoryComponent extends AbstractComponent {
                         new Color(41, 41, 41, alpha).getRGB(),
                         new Color(41, 41, 41, alpha).getRGB(),
                         new Color(41, 41, 41, alpha).getRGB()).build());
-        String icon;
-        switch (category) {
-            case COMBAT -> icon = "A";
-            case MOVEMENT -> icon = "B";
-            case RENDER -> icon = "C";
-            case PLAYER -> icon = "D";
-            case MISC -> icon = "E";
-            case CONFIGS -> icon = "F";
-            case AUTOBUY -> icon = "H";
-            default -> icon = category.getReadableName().substring(0, 1);
-        }
+
         if (ModuleCategory.COMBAT.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "A", x + 16f, y + 7.5f, ColorAssist.getText(0.7F));
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "A", x + 16f, y + 7.5f, ThemeColorsGetter.getText());
         }
         if (ModuleCategory.MOVEMENT.equals(category)) {
-            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "B", x + 15f, y + 7f, ColorAssist.getText(0.7F));
+            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "B", x + 15f, y + 7f, ThemeColorsGetter.getText());
         }
         if (ModuleCategory.RENDER.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "C", x + 15f, y + 7f, ColorAssist.getText(0.7F));
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "C", x + 15f, y + 7f, ThemeColorsGetter.getText());
         }
         if (ModuleCategory.PLAYER.equals(category)) {
-            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "D", x + 15f, y + 7f, ColorAssist.getText(0.7F));
+            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "D", x + 15f, y + 7f, ThemeColorsGetter.getText());
         }
         if (ModuleCategory.MISC.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "E", x + 15.5f, y + 7f, ColorAssist.getText(0.7F));
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "E", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
         }
         if (ModuleCategory.CONFIGS.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "F", x + 15.5f, y + 7f, ColorAssist.getText(0.7F));
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "F", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
         }
         if (ModuleCategory.AUTOBUY.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "H", x + 15.5f, y + 7f, ColorAssist.getText(0.7F));
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "H", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
+        }
+        if (ModuleCategory.THEME.equals(category)) {
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "G", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
         }
     }
 

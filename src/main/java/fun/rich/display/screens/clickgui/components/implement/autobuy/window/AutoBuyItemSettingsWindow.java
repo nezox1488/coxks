@@ -4,6 +4,7 @@ import fun.rich.display.screens.clickgui.components.AbstractComponent;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.items.AutoBuyableItem;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.settings.AutoBuyItemSettings;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.settings.AutoBuySettingsComponent;
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import fun.rich.display.screens.clickgui.components.implement.window.AbstractWindow;
 import fun.rich.utils.display.color.ColorAssist;
 import fun.rich.utils.display.font.Fonts;
@@ -47,15 +48,16 @@ public class AutoBuyItemSettingsWindow extends AbstractWindow {
         ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
         height = MathHelper.clamp(getComponentHeight() + 5, 0, 200);
 
-        rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(8)
-                .softness(1)
-                .thickness(2)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(new Color(18, 19, 20, 255).getRGB())
+        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(8)
+                .color(ThemeColorsGetter.getGuiBackground())
                 .build());
 
-        rectangle.render(ShapeProperties.create(matrix, x, y + 22, width, 0.5f)
-                .color(new Color(48, 48, 48, 255).getRGB())
+        rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(8)
+                .color(ThemeColorsGetter.getGuiBackground())
+                .build());
+
+        rectangle.render(ShapeProperties.create(matrix, x, y + 22, width, 0.5f).round(8)
+                .color(ThemeColorsGetter.getGuiBackground())
                 .build());
 
         ItemStack itemStack = item.createItemStack();

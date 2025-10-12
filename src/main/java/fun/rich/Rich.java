@@ -1,10 +1,12 @@
 package fun.rich;
 
 import fun.rich.commands.manager.CommandRepository;
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeManager;
 import fun.rich.utils.client.managers.file.exception.FileProcessingException;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.client.logs.Logger;
 import fun.rich.utils.client.managers.file.impl.AutoBuySettingsFile;
+import fun.rich.utils.client.managers.file.impl.ThemeFile;
 import fun.rich.utils.connection.irc.IRCManager;
 import fun.rich.utils.connection.tps.TPSCalculate;
 import fun.rich.utils.display.scissor.ScissorAssist;
@@ -148,6 +150,7 @@ public class Rich implements ModInitializer {
         fileRepository.getClientFiles().add(new AccountFile(accountRepository));
         fileRepository.getClientFiles().add(new AutoBuyConfigFile());
         fileRepository.getClientFiles().add(new AutoBuySettingsFile());
+        fileRepository.getClientFiles().add(new ThemeFile(ThemeManager.getInstance()));
         fileController = new FileController(fileRepository.getClientFiles(), clientInfoProvider.filesDir(), clientInfoProvider.configsDir());
         try {
             fileController.loadFiles();

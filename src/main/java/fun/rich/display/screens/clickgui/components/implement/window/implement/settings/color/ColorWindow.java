@@ -1,5 +1,6 @@
 package fun.rich.display.screens.clickgui.components.implement.window.implement.settings.color;
 
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import net.minecraft.client.gui.DrawContext;
 
 import fun.rich.features.module.setting.implement.ColorSetting;
@@ -38,8 +39,14 @@ public class ColorWindow extends AbstractWindow {
     
     @Override
     public void drawWindow(DrawContext context, int mouseX, int mouseY, float delta) {
-        rectangle.render(ShapeProperties.create(context.getMatrices(), x, y + 10, width, height - 10)
-                .round(6).thickness(2).softness(1).outlineColor(ColorAssist.getOutline()).color(ColorAssist.getMainGuiColor()).build());
+
+        blur.render(ShapeProperties.create(context.getMatrices(), x, y + 10, width, height - 10).round(6).quality(8)
+                .color(ThemeColorsGetter.getGuiBackground())
+                .build());
+
+        rectangle.render(ShapeProperties.create(context.getMatrices(), x, y + 10, width, height - 10).round(6)
+                .color(ThemeColorsGetter.getGuiBackground())
+                .build());
 
         alphaComponent.position(x, y);
         hueComponent.position(x, y);
@@ -47,7 +54,7 @@ public class ColorWindow extends AbstractWindow {
         colorEditorComponent.position(x, y);
 
         height = ((ColorPresetComponent) colorPresetComponent.position(x, y))
-                .getWindowHeight() - 50;
+                .getWindowHeight() - 40;
 
         components.forEach(component -> component.render(context, mouseX, mouseY, delta));
     }
