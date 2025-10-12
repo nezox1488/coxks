@@ -17,6 +17,7 @@ import fun.rich.utils.math.calc.Calculate;
 import fun.rich.utils.client.chat.StringHelper;
 import fun.rich.common.animation.Animation;
 import fun.rich.common.animation.implement.Decelerate;
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,17 +73,26 @@ public class ModuleComponent extends AbstractComponent {
         colorAnimation.setDirection(module.isState() ? FORWARDS : BACKWARDS);
         alphaAnimation.setDirection(module.isState() ? FORWARDS : BACKWARDS);
         int brightnessOffset = colorAnimation.getOutput().intValue();
-        int alphaOffset = 150 + alphaAnimation.getOutput().intValue();
+
+        int enabledColor = ThemeColorsGetter.getEnabledModule();
+        int disabledColor = ThemeColorsGetter.getDisabledModule();
+
+        int topLeftColor = disabledColor;
+        int topRightColor = module.isState() ?
+                new Color(
+                        Math.min(((enabledColor >> 16) & 0xFF) + brightnessOffset, 255),
+                        Math.min(((enabledColor >> 8) & 0xFF) + brightnessOffset, 255),
+                        Math.min((enabledColor & 0xFF) + brightnessOffset, 255),
+                        (enabledColor >> 24) & 0xFF
+                ).getRGB() : disabledColor;
+        int bottomLeftColor = disabledColor;
+        int bottomRightColor = topRightColor;
 
         rectangle.render(ShapeProperties.create(context.getMatrices(), x, y, width, height = getComponentHeight())
                 .round(5)
                 .thickness(2)
                 .outlineColor(new Color(55, 52, 55, 255).getRGB())
-                .color(
-                        new Color(19, 19, 21, 0).getRGB(),
-                        new Color(Math.min(19 + brightnessOffset, 255), Math.min(19 + brightnessOffset, 255), Math.min(21 + brightnessOffset, 255), 255).getRGB(),
-                        new Color(19, 19, 21, 0).getRGB(),
-                        new Color(Math.min(19 + brightnessOffset, 255), Math.min(19 + brightnessOffset, 255), Math.min(21 + brightnessOffset, 255), 255).getRGB())
+                .color(topLeftColor, topRightColor, bottomLeftColor, bottomRightColor)
                 .build());
 
         rectangle.render(ShapeProperties.create(context.getMatrices(), x, y + descHeight + 25, width, 1)
@@ -101,6 +111,7 @@ public class ModuleComponent extends AbstractComponent {
                 .setState(module.isState())
                 .render(context, mouseX, mouseY, delta);
 
+        int alphaOffset = 150 + alphaAnimation.getOutput().intValue();
         Fonts.getSize(15, DEFAULT).drawString(context.getMatrices(), point + module.getVisibleName(), x + 11, y + nameY - 1f, new Color(255, 255, 255, alphaOffset).getRGB());
 
         currentX = x + 10;

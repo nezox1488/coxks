@@ -36,7 +36,7 @@ public class AutoBuyItemSettingsWindow extends AbstractWindow {
 
     private void initializeComponents() {
         components.add(new AutoBuySettingsComponent.BuyBelowComponent(settings));
-        components.add(new AutoBuySettingsComponent.SellAboveComponent(settings));
+//        components.add(new AutoBuySettingsComponent.SellAboveComponent(settings));
         if (settings.isCanHaveQuantity()) {
             components.add(new AutoBuySettingsComponent.MinQuantityComponent(settings));
         }

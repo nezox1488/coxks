@@ -38,6 +38,8 @@ public class ThemeComponent extends AbstractComponent {
     private boolean dropdownOpen = false;
     private int selectedThemeIndex = 0;
     private float dropdownScroll = 0f;
+    private boolean previewEnabled = false;
+    private PreviewWindow previewWindow = null;
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -150,7 +152,6 @@ public class ThemeComponent extends AbstractComponent {
                 .round(4).thickness(2).softness(1).outlineColor(new Color(54, 54, 56, 255).getRGB()).color(
                         new Color(31, 27, 35, 75).getRGB()).build());
 
-
         Matrix4f positionMatrix = matrix.peek().getPositionMatrix();
         ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
         scissorManager.push(positionMatrix, x + 55F, y + 89, 140, dropdownHeight);
@@ -222,6 +223,13 @@ public class ThemeComponent extends AbstractComponent {
         rectangle.render(ShapeProperties.create(matrix, boxX + 340, boxY + 2, 12, 12)
                 .round(6).thickness(2.5f).softness(1)
                 .outlineColor(ColorAssist.getText()).color(0x0FFFFFF).build());
+
+//        rectangle.render(ShapeProperties.create(matrix, boxX + 323, boxY + 2, 14, 12)
+//                .round(3).thickness(1.5f).softness(1)
+//                .outlineColor(new Color(54, 54, 56, 255).getRGB())
+//                .color(new Color(31, 27, 35, 100).getRGB()).build());
+
+//        Fonts.getSize(18, Fonts.Type.ICONS).drawString(matrix, "D", boxX + 325.5f, boxY + 4.5f, ColorAssist.getText(0.8f));
     }
 
     private void drawScrollbar(DrawContext context, float viewHeight, float contentHeight, float maxScrollAmount) {
@@ -375,9 +383,34 @@ public class ThemeComponent extends AbstractComponent {
                 openColorWindow(color, mouseX, mouseY);
                 return true;
             }
+
+            if (Calculate.isHovered(mouseX, mouseY, x + 60f + 323, colorY + 2, 14, 12)) {
+                togglePreview();
+                return true;
+            }
+
             colorY += 18f;
         }
         return false;
+    }
+
+    private void togglePreview() {
+        previewEnabled = !previewEnabled;
+
+        if (previewEnabled) {
+            if (previewWindow == null || !windowManager.getWindows().contains(previewWindow)) {
+                previewWindow = new PreviewWindow();
+                previewWindow.position(MenuScreen.INSTANCE.x - 240, MenuScreen.INSTANCE.y - 15)
+                        .size(200, 315)
+                        .draggable(true);
+                windowManager.add(previewWindow);
+            }
+        } else {
+            if (previewWindow != null) {
+                windowManager.delete(previewWindow);
+                previewWindow = null;
+            }
+        }
     }
 
     private void openColorWindow(ColorSetting setting, double mouseX, double mouseY) {

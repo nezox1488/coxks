@@ -1,6 +1,7 @@
 package fun.rich.display.screens.clickgui.components.implement.module;
 
 import fun.rich.display.screens.clickgui.components.AbstractComponent;
+import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -34,16 +35,12 @@ public class ModuleSettingsWindow extends AbstractWindow {
         MatrixStack matrix = context.getMatrices();
         ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
         height = MathHelper.clamp(getComponentHeight() + 5, 0, 200);
-
-        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(16)
-                .color(new Color(0, 0, 0, 200).getRGB())
+        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(8)
+                .color(ThemeColorsGetter.getGuiBackground())
                 .build());
 
         rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(8)
-                .softness(1)
-//                .thickness(2)
-//                .outlineColor(new Color(33, 33, 33, 155).getRGB())
-                .color(new Color(18, 19, 20, 175).getRGB())
+                .color(ThemeColorsGetter.getGuiBackground())
                 .build());
 
         rectangle.render(ShapeProperties.create(matrix, x, y + 22, width, 0.5f)

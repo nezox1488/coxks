@@ -35,8 +35,8 @@ public class BindComponent extends AbstractSettingComponent {
 
         height = 15;
 
-        rectangle.render(ShapeProperties.create(matrix, x + width - stringWidth - 19, y + 5.5f, stringWidth + 10, 12)
-                .round(3).thickness(2).outlineColor(new Color(55,52,55,155).getRGB())
+        rectangle.render(ShapeProperties.create(matrix, x + width - stringWidth - 19, y + 5.5f, stringWidth + 10, 11.5f)
+                .round(3).softness(1).thickness(2).outlineColor(new Color(55,52,55,255).getRGB())
                 .color(
                         new Color(25,22,25,0).getRGB(),
                         new Color(31,27,35,0).getRGB(),
@@ -45,7 +45,7 @@ public class BindComponent extends AbstractSettingComponent {
                 .build());
         int bindingColor = ColorHelper.getArgb(255, 135, 136, 148);
 
-        Fonts.getSize(11, SEMI).drawString(matrix, name, x + width - 14 - stringWidth - 1, y + 11, bindingColor);
+        Fonts.getSize(11, SEMI).drawString(matrix, name, x + width - 14 - stringWidth - 1, y + 10.5f, bindingColor);
 
         Fonts.getSize(14, GUIICONS).drawString(context.getMatrices(), "L", x + 6, y + 11f, new Color(128, 128, 128, 64).getRGB());
 
