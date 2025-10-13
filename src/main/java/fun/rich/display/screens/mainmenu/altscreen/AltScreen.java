@@ -60,7 +60,7 @@ public class AltScreen implements QuickImports {
     private final Map<String, Animation> accountAnimations = new HashMap<>();
     private final Map<String, Float> accountYPositions = new HashMap<>();
     private final Map<String, Animation> accountRemoveAnimations = new HashMap<>();
-    private Animation emptyMessageAnimation = new InOutBack().setValue(0.0).setMs(300);
+    private Animation emptyMessageAnimation = new InOutBack().setValue(1.0).setMs(300);
     private boolean wasEmpty = true;
     private long lastActionTime = 0;
     private static final long ACTION_DELAY = 250;
@@ -70,15 +70,9 @@ public class AltScreen implements QuickImports {
         this.panelY = y;
         this.currentAccount = accountRepository.currentAccount;
         initializeAccountAnimations();
-
+        emptyMessageAnimation.setDirection(Direction.FORWARDS);
+        emptyMessageAnimation.reset();
         wasEmpty = accountRepository.accountList.isEmpty();
-        if (wasEmpty) {
-            emptyMessageAnimation.setDirection(Direction.FORWARDS);
-            emptyMessageAnimation.reset();
-        } else {
-            emptyMessageAnimation.setValue(0.0);
-            emptyMessageAnimation.setDirection(Direction.BACKWARDS);
-        }
     }
 
     private void initializeAccountAnimations() {
@@ -86,6 +80,7 @@ public class AltScreen implements QuickImports {
             if (!accountAnimations.containsKey(account.uuid)) {
                 Animation anim = new InOutBack().setValue(1.0).setMs(300);
                 anim.setDirection(Direction.FORWARDS);
+                anim.reset();
                 accountAnimations.put(account.uuid, anim);
             }
         }
@@ -110,6 +105,7 @@ public class AltScreen implements QuickImports {
             if (!accountAnimations.containsKey(account.uuid)) {
                 Animation anim = new InOutBack().setValue(1.0).setMs(300);
                 anim.setDirection(Direction.FORWARDS);
+                anim.reset();
                 accountAnimations.put(account.uuid, anim);
             }
         }
@@ -124,14 +120,13 @@ public class AltScreen implements QuickImports {
 
         boolean isEmpty = accountRepository.accountList.isEmpty();
         if (isEmpty != wasEmpty) {
+            wasEmpty = isEmpty;
             if (isEmpty) {
                 emptyMessageAnimation.setDirection(Direction.FORWARDS);
-                emptyMessageAnimation.reset();
             } else {
                 emptyMessageAnimation.setDirection(Direction.BACKWARDS);
-                emptyMessageAnimation.reset();
             }
-            wasEmpty = isEmpty;
+            emptyMessageAnimation.reset();
         }
     }
 
@@ -141,7 +136,7 @@ public class AltScreen implements QuickImports {
                 .outlineColor(outlineColor.getRGB())
                 .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
         Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Accounts", panelX + panelWidth / 2, panelY - 10, textColor.getRGB());
-
+ 
         rectangle.render(ShapeProperties.create(context.getMatrices(), panelX, panelY, panelWidth, panelHeight)
                 .thickness(2).round(10)
                 .outlineColor(outlineColor.getRGB())
@@ -223,12 +218,8 @@ public class AltScreen implements QuickImports {
         smoothedScroll = MathHelper.lerp(0.1f, smoothedScroll, scroll);
 
         if (accountRepository.accountList.isEmpty()) {
-            float emptyAlpha = emptyMessageAnimation.getOutput().floatValue();
-            int emptyAlphaInt = (int) (textColor.getAlpha() * emptyAlpha);
-            Color emptyTextColor = new Color(textColor.getRed(), textColor.getGreen(), textColor.getBlue(), emptyAlphaInt);
-
-            Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Пусто    ", panelX + panelWidth / 2 - 5, panelY + panelHeight / 2 - 10, emptyTextColor.getRGB());
-            Fonts.getSize(36, Fonts.Type.ICONS).drawCenteredString(context.getMatrices(), "   W", panelX + panelWidth / 2 + 7, panelY + panelHeight / 2 - 16, emptyTextColor.getRGB());
+            Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Пусто    ", panelX + panelWidth / 2 - 5, panelY + panelHeight / 2 - 10, textColor.getRGB());
+            Fonts.getSize(36, Fonts.Type.ICONS).drawCenteredString(context.getMatrices(), "   W", panelX + panelWidth / 2 + 7, panelY + panelHeight / 2 - 16, textColor.getRGB());
         } else {
             for (int i = 0; i < accountRepository.accountList.size(); i++) {
                 Account account = accountRepository.accountList.get(i);
