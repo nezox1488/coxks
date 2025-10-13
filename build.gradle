@@ -19,7 +19,7 @@ repositories {
 }
 
 loom {
-    accessWidenerPath = file("src/main/resources/rich.accesswidener")
+    accessWidenerPath = file("src/main/resources/accesswidener")
 }
 
 configurations {
