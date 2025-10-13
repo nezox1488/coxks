@@ -1,25 +1,20 @@
 package fun.rich.utils.features.aura.rotations.impl;
 
-import fun.rich.features.module.setting.implement.SelectSetting;
-import fun.rich.utils.features.aura.point.Vector;
+import fun.rich.Rich;
+import fun.rich.features.impl.combat.Aura;
 import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
-import fun.rich.utils.features.aura.utils.RaycastAngle;
+import fun.rich.utils.features.aura.striking.StrikeManager;
+import fun.rich.utils.features.aura.utils.MathAngle;
 import fun.rich.utils.features.aura.warp.Turns;
-import fun.rich.utils.features.aura.warp.TurnsConfig;
-import fun.rich.utils.math.calc.Calculate;
+import fun.rich.utils.math.time.StopWatch;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import fun.rich.features.impl.combat.Aura;
-import fun.rich.utils.features.aura.striking.StrikeManager;
-import fun.rich.utils.features.aura.utils.MathAngle;
-import fun.rich.Rich;
-import fun.rich.utils.math.time.StopWatch;
 
 import java.security.SecureRandom;
 
-public class MatrixAngle extends RotateConstructor {
-    public MatrixAngle() {
+public class LegitAngle extends RotateConstructor {
+    public LegitAngle() {
         super("Matrix");
     }
 

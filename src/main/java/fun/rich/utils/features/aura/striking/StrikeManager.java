@@ -71,20 +71,10 @@ public class StrikeManager implements QuickImports {
         }
 
         if (sprintMode.equals("Packet")) {
-            boolean serverThinksSprinting = mc.player.isSprinting();
-
-            if (serverThinksSprinting && !mc.player.isSubmergedInWater() && lastSprintCommand != ClientCommandC2SPacket.Mode.STOP_SPRINTING) {
-                mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-                lastSprintCommand = ClientCommandC2SPacket.Mode.STOP_SPRINTING;
-                mc.player.setSprinting(false);
-            }
+            mc.player.setSprinting(false);
+            mc.player.sendSprintingPacket();
             attackEntity(config);
-
-            if (serverThinksSprinting && !mc.player.isSubmergedInWater() && lastSprintCommand != ClientCommandC2SPacket.Mode.START_SPRINTING) {
-                mc.player.networkHandler.sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_SPRINTING));
-                lastSprintCommand = ClientCommandC2SPacket.Mode.START_SPRINTING;
-                mc.player.setSprinting(true);
-            }
+            mc.options.sprintKey.setPressed(true);
             return;
         }
 
