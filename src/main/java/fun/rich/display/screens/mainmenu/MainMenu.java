@@ -1,8 +1,6 @@
 package fun.rich.display.screens.mainmenu;
 
-import fun.rich.Rich;
 import fun.rich.common.animation.Direction;
-import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import fun.rich.display.screens.mainmenu.altscreen.AltScreen;
 import fun.rich.utils.client.text.TextAnimation;
 import fun.rich.utils.display.color.ColorAssist;
@@ -11,10 +9,7 @@ import fun.rich.utils.display.geometry.Render2D;
 import fun.rich.utils.display.gif.GifRender;
 import fun.rich.utils.display.interfaces.QuickImports;
 import fun.rich.utils.display.shape.ShapeProperties;
-import fun.rich.common.animation.Easy.EaseBackIn;
 import fun.rich.common.animation.implement.Decelerate;
-import fun.rich.utils.math.calc.Calculate;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
