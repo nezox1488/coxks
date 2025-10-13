@@ -11,6 +11,9 @@ import fun.rich.utils.display.geometry.Render2D;
 import fun.rich.utils.display.interfaces.QuickImports;
 import fun.rich.utils.display.scissor.ScissorAssist;
 import fun.rich.utils.display.shape.ShapeProperties;
+import fun.rich.common.animation.Animation;
+import fun.rich.common.animation.Direction;
+import fun.rich.common.animation.implement.InOutBack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.SocialInteractionsManager;
@@ -28,6 +31,8 @@ import com.mojang.authlib.minecraft.UserApiService;
 
 import java.awt.Color;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -52,22 +57,81 @@ public class AltScreen implements QuickImports {
     private float panelY;
     private final float panelWidth = 160;
     private final float panelHeight = 210;
+    private final Map<String, Animation> accountAnimations = new HashMap<>();
+    private final Map<String, Float> accountYPositions = new HashMap<>();
+    private final Map<String, Animation> accountRemoveAnimations = new HashMap<>();
+    private Animation emptyMessageAnimation = new InOutBack().setValue(0.0).setMs(300);
+    private boolean wasEmpty = true;
+    private long lastActionTime = 0;
+    private static final long ACTION_DELAY = 250;
 
     public AltScreen(float x, float y) {
         this.panelX = x;
         this.panelY = y;
         this.currentAccount = accountRepository.currentAccount;
+        initializeAccountAnimations();
+
+        wasEmpty = accountRepository.accountList.isEmpty();
+        if (wasEmpty) {
+            emptyMessageAnimation.setDirection(Direction.FORWARDS);
+            emptyMessageAnimation.reset();
+        } else {
+            emptyMessageAnimation.setValue(0.0);
+            emptyMessageAnimation.setDirection(Direction.BACKWARDS);
+        }
+    }
+
+    private void initializeAccountAnimations() {
+        for (Account account : accountRepository.accountList) {
+            if (!accountAnimations.containsKey(account.uuid)) {
+                Animation anim = new InOutBack().setValue(1.0).setMs(300);
+                anim.setDirection(Direction.FORWARDS);
+                accountAnimations.put(account.uuid, anim);
+            }
+        }
     }
 
     public void updatePosition(float x, float y) {
+        float deltaX = x - this.panelX;
+        float deltaY = y - this.panelY;
         this.panelX = x;
         this.panelY = y;
+
+        for (String key : accountYPositions.keySet()) {
+            accountYPositions.put(key, accountYPositions.get(key) + deltaY);
+        }
     }
 
     public void tick() {
         for (Account account : accountRepository.accountList) {
             float target = account.starred ? 1f : 0f;
             account.starAnim += (target - account.starAnim) * 0.2f;
+
+            if (!accountAnimations.containsKey(account.uuid)) {
+                Animation anim = new InOutBack().setValue(1.0).setMs(300);
+                anim.setDirection(Direction.FORWARDS);
+                accountAnimations.put(account.uuid, anim);
+            }
+        }
+
+        accountAnimations.keySet().removeIf(uuid -> {
+            boolean exists = accountRepository.accountList.stream().anyMatch(acc -> acc.uuid.equals(uuid));
+            if (!exists) {
+                accountYPositions.remove(uuid);
+            }
+            return !exists;
+        });
+
+        boolean isEmpty = accountRepository.accountList.isEmpty();
+        if (isEmpty != wasEmpty) {
+            if (isEmpty) {
+                emptyMessageAnimation.setDirection(Direction.FORWARDS);
+                emptyMessageAnimation.reset();
+            } else {
+                emptyMessageAnimation.setDirection(Direction.BACKWARDS);
+                emptyMessageAnimation.reset();
+            }
+            wasEmpty = isEmpty;
         }
     }
 
@@ -111,7 +175,6 @@ public class AltScreen implements QuickImports {
         rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + panelWidth - 25, panelY + 187.5f, 15, 15)
                 .thickness(2).round(4).outlineColor(outlineColor.getRGB())
                 .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
-
 
         Fonts.getSize(24, Fonts.Type.ICONS).drawString(context.getMatrices(), "R", panelX + panelWidth - 24.5f, panelY + 192, textColor.getRGB());
 
@@ -159,37 +222,72 @@ public class AltScreen implements QuickImports {
         scissorManager.push(positionMatrix, panelX, listY, panelWidth, listHeight);
         smoothedScroll = MathHelper.lerp(0.1f, smoothedScroll, scroll);
 
-
         if (accountRepository.accountList.isEmpty()) {
-            Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Пусто    ", panelX + panelWidth / 2 - 5, panelY + panelHeight / 2 - 10, textColor.getRGB());
-            Fonts.getSize(36, Fonts.Type.ICONS).drawCenteredString(context.getMatrices(), "   W", panelX + panelWidth / 2 + 7, panelY + panelHeight / 2 - 16, textColor.getRGB());
+            float emptyAlpha = emptyMessageAnimation.getOutput().floatValue();
+            int emptyAlphaInt = (int) (textColor.getAlpha() * emptyAlpha);
+            Color emptyTextColor = new Color(textColor.getRed(), textColor.getGreen(), textColor.getBlue(), emptyAlphaInt);
 
+            Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Пусто    ", panelX + panelWidth / 2 - 5, panelY + panelHeight / 2 - 10, emptyTextColor.getRGB());
+            Fonts.getSize(36, Fonts.Type.ICONS).drawCenteredString(context.getMatrices(), "   W", panelX + panelWidth / 2 + 7, panelY + panelHeight / 2 - 16, emptyTextColor.getRGB());
         } else {
             for (int i = 0; i < accountRepository.accountList.size(); i++) {
                 Account account = accountRepository.accountList.get(i);
-                float accY = panelY + 10 + i * accountSpacing - smoothedScroll;
+                float targetY = panelY + 10 + i * accountSpacing - smoothedScroll;
 
-                if (accY + 20 >= listY && accY <= listY + listHeight) {
-                    rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 5, accY, panelWidth - 11, 20)
-                            .thickness(2).round(5).outlineColor(outlineColor.getRGB())
-                            .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
+                String key = account.uuid;
+                accountYPositions.putIfAbsent(key, targetY);
+                float currentY = accountYPositions.get(key);
+                currentY = MathHelper.lerp(0.15f, currentY, targetY);
+                accountYPositions.put(key, currentY);
 
-                    rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 5, accY, panelWidth - 11, 1)
-                            .thickness(2).round(5).outlineColor(outlineColor.getRGB())
-                            .color(new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), 5).getRGB(),
-                                    new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), textColor.getAlpha()).getRGB(),
-                                    new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), textColor.getAlpha()).getRGB(),
-                                    new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), 5).getRGB()).build());
+                Animation anim = accountAnimations.get(account.uuid);
+                Animation removeAnim = accountRemoveAnimations.get(account.uuid);
+                if (anim == null) continue;
 
-                    Color starColor = interpolateColor(textColor, new Color(255, 255, 0, textColor.getAlpha()), account.starAnim);
-                    Color faceOutline = new Color(64, 64, 64, textColor.getAlpha());
-                    rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 9.5f, accY + 2.5, 16, 16)
+                float animProgress = anim.getOutput().floatValue();
+                if (removeAnim != null) {
+                    animProgress *= removeAnim.getOutput().floatValue();
+                }
+
+                float scale = 0.5f + animProgress * 0.5f;
+                int alpha = (int) (textColor.getAlpha() * animProgress);
+
+                if (currentY + 20 >= listY && currentY <= listY + listHeight) {
+                    matrix.push();
+                    float centerX = panelX + panelWidth / 2;
+                    float centerY = currentY + 10;
+                    matrix.translate(centerX, centerY, 0);
+                    matrix.scale(scale, scale, 1);
+                    matrix.translate(-centerX, -centerY, 0);
+
+                    int clampedAlpha = Math.max(0, Math.min(255, alpha));
+                    Color animButtonColor = new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), clampedAlpha);
+                    Color animGradientColor = new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), clampedAlpha);
+                    Color animOutlineColor = new Color(outlineColor.getRed(), outlineColor.getGreen(), outlineColor.getBlue(), clampedAlpha);
+                    Color animTextColor = new Color(textColor.getRed(), textColor.getGreen(), textColor.getBlue(), clampedAlpha);
+
+                    rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 5, currentY, panelWidth - 11, 20)
+                            .thickness(2).round(5).outlineColor(animOutlineColor.getRGB())
+                            .color(animButtonColor.getRGB(), animButtonColor.getRGB(), animGradientColor.getRGB(), animGradientColor.getRGB()).build());
+
+                    rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 5, currentY, panelWidth - 11, 1)
+                            .thickness(2).round(5).outlineColor(animOutlineColor.getRGB())
+                            .color(new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), Math.max(0, Math.min(255, (5 * clampedAlpha / 255)))).getRGB(),
+                                    new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), clampedAlpha).getRGB(),
+                                    new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), clampedAlpha).getRGB(),
+                                    new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), Math.max(0, Math.min(255, (5 * clampedAlpha / 255)))).getRGB()).build());
+
+                    Color starColor = interpolateColor(animTextColor, new Color(255, 255, 0, clampedAlpha), account.starAnim);
+                    Color faceOutline = new Color(64, 64, 64, clampedAlpha);
+                    rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 9.5f, currentY + 2.5, 16, 16)
                             .thickness(4).round(8).outlineColor(faceOutline.getRGB())
-                            .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
+                            .color(animButtonColor.getRGB(), animButtonColor.getRGB(), animGradientColor.getRGB(), animGradientColor.getRGB()).build());
 
-                    Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "★", panelX + panelWidth - 23.5f, accY + 4.5f, starColor.getRGB());
-                    drawAccountFace(context, account, panelX + 10, accY + 3, textColor.getAlpha());
-                    Fonts.getSize(15, Fonts.Type.SEMI).drawString(context.getMatrices(), account.name, panelX + 28, accY + 8.5f, textColor.getRGB());
+                    Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "★", panelX + panelWidth - 23.5f, currentY + 4.5f, starColor.getRGB());
+                    drawAccountFace(context, account, panelX + 10, currentY + 3, alpha);
+                    Fonts.getSize(15, Fonts.Type.SEMI).drawString(context.getMatrices(), account.name, panelX + 28, currentY + 8.5f, animTextColor.getRGB());
+
+                    matrix.pop();
                 }
             }
         }
@@ -238,7 +336,6 @@ public class AltScreen implements QuickImports {
         Render2D.drawTexture(context, skinTexture, x, y, 15, 7, 8, 8, 64, ColorAssist.getRect(1), -1);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableBlend();
-
         matrices.pop();
     }
 
@@ -263,7 +360,11 @@ public class AltScreen implements QuickImports {
         }
 
         if (button == 0 && isInBounds(mouseX, mouseY, panelX + panelWidth - 25, panelY + 187.5f, 15, 15)) {
-            addRandomAccount();
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastActionTime >= ACTION_DELAY) {
+                lastActionTime = currentTime;
+                addRandomAccount();
+            }
             return true;
         }
 
@@ -288,8 +389,15 @@ public class AltScreen implements QuickImports {
     private void addRandomAccount() {
         String username = generateRandomUsername();
         String offlineUuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8)).toString();
-        accountRepository.accountList.add(new Account(username, false, false, null, offlineUuid, "0"));
+        Account newAccount = new Account(username, false, false, null, offlineUuid, "0");
+        accountRepository.accountList.add(newAccount);
         accountRepository.accountList.sort((a1, a2) -> Boolean.compare(a2.starred, a1.starred));
+
+        Animation anim = new InOutBack().setValue(1.0).setMs(300);
+        anim.setDirection(Direction.FORWARDS);
+        anim.reset();
+        accountAnimations.put(offlineUuid, anim);
+
         typedText = "";
         cursorPos = 0;
         clearSelection();
@@ -328,26 +436,45 @@ public class AltScreen implements QuickImports {
         float listHeight = panelHeight - 31;
 
         for (int i = 0; i < accountRepository.accountList.size(); i++) {
-            float accY = panelY + 10 + i * accountSpacing - smoothedScroll;
+            Account account = accountRepository.accountList.get(i);
+            float accY = accountYPositions.getOrDefault(account.uuid, panelY + 10 + i * accountSpacing - smoothedScroll);
 
             if (accY + 20 < listY || accY > listY + listHeight) continue;
 
             if (button == 0 && isInBounds(mouseX, mouseY, panelX + panelWidth - 25, accY + 6.5f, 15, 15)) {
-                Account account = accountRepository.accountList.get(i);
                 account.starred = !account.starred;
                 accountRepository.accountList.sort((a1, a2) -> Boolean.compare(a2.starred, a1.starred));
                 return true;
             }
 
             if (button == 0 && isInBounds(mouseX, mouseY, panelX + 5, accY, panelWidth - 11, 20)) {
-                Account account = accountRepository.accountList.get(i);
                 currentAccount = account.name;
                 setSession(account);
                 return true;
             }
 
             if (button == 1 && isInBounds(mouseX, mouseY, panelX + 5, accY, panelWidth - 11, 20)) {
-                accountRepository.accountList.remove(i);
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastActionTime >= ACTION_DELAY) {
+                    lastActionTime = currentTime;
+                    Account accountToRemove = accountRepository.accountList.get(i);
+                    Animation removeAnim = new InOutBack().setValue(1.0).setMs(250);
+                    removeAnim.setDirection(Direction.BACKWARDS);
+                    removeAnim.reset();
+                    accountRemoveAnimations.put(accountToRemove.uuid, removeAnim);
+
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(250);
+                            accountRepository.accountList.remove(accountToRemove);
+                            accountYPositions.remove(accountToRemove.uuid);
+                            accountAnimations.remove(accountToRemove.uuid);
+                            accountRemoveAnimations.remove(accountToRemove.uuid);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
+                }
                 return true;
             }
         }
@@ -461,13 +588,24 @@ public class AltScreen implements QuickImports {
                     return true;
                 case GLFW.GLFW_KEY_ENTER:
                     if (typedText.length() >= MIN_LENGTH && typedText.length() <= MAX_LENGTH) {
-                        String offlineUuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + typedText).getBytes(StandardCharsets.UTF_8)).toString();
-                        accountRepository.accountList.add(new Account(typedText, false, false, null, offlineUuid, "0"));
-                        accountRepository.accountList.sort((a1, a2) -> Boolean.compare(a2.starred, a1.starred));
-                        typedText = "";
-                        cursorPos = 0;
-                        typing = false;
-                        clearSelection();
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastActionTime >= ACTION_DELAY) {
+                            lastActionTime = currentTime;
+                            String offlineUuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + typedText).getBytes(StandardCharsets.UTF_8)).toString();
+                            Account newAccount = new Account(typedText, false, false, null, offlineUuid, "0");
+                            accountRepository.accountList.add(newAccount);
+                            accountRepository.accountList.sort((a1, a2) -> Boolean.compare(a2.starred, a1.starred));
+
+                            Animation anim = new InOutBack().setValue(1.0).setMs(300);
+                            anim.setDirection(Direction.FORWARDS);
+                            anim.reset();
+                            accountAnimations.put(offlineUuid, anim);
+
+                            typedText = "";
+                            cursorPos = 0;
+                            typing = false;
+                            clearSelection();
+                        }
                     }
                     return true;
             }

@@ -76,6 +76,8 @@ public class MainMenu extends Screen implements QuickImports {
             Fonts.getSize(21, Fonts.Type.ICONSTYPENEW).drawCenteredString(context.getMatrices(), "i", width / 2 - 24, sy + bs + 49, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
             Fonts.getSize(22, Fonts.Type.ICONSTYPENEW).drawCenteredString(context.getMatrices(), "s", width / 2 + 27, sy + bs + 49, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
 
+            Fonts.getSize(45, Fonts.Type.ICONS).drawCenteredString(context.getMatrices(), "A", width / 2, sy - 70, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
+
             Fonts.getSize(18, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Rich Client, you made the right choice.", width / 2, sy - 40, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), textAnimation.getCurrentText(), width / 2, sy - 25, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "© 2025 RichClient. All rights reserved.", width / 2, height - 7, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
@@ -101,7 +103,7 @@ public class MainMenu extends Screen implements QuickImports {
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Username ▸ Baflllikov", 35, height - 21.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Uid ▸ 1", 35, height - 14.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
 
-            String text = "Build ▸ 1.1 alpha";
+            String text = "Build ▸ 0.1 alpha";
             float textWidth = Fonts.getSize(12, Fonts.Type.DEFAULT).getStringWidth(text);
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), text, context.getScaledWindowWidth() - textWidth - 3, context.getScaledWindowHeight() - 5.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
         }
