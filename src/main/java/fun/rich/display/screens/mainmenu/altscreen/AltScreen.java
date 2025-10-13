@@ -1,5 +1,6 @@
 package fun.rich.display.screens.mainmenu.altscreen;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import fun.rich.Rich;
 import fun.rich.mixin.client.IMinecraftClient;
 import fun.rich.utils.client.managers.file.impl.account.Account;
@@ -47,12 +48,17 @@ public class AltScreen implements QuickImports {
     private final Random rand = new Random();
     private float scroll = 0f;
     private float smoothedScroll = 0f;
-    private final float panelX;
-    private final float panelY;
+    private float panelX;
+    private float panelY;
     private final float panelWidth = 160;
     private final float panelHeight = 210;
 
     public AltScreen(float x, float y) {
+        this.panelX = x;
+        this.panelY = y;
+    }
+
+    public void updatePosition(float x, float y) {
         this.panelX = x;
         this.panelY = y;
     }
@@ -65,9 +71,16 @@ public class AltScreen implements QuickImports {
     }
 
     public void render(DrawContext context, Color buttonColor, Color outlineColor, Color gradientColor, Color textColor, Color bgColor) {
-        rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + panelWidth / 2 - 22, panelY - 13.5f, 43, 12).color(bgColor.getRGB()).round(3).build());
+        rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + panelWidth / 2 - 22, panelY - 13.5f, 43, 12)
+                .thickness(2).round(3)
+                .outlineColor(outlineColor.getRGB())
+                .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
         Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Accounts", panelX + panelWidth / 2, panelY - 10, textColor.getRGB());
-        rectangle.render(ShapeProperties.create(context.getMatrices(), panelX, panelY, panelWidth, panelHeight).color(bgColor.getRGB()).round(7).build());
+
+        rectangle.render(ShapeProperties.create(context.getMatrices(), panelX, panelY, panelWidth, panelHeight)
+                .thickness(2).round(7)
+                .outlineColor(outlineColor.getRGB())
+                .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
 
         renderTextField(context, buttonColor, outlineColor, gradientColor, textColor);
         renderAccountList(context, buttonColor, outlineColor, gradientColor, textColor);
@@ -75,7 +88,10 @@ public class AltScreen implements QuickImports {
         String currentText = "Current account - " + currentAccount;
         float currentWidth = Fonts.getSize(15, Fonts.Type.SEMI).getStringWidth(currentText) + 20;
         float currentX = panelX + panelWidth / 2 - currentWidth / 2;
-        rectangle.render(ShapeProperties.create(context.getMatrices(), currentX, panelY + panelHeight + 2, currentWidth, 12).color(bgColor.getRGB()).round(3).build());
+        rectangle.render(ShapeProperties.create(context.getMatrices(), currentX, panelY + panelHeight + 2, currentWidth, 12)
+                .thickness(2).round(3)
+                .outlineColor(outlineColor.getRGB())
+                .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
         Fonts.getSize(15, Fonts.Type.SEMI).drawCenteredString(context.getMatrices(), currentText, panelX + panelWidth / 2, panelY + panelHeight + 6, textColor.getRGB());
     }
 
@@ -83,9 +99,25 @@ public class AltScreen implements QuickImports {
         rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 5, panelY + 185, panelWidth - 11, 20)
                 .thickness(2).round(5).outlineColor(outlineColor.getRGB())
                 .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
+
+        rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 5, panelY + 185, panelWidth - 11, 1)
+                .thickness(2).round(5).outlineColor(outlineColor.getRGB())
+                .color(new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), 5).getRGB(),
+                        new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), textColor.getAlpha()).getRGB(),
+                        new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), textColor.getAlpha()).getRGB(),
+                        new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), 5).getRGB()).build());
+
         rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + panelWidth - 25, panelY + 187.5f, 15, 15)
                 .thickness(2).round(4).outlineColor(outlineColor.getRGB())
                 .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
+
+        rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + panelWidth - 25, panelY + 187.5f, 15, 1)
+                .thickness(2).round(4).outlineColor(outlineColor.getRGB())
+                .color(new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), 5).getRGB(),
+                        new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), textColor.getAlpha()).getRGB(),
+                        new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), textColor.getAlpha()).getRGB(),
+                        new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), 5).getRGB()).build());
+
         Fonts.getSize(14, Fonts.Type.ICONS).drawString(context.getMatrices(), "+", panelX + panelWidth - 22, panelY + 189, textColor.getRGB());
 
         float textFieldX = panelX + 5;
@@ -103,7 +135,8 @@ public class AltScreen implements QuickImports {
             int end = Math.max(selStart, selEnd);
             float selXStart = textFieldX + 5 - textXOffset + font.getStringWidth(typedText.substring(0, start));
             float selWidth = font.getStringWidth(typedText.substring(start, end));
-            rectangle.render(ShapeProperties.create(context.getMatrices(), selXStart, textFieldY + 13.5f, selWidth, textFieldHeight - 10).color(0xFF5585E8).build());
+            Color selColor = new Color(85, 133, 232, textColor.getAlpha());
+            rectangle.render(ShapeProperties.create(context.getMatrices(), selXStart, textFieldY + 13.5f, selWidth, textFieldHeight - 10).color(selColor.getRGB()).build());
         }
 
         if (!typedText.isEmpty() || typing) {
@@ -140,13 +173,21 @@ public class AltScreen implements QuickImports {
                         .thickness(2).round(5).outlineColor(outlineColor.getRGB())
                         .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
 
+                rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 5, accY, panelWidth - 11, 1)
+                        .thickness(2).round(5).outlineColor(outlineColor.getRGB())
+                        .color(new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), 5).getRGB(),
+                                new Color(buttonColor.getRed(), buttonColor.getGreen(), buttonColor.getBlue(), textColor.getAlpha()).getRGB(),
+                                new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), textColor.getAlpha()).getRGB(),
+                                new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), 5).getRGB()).build());
+
                 Color starColor = interpolateColor(textColor, new Color(255, 255, 0, textColor.getAlpha()), account.starAnim);
+                Color faceOutline = new Color(64, 64, 64, textColor.getAlpha());
                 rectangle.render(ShapeProperties.create(context.getMatrices(), panelX + 9.5f, accY + 2.5, 16, 16)
-                        .thickness(4).round(8).outlineColor(new Color(64, 64, 64, 255).getRGB())
+                        .thickness(4).round(8).outlineColor(faceOutline.getRGB())
                         .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
 
                 Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "★", panelX + panelWidth - 25, accY + 6.5f, starColor.getRGB());
-                drawAccountFace(context, account, panelX + 10, accY + 3);
+                drawAccountFace(context, account, panelX + 10, accY + 3, textColor.getAlpha());
                 Fonts.getSize(15, Fonts.Type.SEMI).drawString(context.getMatrices(), account.name, panelX + 28, accY + 8.5f, textColor.getRGB());
             }
         }
@@ -154,11 +195,11 @@ public class AltScreen implements QuickImports {
         scissorManager.pop();
 
         if (accountRepository.accountList.size() > 7) {
-            renderScrollbar(context, listY, listHeight, accountSpacing);
+            renderScrollbar(context, listY, listHeight, accountSpacing, textColor.getAlpha());
         }
     }
 
-    private void renderScrollbar(DrawContext context, float listY, float listHeight, float accountSpacing) {
+    private void renderScrollbar(DrawContext context, float listY, float listHeight, float accountSpacing, int alpha) {
         float contentHeight = accountRepository.accountList.size() * accountSpacing;
         float maxScroll = Math.max(0, contentHeight - listHeight);
         scroll = MathHelper.clamp(scroll, 0, maxScroll);
@@ -168,24 +209,38 @@ public class AltScreen implements QuickImports {
         float scrollbarY = listY + 1;
         float scrollbarHeight = listHeight - 3;
 
+        Color bgScrollColor = new Color(30, 30, 30, (int) (100 * (alpha / 255.0)));
         rectangle.render(ShapeProperties.create(context.getMatrices(), scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight)
-                .round(1f).color(new Color(30, 30, 30, 100).getRGB()).build());
+                .round(1f).color(bgScrollColor.getRGB()).build());
 
         float handleHeight = Math.max(20, listHeight * (listHeight / (contentHeight + listHeight)));
         float scrollRatio = smoothedScroll / maxScroll;
         float handleY = scrollbarY + (scrollbarHeight - handleHeight) * scrollRatio;
 
+        Color handleColor = new Color(100, 100, 100, (int) (150 * (alpha / 255.0)));
         rectangle.render(ShapeProperties.create(context.getMatrices(), scrollbarX, handleY, scrollbarWidth, handleHeight)
-                .round(1f).color(new Color(100, 100, 100, 150).getRGB()).build());
+                .round(1f).color(handleColor.getRGB()).build());
     }
 
-    private void drawAccountFace(DrawContext context, Account account, float x, float y) {
+    private void drawAccountFace(DrawContext context, Account account, float x, float y, int alpha) {
         GameProfile profile = new GameProfile(UUID.fromString(account.uuid), account.name);
         Identifier skinTexture = MinecraftClient.getInstance().getSkinProvider().getSkinTextures(profile).texture();
         if (skinTexture == null) {
             skinTexture = Identifier.of("minecraft", "textures/entity/steve.png");
         }
+
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha / 255.0f);
+
         Render2D.drawTexture(context, skinTexture, x, y, 15, 7, 8, 8, 64, ColorAssist.getRect(1), -1);
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+
+        matrices.pop();
     }
 
     private Color interpolateColor(Color start, Color end, float t) {
