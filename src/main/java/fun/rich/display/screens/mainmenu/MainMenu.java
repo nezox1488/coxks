@@ -34,8 +34,8 @@ public class MainMenu extends Screen implements QuickImports {
 
     public MainMenu() {
         super(Text.of("MainMenu"));
-        altFadeAnimation.setMs(500).setValue(1.0);
-        mainFadeAnimation.setMs(500).setValue(1.0);
+        altFadeAnimation.setMs(250).setValue(1.0);
+        mainFadeAnimation.setMs(250).setValue(1.0);
         mainFadeAnimation.setDirection(Direction.FORWARDS);
         altFadeAnimation.setDirection(Direction.BACKWARDS);
     }

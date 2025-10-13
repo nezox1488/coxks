@@ -59,7 +59,7 @@ public class Esp extends Module {
     public static Esp getInstance() {
         return Instance.get(Esp.class);
     }
-    Identifier TEXTURE = Identifier.of("textures/container.png");
+    Identifier TEXTURE = Identifier.of("textures/features/esp/container.png");
     List<PlayerEntity> players = new ArrayList<>();
     Map<RegistryKey<Enchantment>, String> encMap = new HashMap<>();
 

@@ -118,7 +118,7 @@ public class AltScreen implements QuickImports {
                         new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), textColor.getAlpha()).getRGB(),
                         new Color(gradientColor.getRed(), gradientColor.getGreen(), gradientColor.getBlue(), 5).getRGB()).build());
 
-        Fonts.getSize(14, Fonts.Type.ICONS).drawString(context.getMatrices(), "+", panelX + panelWidth - 22, panelY + 189, textColor.getRGB());
+//        Fonts.getSize(14, Fonts.Type.ICONS).drawString(context.getMatrices(), "+", panelX + panelWidth - 22, panelY + 189, textColor.getRGB());
 
         float textFieldX = panelX + 5;
         float textFieldY = panelY + 177;
@@ -186,7 +186,7 @@ public class AltScreen implements QuickImports {
                         .thickness(4).round(8).outlineColor(faceOutline.getRGB())
                         .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
 
-                Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "★", panelX + panelWidth - 25, accY + 6.5f, starColor.getRGB());
+                Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "★", panelX + panelWidth - 23.5f, accY + 4.5f, starColor.getRGB());
                 drawAccountFace(context, account, panelX + 10, accY + 3, textColor.getAlpha());
                 Fonts.getSize(15, Fonts.Type.SEMI).drawString(context.getMatrices(), account.name, panelX + 28, accY + 8.5f, textColor.getRGB());
             }
