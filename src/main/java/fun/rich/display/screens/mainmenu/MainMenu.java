@@ -207,13 +207,18 @@ public class MainMenu extends Screen implements QuickImports {
 
     @Override
     public boolean keyPressed(int k, int s, int m) {
+        if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+            if (altVisible) {
+                toggleAlt();
+                return true;
+            }
+            return false;
+        }
+
         if (altVisible && altFadeAnimation.getOutput() > 0.5 && altScreen != null && altScreen.keyPressed(k)) {
             return true;
         }
-        if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE && altVisible) {
-            toggleAlt();
-            return true;
-        }
+
         return super.keyPressed(k, s, m);
     }
 

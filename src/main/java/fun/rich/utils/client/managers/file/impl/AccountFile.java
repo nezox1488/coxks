@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
-import fun.rich.utils.client.managers.file.impl.account.Account;
-import fun.rich.utils.client.managers.file.impl.account.AccountRepository;
+import fun.rich.display.screens.mainmenu.altscreen.impl.AccountData;
+import fun.rich.display.screens.mainmenu.altscreen.impl.AccountRepository;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import fun.rich.utils.client.managers.file.ClientFile;
@@ -13,7 +13,6 @@ import fun.rich.utils.client.managers.file.exception.FileLoadException;
 import fun.rich.utils.client.managers.file.exception.FileSaveException;
 
 import java.io.*;
-import java.util.Arrays;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AccountFile extends ClientFile {
@@ -29,7 +28,10 @@ public class AccountFile extends ClientFile {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File file = new File(path, getName() + ".json");
         try (FileWriter writer = new FileWriter(file)) {
-            gson.toJson(accountRepository.accountList, writer);
+            AccountData data = new AccountData();
+            data.accounts = accountRepository.accountList;
+            data.currentAccount = accountRepository.currentAccount;
+            gson.toJson(data, writer);
         } catch (JsonIOException | IOException e) {
             throw new FileSaveException("Failed to save accounts to file", e);
         }
@@ -40,9 +42,14 @@ public class AccountFile extends ClientFile {
         Gson gson = new Gson();
         File file = new File(path, getName() + ".json");
         try (FileReader reader = new FileReader(file)) {
-            Account[] accounts = gson.fromJson(reader, Account[].class);
+            AccountData data = gson.fromJson(reader, AccountData.class);
             accountRepository.accountList.clear();
-            accountRepository.accountList.addAll(Arrays.asList(accounts));
+            if (data.accounts != null) {
+                accountRepository.accountList.addAll(data.accounts);
+            }
+            if (data.currentAccount != null) {
+                accountRepository.currentAccount = data.currentAccount;
+            }
         } catch (IOException e) {
             throw new FileLoadException("Failed to load accounts from file", e);
         } catch (JsonSyntaxException e) {
