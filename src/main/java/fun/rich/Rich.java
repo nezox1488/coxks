@@ -41,7 +41,7 @@ import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import fun.rich.utils.client.managers.file.impl.account.AccountRepository;
+import fun.rich.display.screens.mainmenu.altscreen.impl.AccountRepository;
 import fun.rich.utils.client.managers.file.impl.AccountFile;
 import fun.rich.utils.client.managers.file.impl.AutoBuyConfigFile;
 

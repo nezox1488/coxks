@@ -1,4 +1,4 @@
-package fun.rich.utils.client.managers.file.impl.account;
+package fun.rich.display.screens.mainmenu.altscreen.impl;
 
 public class Account {
     public String name;
