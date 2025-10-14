@@ -34,7 +34,7 @@ public class GuiProxy extends Screen {
         this.parentScreen = parentScreen;
     }
 
-    
+
     private static boolean isValidIpPort(String ipP) {
         if (ipP == null || ipP.isEmpty()) return false;
         String[] split = ipP.split(":");
@@ -51,10 +51,10 @@ public class GuiProxy extends Screen {
         return false;
     }
 
-    
+
     private boolean checkProxy() {
         if (!isValidIpPort(ipPort.getText())) {
-            msg = Formatting.RED + Text.translatable("ОШИБКА В НАПИСАНИИ АЙПИ АДРЕСА ИЛИ ПОРТА").getString();
+//            msg = Formatting.RED + "Ошибка в написании IP адреса или порта";
             this.ipPort.setFocused(true);
             return false;
         }
@@ -73,6 +73,10 @@ public class GuiProxy extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) {
+            MinecraftClient.getInstance().setScreen(parentScreen);
+            return true;
+        }
         super.keyPressed(keyCode, scanCode, modifiers);
         msg = "";
         return true;
@@ -86,15 +90,15 @@ public class GuiProxy extends Screen {
             enabledCheck.onPress();
         }
 
-        context.drawTextWithShadow(this.textRenderer, Text.translatable("Введите айпи адрес и порт. Пример ниже").getString(), this.width / 2 - 106, positionY[2] - 30, 0xA0A0A0);
-        context.drawTextWithShadow(this.textRenderer, Text.translatable("Айпи:Порт").getString(), this.width / 2 - 24, positionY[2] - 14, 0xA0A0A0);
+        context.drawTextWithShadow(this.textRenderer, Text.translatable("Введите айпи адрес и порт. Пример ниже").getString(), this.width / 2 - 106, positionY[3] - 15, 0xA0A0A0);
+        context.drawTextWithShadow(this.textRenderer, Text.translatable("Айпи:Порт ▸").getString(), this.width / 2 - 140, positionY[3] + 15, 0xA0A0A0);
 
         this.ipPort.render(context, mouseX, mouseY, partialTicks);
 
-        context.drawTextWithShadow(this.textRenderer, Text.translatable("Никнейм").getString(), this.width / 2 - 20, positionY[4] - 14, 0xA0A0A0);
-        context.drawTextWithShadow(this.textRenderer, Text.translatable("Пароль").getString(), this.width / 2 - 20, positionY[5] + 3, 0xA0A0A0);
-            this.username.render(context, mouseX, mouseY, partialTicks);
-            this.password.render(context, mouseX, mouseY, partialTicks);
+        context.drawTextWithShadow(this.textRenderer, Text.translatable("Никнейм ▸").getString(), this.width / 2 - 131, positionY[4] + 15, 0xA0A0A0);
+        context.drawTextWithShadow(this.textRenderer, Text.translatable("Пароль ▸").getString(), this.width / 2 - 126, positionY[5] + 15, 0xA0A0A0);
+        this.username.render(context, mouseX, mouseY, partialTicks);
+        this.password.render(context, mouseX, mouseY, partialTicks);
 
         context.drawCenteredTextWithShadow(this.textRenderer, msg, this.width / 2, positionY[6] + 5, 0xA0A0A0);
     }
@@ -107,18 +111,18 @@ public class GuiProxy extends Screen {
 
         isSocks4 = ProxyServer.proxy.type == Proxy.ProxyType.SOCKS4;
 
-        this.ipPort = new TextFieldWidget(this.textRenderer, positionX, positionY[2], buttonLength, 20, Text.literal(""));
+        this.ipPort = new TextFieldWidget(this.textRenderer, positionX, positionY[3] + 10, buttonLength, 20, Text.literal(""));
         this.ipPort.setText(ProxyServer.proxy.ipPort);
         this.ipPort.setMaxLength(1024);
         this.ipPort.setFocused(true);
         this.addSelectableChild(this.ipPort);
 
-        this.username = new TextFieldWidget(this.textRenderer, positionX, positionY[4], buttonLength, 20, Text.literal(""));
+        this.username = new TextFieldWidget(this.textRenderer, positionX, positionY[4] + 10, buttonLength, 20, Text.literal(""));
         this.username.setMaxLength(255);
         this.username.setText(ProxyServer.proxy.username);
         this.addSelectableChild(this.username);
 
-        this.password = new TextFieldWidget(this.textRenderer, positionX, positionY[5] + 15, buttonLength, 20, Text.literal(""));
+        this.password = new TextFieldWidget(this.textRenderer, positionX, positionY[5] + 10, buttonLength, 20, Text.literal(""));
         this.password.setMaxLength(255);
         this.password.setText(ProxyServer.proxy.password);
         this.addSelectableChild(this.password);
@@ -126,18 +130,26 @@ public class GuiProxy extends Screen {
         int posXButtons = (this.width / 2) - (((buttonLength / 2) * 3) / 2);
 
         ButtonWidget apply = ButtonWidget.builder(Text.translatable("Применить"), button -> {
-            if (checkProxy()) {
+            if (enabledCheck.isChecked()) {
+                if (checkProxy()) {
+                    ProxyServer.proxy = new Proxy(isSocks4, ipPort.getText(), username.getText(), password.getText());
+                    ProxyServer.proxyEnabled = true;
+                    Config.setDefaultProxy(ProxyServer.proxy);
+                    Config.saveConfig();
+                    MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
+                }
+            } else {
                 ProxyServer.proxy = new Proxy(isSocks4, ipPort.getText(), username.getText(), password.getText());
-                ProxyServer.proxyEnabled = enabledCheck.isChecked();
+                ProxyServer.proxyEnabled = false;
                 Config.setDefaultProxy(ProxyServer.proxy);
                 Config.saveConfig();
                 MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
             }
-        }).dimensions(posXButtons + (buttonLength / 2 - 65) * 2, positionY[8], buttonLength / 2 + 3, 20).build();
+        }).dimensions(posXButtons + (buttonLength / 2 - 62) * 2, positionY[7] - 10, buttonLength / 2 + 3, 20).build();
         this.addDrawableChild(apply);
 
         CheckboxWidget.Builder checkboxBuilder = CheckboxWidget.builder(Text.translatable("Включить прокси"), this.textRenderer);
-        checkboxBuilder.pos((this.width / 2) - (15 + textRenderer.getWidth(Text.translatable("Включить прокси"))) / 2, positionY[7]);
+        checkboxBuilder.pos((this.width / 2 - 34) - (13 + textRenderer.getWidth(Text.translatable("Включить прокси"))) / 2, positionY[7] + 15);
         if (ProxyServer.proxyEnabled) {
             checkboxBuilder.checked(ProxyServer.proxyEnabled);
         }
@@ -146,12 +158,13 @@ public class GuiProxy extends Screen {
 
         ButtonWidget cancel = ButtonWidget.builder(Text.translatable("Отменить"), (button) -> {
             MinecraftClient.getInstance().setScreen(parentScreen);
-        }).dimensions(posXButtons + (buttonLength / 2 - 16) * 2, positionY[8], buttonLength / 2 - 3, 20).build();
+        }).dimensions(posXButtons + (buttonLength / 2 - 16) * 2, positionY[7] - 10, buttonLength / 2 - 3, 20).build();
         this.addDrawableChild(cancel);
     }
 
     @Override
     public void close() {
         msg = "";
+        MinecraftClient.getInstance().setScreen(parentScreen);
     }
 }

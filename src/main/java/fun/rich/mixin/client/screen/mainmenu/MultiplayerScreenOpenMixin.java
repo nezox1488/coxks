@@ -33,9 +33,19 @@ public class MultiplayerScreenOpenMixin {
         }
 
         MultiplayerScreen ms = (MultiplayerScreen) (Object) this;
-        ProxyServer.proxyMenuButton = ButtonWidget.builder(Text.literal("Proxy"), (buttonWidget) -> {
+        MinecraftClient client = MinecraftClient.getInstance();
+        int screenWidth = client.getWindow().getScaledWidth();
+
+        String buttonText;
+        if (ProxyServer.proxyEnabled && ProxyServer.proxy != null && !ProxyServer.proxy.ipPort.isEmpty()) {
+            buttonText = "Прокси: Активен";
+        } else {
+            buttonText = "Proxy";
+        }
+
+        ProxyServer.proxyMenuButton = ButtonWidget.builder(Text.literal(buttonText), (buttonWidget) -> {
             MinecraftClient.getInstance().setScreen(new GuiProxy(ms));
-        }).dimensions(5, 5, 120, 20).build();
+        }).dimensions(screenWidth - 105, 5, 100, 20).build();
 
         IScreen si = (IScreen) ms;
         si.getDrawables().add(ProxyServer.proxyMenuButton);

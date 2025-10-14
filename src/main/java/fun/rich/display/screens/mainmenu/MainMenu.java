@@ -80,7 +80,7 @@ public class MainMenu extends Screen implements QuickImports {
 
             Fonts.getSize(18, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Rich Client, you made the right choice.", width / 2, sy - 40, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), textAnimation.getCurrentText(), width / 2, sy - 25, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
-            Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "© 2025 RichClient. All rights reserved.", width / 2, height - 7, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
+            Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "© 2025 RichClient. All rights reserved.", width / 2 + 2, height - 7, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
 
             rectangle.render(ShapeProperties.create(context.getMatrices(), 8, height - 27, 20, 20).thickness(2).round(10)
                     .outlineColor(applyAlpha(new Color(100, 100, 100, 95).getRGB(), mainAlphaInt))
@@ -140,7 +140,7 @@ public class MainMenu extends Screen implements QuickImports {
                         applyAlpha(new Color(80, 80, 80, 95).getRGB(), alpha),
                         applyAlpha(new Color(80, 80, 80, 95).getRGB(), alpha)).build());
 
-        rectangle.render(ShapeProperties.create(ctx.getMatrices(), x, y, w, 1).thickness(2).round(4)
+        rectangle.render(ShapeProperties.create(ctx.getMatrices(), x, y, w, 1).thickness(2).round(5)
                 .outlineColor(applyAlpha(new Color(100, 100, 100, 95).getRGB(), alpha))
                 .color(applyAlpha(new Color(50, 50, 50, 5).getRGB(), alpha),
                         applyAlpha(new Color(50, 50, 50, 255).getRGB(), alpha),

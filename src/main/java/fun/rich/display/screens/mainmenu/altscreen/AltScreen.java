@@ -136,7 +136,7 @@ public class AltScreen implements QuickImports {
                 .outlineColor(outlineColor.getRGB())
                 .color(buttonColor.getRGB(), buttonColor.getRGB(), gradientColor.getRGB(), gradientColor.getRGB()).build());
         Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Accounts", panelX + panelWidth / 2, panelY - 10, textColor.getRGB());
- 
+
         rectangle.render(ShapeProperties.create(context.getMatrices(), panelX, panelY, panelWidth, panelHeight)
                 .thickness(2).round(10)
                 .outlineColor(outlineColor.getRGB())
