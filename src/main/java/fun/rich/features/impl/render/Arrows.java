@@ -33,7 +33,7 @@ import static net.minecraft.client.render.VertexFormats.POSITION_TEXTURE_COLOR;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class Arrows extends Module {
-    Identifier iconId = Identifier.of("textures/arrow.png");
+    Identifier iconId = Identifier.of("textures/features/arrows/arrow.png");
     Animation radiusAnim = new Decelerate().setMs(150).setValue(6);
 
     SliderSettings radiusSetting = new SliderSettings("Радиус", "Радиус стрелок")
@@ -67,7 +67,7 @@ public class Arrows extends Module {
             RenderSystem.disableCull();
             RenderSystem.disableDepthTest();
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_CONSTANT_ALPHA);
-            RenderSystem.setShaderTexture(0, iconId);
+            RenderSystem.setShaderTexture(0, Identifier.of("textures/features/arrows/arrow.png"));
             RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
             BufferBuilder buffer = tessellator.begin(QUADS, POSITION_TEXTURE_COLOR);
 
