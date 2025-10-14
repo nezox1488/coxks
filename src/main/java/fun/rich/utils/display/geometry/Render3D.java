@@ -2,6 +2,7 @@ package fun.rich.utils.display.geometry;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import fun.rich.features.impl.render.TargetESP;
 import lombok.Setter;
 import lombok.experimental.UtilityClass;
 import net.minecraft.client.gl.ShaderProgramKeys;
@@ -39,7 +40,7 @@ public class Render3D implements QuickImports {
     public final List<Quad> QUAD = new ArrayList<>();
     @Setter public Matrix4f lastProjMat = new Matrix4f();
     @Setter public MatrixStack.Entry lastWorldSpaceMatrix = new MatrixStack().peek();
-    private final Identifier captureId = Identifier.of("textures/capture1.png"), bloom = Identifier.of("textures/bloom.png");
+    private final Identifier captureId = Identifier.of("textures/capture1.png"), bloom = Identifier.of("textures/features/particles/bloom.png");
     public final List<Crystal> crystalList = new ArrayList<>();
 
     private static class Crystal {
@@ -417,7 +418,7 @@ public class Render3D implements QuickImports {
         matrix.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(Calculate.interpolate(prevEspValue, espValue)));
 
         MatrixStack.Entry entry = matrix.peek().copy();
-        Render3D.drawTexture(entry, Identifier.of("textures/capture" + png + ".png"), -size / 2, -size / 2, size, size, ColorAssist.multRedAndAlpha(new Vector4i(ColorAssist.fade(90), ColorAssist.fade(0), ColorAssist.fade(180), ColorAssist.fade(270)), 1 + red * 10, anim), false);
+        Render3D.drawTexture(entry, Identifier.of("textures/features/targetesp/capture" + png + ".png"), -size / 2, -size / 2, size, size, ColorAssist.multRedAndAlpha(new Vector4i(TargetESP.getInstance().colorSetting.getColor(), TargetESP.getInstance().colorSetting.getColor(), TargetESP.getInstance().colorSetting.getColor(), TargetESP.getInstance().colorSetting.getColor()), 1 + red * 10, anim), false);
         matrix.pop();
     }
     private final Random random = new Random();
@@ -450,7 +451,7 @@ public class Render3D implements QuickImports {
             Vec3d cosSin = Calculate.cosSin(i, size, width);
             Vec3d nextCosSin = Calculate.cosSin(i + 1, size, width);
 
-            int color = ColorAssist.multRed(ColorAssist.fade(i * 4), 1 + red * 10);
+            int color = ColorAssist.multRed(TargetESP.getInstance().colorSetting.getColor(), 1 + red * 125);
 
             Vec3d start = target.add(cosSin.x, cosSin.y + yAnim, cosSin.z);
             Vec3d end   = target.add(cosSin.x, cosSin.y + yAnim2, cosSin.z);
@@ -500,9 +501,9 @@ public class Render3D implements QuickImports {
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
                 MatrixStack.Entry entry = matrices.peek().copy();
-                int color = ColorAssist.multRedAndAlpha(ColorAssist.fade((int) (offset * 180)), 1 + red * 10, offset * anim);
+                int color = ColorAssist.multRedAndAlpha(TargetESP.getInstance().colorSetting.getColor(), 1 + red * 10, offset * anim);
                 float scale = 0.5f * offset * (0.7f + speed * 0.1f);
-                Render3D.drawTexture(entry, bloom, -scale / 2, -scale / 2, scale, scale, new Vector4i(color), canSee);
+                Render3D.drawTexture(entry, Identifier.of("textures/features/particles/bloom.png"), -scale / 2, -scale / 2, scale, scale, new Vector4i(color), canSee);
             }
         }
     }

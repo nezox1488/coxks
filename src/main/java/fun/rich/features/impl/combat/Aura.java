@@ -174,7 +174,7 @@ public class Aura extends Module {
         }
 
         boolean shouldRotate = switch (aimMode.getSelected()) {
-            case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(70);
+            case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
             case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
             case "SpookyTime" -> true;
             case "LonyGrief" -> true;

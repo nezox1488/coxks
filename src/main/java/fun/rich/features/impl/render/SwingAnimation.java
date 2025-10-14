@@ -21,7 +21,7 @@ import fun.rich.events.item.SwingDurationEvent;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SwingAnimation extends Module {
     SelectSetting swingType = new SelectSetting("Тип взмаха", "Выберите тип взмаха")
-            .value("Swipe", "Down", "Smooth", "Power", "Feast", "Twist", "Default");
+            .value("Swipe", "Down", "Smooth", "Smooth 2","Power", "Feast", "Twist", "Default");
     SliderSettings hitStrengthSetting = new SliderSettings("Сила взмаха", "Сила анимации взмаха")
             .setValue(1.0F).range(0.5F, 3.0F);
     SliderSettings swingSpeedSetting = new SliderSettings("Длительность взмаха", "Длительность анимации удара")
@@ -108,6 +108,11 @@ public class SwingAnimation extends Module {
                             matrix.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * sin2 * -20.0F * strength));
                             matrix.multiply(RotationAxis.POSITIVE_X.rotationDegrees(sin2 * -80.0F * strength));
                             matrix.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
+                            matrix.translate(0, -0.1, 0);
+                        }
+                        case "Smooth 2" -> {
+                            matrix.translate(i * 0.56F, -0.42F, -0.72F);
+                            matrix.multiply(RotationAxis.POSITIVE_X.rotationDegrees(sin2 * -80.0F * strength));
                             matrix.translate(0, -0.1, 0);
                         }
                         case "Power" -> {

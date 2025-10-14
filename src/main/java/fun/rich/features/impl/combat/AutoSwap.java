@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AutoSwap extends Module {
 
-    final SelectSetting modeSetting = new SelectSetting("Режим", "Способ обмена")
+    final SelectSetting modeSetting = new SelectSetting("Режим", "Способ обхода")
             .value("Default", "Legit")
             .selected("Default");
 

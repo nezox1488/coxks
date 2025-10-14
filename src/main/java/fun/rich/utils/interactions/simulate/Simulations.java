@@ -100,7 +100,7 @@ public class Simulations implements QuickImports {
             }
         }
 
-        if (mc.player != null && mc.player.handSwingProgress - 0.3F > 0F) {
+        if (mc.player != null && mc.player.handSwingProgress - 0.2F > 0F) {
            bodyYaw = yaw;
         }
 

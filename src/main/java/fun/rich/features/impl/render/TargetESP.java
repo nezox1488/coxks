@@ -2,6 +2,7 @@ package fun.rich.features.impl.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import fun.rich.features.module.setting.implement.ColorSetting;
 import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.utils.client.managers.event.types.EventType;
 import fun.rich.features.impl.combat.Aura;
@@ -49,10 +50,12 @@ public class TargetESP extends Module {
     SelectSetting cubeType = new SelectSetting("Картинка для куба", "Выбирает тип куба")
             .value("1", "2", "3", "4", "5")
             .visible(() -> targetEspType.isSelected("Cube"));
+    public ColorSetting colorSetting = new ColorSetting("Цвет", "Выберите цвет для esp")
+            .setColor(new Color(255, 101, 57, 255).getRGB());
 
     public TargetESP() {
         super("TargetEsp", "Target Esp", ModuleCategory.RENDER);
-        setup(targetEspType, cubeType);
+        setup(targetEspType, cubeType, colorSetting);
     }
 
     @EventHandler
@@ -118,7 +121,7 @@ public class TargetESP extends Module {
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
             RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
-            int baseColor = ColorAssist.interpolateColor(new Color(255, 255, 255).getRGB(), new Color(255, 0, 0).getRGB(), red);
+            int baseColor = ColorAssist.interpolateColor(TargetESP.getInstance().colorSetting.getColor(), new Color(255, 0, 0).getRGB(), red);
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE);
             drawCrystal(ms, baseColor, 0.2f, true, anim);
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
@@ -139,7 +142,7 @@ public class TargetESP extends Module {
 
         private void drawBloomSphere(MatrixStack ms, int baseColor, float anim, Camera camera) {
             RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
-            RenderSystem.setShaderTexture(0, Identifier.of("textures/bloom.png"));
+            RenderSystem.setShaderTexture(0, Identifier.of("textures/features/particles/bloom.png"));
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE);
             RenderSystem.depthMask(false);
