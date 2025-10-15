@@ -1,5 +1,6 @@
 package fun.rich.mixin.player.inventory;
 
+import fun.rich.features.impl.misc.SelfDestruct;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -17,6 +18,8 @@ public abstract class CreativeInventoryScreenMixin {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void addDropAllButton(CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         MinecraftClient mc = MinecraftClient.getInstance();
         CreativeInventoryScreen screen = (CreativeInventoryScreen) (Object) this;
 

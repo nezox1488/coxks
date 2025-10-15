@@ -1,6 +1,7 @@
 package fun.rich.mixin.client.screen.mainmenu;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import fun.rich.features.impl.misc.SelfDestruct;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.option.ServerList;
 import net.minecraft.nbt.NbtElement;
@@ -31,12 +32,16 @@ public class ServerListMixin {
 
     @Inject(method = "loadFile", at = @At(value = "FIELD", target = "Lnet/minecraft/client/option/ServerList;hiddenServers:Ljava/util/List;", ordinal = 0))
     private void loadFileHook(CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         servers.addAll(sponsorServers);
     }
 
     @Redirect(method = "saveFile", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NbtList;add(Ljava/lang/Object;)Z", ordinal = 0))
     private boolean saveFileHook(NbtList instance, Object o, @Local(ordinal = 0) ServerInfo info) {
         if (sponsorServers.contains(info)) return true;
+        if (SelfDestruct.unhooked) return false;
+
         return instance.add((NbtElement) o);
     }
 }

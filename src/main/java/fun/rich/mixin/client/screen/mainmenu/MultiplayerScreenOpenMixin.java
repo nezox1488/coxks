@@ -1,5 +1,6 @@
 package fun.rich.mixin.client.screen.mainmenu;
 
+import fun.rich.features.impl.misc.SelfDestruct;
 import fun.rich.mixin.client.screen.IScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
@@ -18,6 +19,8 @@ import fun.rich.common.proxy.ProxyServer;
 public class MultiplayerScreenOpenMixin {
     @Inject(method = "init()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerScreen;updateButtonActivationStates()V"))
     public void multiplayerGuiOpen(CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         String playerName = MinecraftClient.getInstance().getSession().getUsername();
         if (!playerName.equals(Config.lastPlayerName)) {
             Config.lastPlayerName = playerName;
@@ -45,7 +48,7 @@ public class MultiplayerScreenOpenMixin {
 
         ProxyServer.proxyMenuButton = ButtonWidget.builder(Text.literal(buttonText), (buttonWidget) -> {
             MinecraftClient.getInstance().setScreen(new GuiProxy(ms));
-        }).dimensions(screenWidth - 105, 5, 100, 20).build();
+        }).dimensions(5, 5, 100, 20).build();
 
         IScreen si = (IScreen) ms;
         si.getDrawables().add(ProxyServer.proxyMenuButton);

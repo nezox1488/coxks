@@ -22,6 +22,7 @@ public class KeyboardMixin {
 
     @Inject(method = "onKey", at = @At("HEAD"))
     private void onKey(long window, int key, int scanCode, int action, int modifiers, CallbackInfo ci) {
+
         if (key != GLFW.GLFW_KEY_UNKNOWN && window == client.getWindow().getHandle()) {
             if (action == 0 && key == GLFW.GLFW_KEY_RIGHT_SHIFT && client.currentScreen == null) {
                 MenuScreen.INSTANCE.openGui();

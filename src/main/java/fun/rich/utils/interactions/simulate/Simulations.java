@@ -121,7 +121,7 @@ public class Simulations implements QuickImports {
     }
 
     public static String fpsADDS() {
-        return "lunarclient:v2.21.5-2540    ";
+        return "lunarclient:v2.21.5-2540";
     }
 
     public double[] calculateDirection(float forward, float sideways, double distance) {

@@ -1,5 +1,6 @@
 package fun.rich.mixin.client.screen.mainmenu;
 
+import fun.rich.features.impl.misc.SelfDestruct;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.CubeMapRenderer;
@@ -24,6 +25,8 @@ public class ScreenMixin {
 
     @Inject(at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;error(Ljava/lang/String;Ljava/lang/Object;)V", remap = false, ordinal = 1), method = "handleTextClick", cancellable = true)
     public void handleCustomClickEvent(Style style, CallbackInfoReturnable<Boolean> cir) {
+        if (SelfDestruct.unhooked) return;
+
         ClickEvent clickEvent = style.getClickEvent();
         if (clickEvent == null) {
             return;
@@ -35,6 +38,8 @@ public class ScreenMixin {
 
     @Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true)
     private void disableBackgroundBlurAndDimming(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         if ((Object) this instanceof MenuScreen || (Object) this instanceof MainMenu) {
             ci.cancel();
         }
@@ -42,6 +47,8 @@ public class ScreenMixin {
 
     @Inject(method = "renderPanoramaBackground", at = @At("HEAD"), cancellable = true)
     private void renderCustomPanoramaBackground(DrawContext context, float delta, CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         if ((Object) this instanceof MainMenu) {
             ci.cancel();
         } else {

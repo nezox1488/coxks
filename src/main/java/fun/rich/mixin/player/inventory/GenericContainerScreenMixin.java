@@ -2,6 +2,7 @@ package fun.rich.mixin.player.inventory;
 
 import fun.rich.display.screens.clickgui.components.implement.autobuy.manager.AutoBuyManager;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.autobuyui.PurchaseHistoryWindow;
+import fun.rich.features.impl.misc.SelfDestruct;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
@@ -34,6 +35,7 @@ public abstract class GenericContainerScreenMixin extends HandledScreen<GenericC
 
     @Inject(method = "render", at = @At("TAIL"))
     private void onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
         MinecraftClient mc = MinecraftClient.getInstance();
         String title = this.getTitle().getString();
 

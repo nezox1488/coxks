@@ -23,7 +23,7 @@ public class AutoSprint extends Module {
     public static int tickStop;
 
     MultiSelectSetting settings = new MultiSelectSetting("Отключать при эффекте", "Не дает спринтиться при эффектах")
-            .value("Slowness", "Blindness");
+            .value("Slowness", "Blindness", "Using Item");
 
     public AutoSprint() {
         super("AutoSprint", "Auto Sprint", ModuleCategory.MOVEMENT);
@@ -36,12 +36,12 @@ public class AutoSprint extends Module {
 
         boolean horizontal = mc.player.horizontalCollision && !mc.player.collidedSoftly;
         boolean sneaking = mc.player.isSneaking() && !mc.player.isSwimming();
-        if (!mc.player.isUsingItem()
+        if (!(settings.isSelected("Using Item") && mc.player.isUsingItem()  )
                 && !(settings.isSelected("Blindness") && mc.player.hasStatusEffect(StatusEffects.BLINDNESS))
                 && !(settings.isSelected("Slowness") && mc.player.hasStatusEffect(StatusEffects.SLOWNESS))
                 && tickStop > 0 || sneaking) {
             mc.player.setSprinting(false);
-        } else if (!horizontal && mc.player.forwardSpeed > 0 && !mc.options.sprintKey.isPressed()) {
+        } else if (!horizontal && !mc.player.isUsingItem() && mc.player.forwardSpeed > 0 && !mc.options.sprintKey.isPressed()) {
             mc.player.setSprinting(true);
         }
 
