@@ -1,5 +1,6 @@
 package fun.rich.utils.interactions.simulate;
 
+import fun.rich.features.impl.misc.SelfDestruct;
 import lombok.experimental.UtilityClass;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.PlayerInput;
@@ -121,7 +122,11 @@ public class Simulations implements QuickImports {
     }
 
     public static String fpsADDS() {
-        return "lunarclient:v2.21.5-2540";
+        if (SelfDestruct.unhooked) {
+            return "fabric";
+        } else {
+            return "lunarclient:v2.21.5-2540";
+        }
     }
 
     public double[] calculateDirection(float forward, float sideways, double distance) {
