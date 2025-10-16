@@ -74,8 +74,6 @@ public class StrikeManager implements QuickImports {
             mc.player.setSprinting(false);
             mc.player.sendSprintingPacket();
             attackEntity(config);
-            mc.options.sprintKey.setPressed(true);
-            return;
         }
 
 

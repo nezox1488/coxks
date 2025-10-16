@@ -1,6 +1,7 @@
 package fun.rich.utils.client.window;
 
 import antidaunleak.api.UserProfile;
+import fun.rich.features.impl.misc.SelfDestruct;
 
 public class WindowTitleAnimation {
     private static final WindowTitleAnimation INSTANCE = new WindowTitleAnimation();

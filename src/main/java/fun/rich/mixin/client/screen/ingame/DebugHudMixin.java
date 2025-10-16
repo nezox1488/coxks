@@ -1,7 +1,7 @@
 package fun.rich.mixin.client.screen.ingame;
 
+import fun.rich.features.impl.misc.SelfDestruct;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.entity.Entity;
@@ -14,16 +14,15 @@ import java.util.List;
 
 @Mixin(DebugHud.class)
 public abstract class DebugHudMixin {
+
     @ModifyVariable(
             method = "getLeftText",
             at = @At("RETURN"),
             ordinal = 0
     )
     private List<String> modifyLeftText(List<String> list) {
-        if (!list.isEmpty()) {
-            String fps = MinecraftClient.getInstance().fpsDebugString.split(" ")[0] ;
-            list.set(0, "Rich Recode // " + fps + "FPS");
-        }
+        if (SelfDestruct.unhooked) return list;
+
         list.removeIf(s ->
                 s.contains("fps") ||
                         s.startsWith("Chunks") ||
@@ -56,6 +55,8 @@ public abstract class DebugHudMixin {
             ordinal = 0
     )
     private List<String> modifyRightText(List<String> list) {
+        if (SelfDestruct.unhooked) return list;
+
         list.removeIf(s ->
                 s.contains("Targeted Block") ||
                         s.contains("Targeted Fluid") ||
@@ -73,6 +74,11 @@ public abstract class DebugHudMixin {
             )
     )
     private void redirectFill(DrawContext instance, int x1, int y1, int x2, int y2, int color) {
+        if (SelfDestruct.unhooked) {
+            instance.fill(x1, y1, x2, y2, color);
+            return;
+        }
+
         int newColor = (200 << 24);
         instance.fill(x1, y1, x2, y2, newColor);
     }
@@ -85,6 +91,7 @@ public abstract class DebugHudMixin {
             )
     )
     private float redirectYaw(Entity entity) {
+        if (SelfDestruct.unhooked) return entity.getYaw();
         return TurnsConnection.INSTANCE.getRotation().getYaw();
     }
 
@@ -96,6 +103,7 @@ public abstract class DebugHudMixin {
             )
     )
     private float redirectPitch(Entity entity) {
+        if (SelfDestruct.unhooked) return entity.getPitch();
         return TurnsConnection.INSTANCE.getRotation().getPitch();
     }
 }

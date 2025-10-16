@@ -57,8 +57,6 @@ public class CommandDispatcher implements QuickLogger {
             if (!runCommand(commandStr) && !commandStr.trim().isEmpty()) {
                 new CommandNotFoundException(CommandRepository.expand(commandStr).getLeft()).handle(null, null);
             }
-        } else if (runCommand(msg)) {
-            event.cancel();
         }
     }
 

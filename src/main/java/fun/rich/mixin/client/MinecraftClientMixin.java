@@ -1,5 +1,6 @@
 package fun.rich.mixin.client;
 
+import fun.rich.features.impl.misc.SelfDestruct;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -41,6 +42,7 @@ public abstract class MinecraftClientMixin implements QuickImports {
 
     @Inject(at = @At("TAIL"), method = "<init>")
     private void onInit(RunArgs args, CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
         Fonts.init();
         MinecraftClient.getInstance().getWindow().setTitle(titleUtil.getCurrentTitle());
     }
@@ -78,6 +80,8 @@ public abstract class MinecraftClientMixin implements QuickImports {
 
     @Inject(method = "setScreen", at = @At(value = "HEAD"), cancellable = true)
     public void setScreenHook(Screen screen, CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         SetScreenEvent event = new SetScreenEvent(screen);
         EventManager.callEvent(event);
         Rich.getInstance().getDraggableRepository().draggable().forEach(drag -> drag.setScreen(event));
@@ -90,6 +94,8 @@ public abstract class MinecraftClientMixin implements QuickImports {
 
     @Inject(method = "onResolutionChanged", at = @At("TAIL"))
     private void applyDarkMode(CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("linux")) {
             return;
@@ -100,12 +106,16 @@ public abstract class MinecraftClientMixin implements QuickImports {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void onTick(CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         titleUtil.updateTitle();
         MinecraftClient.getInstance().getWindow().setTitle(titleUtil.getCurrentTitle());
     }
 
     @Inject(method = "updateWindowTitle", at = @At("HEAD"), cancellable = true)
     private void onUpdateWindowTitle(CallbackInfo ci) {
+        if (SelfDestruct.unhooked) return;
+
         MinecraftClient.getInstance().getWindow().setTitle(titleUtil.getCurrentTitle());
         ci.cancel();
     }

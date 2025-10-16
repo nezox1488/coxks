@@ -1,4 +1,5 @@
 package fun.rich.utils.client.window;
+import fun.rich.features.impl.misc.SelfDestruct;
 import org.lwjgl.glfw.GLFWNativeWin32;
 import com.sun.jna.*;
 import com.sun.jna.platform.win32.WinDef.*;
@@ -11,6 +12,7 @@ public class WindowStyle {
     }
 
     public static void setDarkMode(long windowHandle) {
+        if (SelfDestruct.unhooked) return;
 
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("linux")) {

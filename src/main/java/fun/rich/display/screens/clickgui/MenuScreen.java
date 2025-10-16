@@ -2,6 +2,7 @@ package fun.rich.display.screens.clickgui;
 
 import fun.rich.display.screens.clickgui.components.implement.autobuy.autobuyui.AutoBuyGuiComponent;
 import fun.rich.display.screens.clickgui.components.implement.themes.ThemeComponent;
+import fun.rich.features.impl.misc.SelfDestruct;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.gui.DrawContext;
@@ -89,6 +90,8 @@ public class MenuScreen extends Screen implements QuickImports {
     }
 
     public void openGui() {
+        if (SelfDestruct.unhooked) return;
+
         animation.setDirection(Direction.FORWARDS);
         animation.reset();
         mc.setScreen(this);
