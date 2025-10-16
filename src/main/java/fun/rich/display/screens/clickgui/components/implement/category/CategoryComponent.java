@@ -86,14 +86,14 @@ public class CategoryComponent extends AbstractComponent {
         int column = 0;
         int maxScroll = 0;
         float offsetX = 35, offsetY = 14;
-        scissorManager.push(positionMatrix, menuScreen.x + offsetX - 75, menuScreen.y + offsetY, menuScreen.width - offsetX + 150, menuScreen.height - offsetY + 15);
+        scissorManager.push(positionMatrix, menuScreen.x + offsetX - 75, menuScreen.y + offsetY + 15, menuScreen.width - offsetX + 150, menuScreen.height - offsetY - 15);
         for (int i = moduleComponents.size() - 1; i >= 0; i--) {
             ModuleComponent component = moduleComponents.get(i);
             if (shouldRenderComponent(component)) {
                 int componentHeight = component.getComponentHeight() + 9;
-                component.x = menuScreen.x + 36 + (column * (columnWidth + 50));
-                component.y = (float) (menuScreen.y + 25 + offsets[column] - componentHeight + smoothedScroll);
-                component.width = columnWidth + 37;
+                component.x = menuScreen.x + 48 + (column * (columnWidth + 40));
+                component.y = (float) (menuScreen.y + 35 + offsets[column] - componentHeight + smoothedScroll);
+                component.width = columnWidth + 30;
                 if (component.y > menuScreen.y - componentHeight && menuScreen.y + menuScreen.height + 15 > component.y) {
                     component.render(context, mouseX, mouseY, delta);
                 }
@@ -103,15 +103,15 @@ public class CategoryComponent extends AbstractComponent {
             }
         }
         scissorManager.pop();
-        int clamped = MathHelper.clamp(maxScroll - (menuScreen.height / 2 + 50), 0, maxScroll);
+        int clamped = MathHelper.clamp(maxScroll - (menuScreen.height / 2 + 35), 0, maxScroll);
         scroll = MathHelper.clamp(scroll, -clamped, 0);
         smoothedScroll = Calculate.interpolateSmooth(2, smoothedScroll, scroll);
 
         if (clamped > 0) {
             float scrollbarWidth = 4;
             float scrollbarX = menuScreen.x + menuScreen.width - offsetX - scrollbarWidth + 50;
-            float scrollbarY = menuScreen.y + offsetY + 12;
-            float scrollbarHeight = menuScreen.height - offsetY * 2;
+            float scrollbarY = menuScreen.y + offsetY + 22;
+            float scrollbarHeight = menuScreen.height - offsetY * 2 - 14;
 
             rectangle.render(ShapeProperties.create(context.getMatrices(), scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight)
                     .round(2F)
@@ -155,11 +155,12 @@ public class CategoryComponent extends AbstractComponent {
             scaleAnimation.setDirection(Direction.FORWARDS);
             return true;
         }
-        float offsetX = 84, offsetY = 29;
-        if (Calculate.isHovered(mouseX, mouseY, menuScreen.x + offsetX, menuScreen.y + offsetY, menuScreen.width - offsetX, menuScreen.height - offsetY)) {
-            for (ModuleComponent moduleComponent : moduleComponents) {
+        float offsetX = 35, offsetY = 14;
+        if (Calculate.isHovered(mouseX, mouseY, menuScreen.x + offsetX - 75, menuScreen.y + offsetY, menuScreen.width - offsetX + 150, menuScreen.height - offsetY + 15)) {
+            for (int i = 0; i < moduleComponents.size(); i++) {
+                ModuleComponent moduleComponent = moduleComponents.get(i);
                 if (shouldRenderComponent(moduleComponent) && moduleComponent.isHover(mouseX, mouseY)) {
-                    moduleComponent.mouseClicked(mouseX, mouseY, button);
+                    return moduleComponent.mouseClicked(mouseX, mouseY, button);
                 }
             }
         }

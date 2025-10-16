@@ -152,7 +152,11 @@ public class CoolDowns extends AbstractDraggable {
             for (CoolDown coolDown : list) {
                 float animation = coolDown.anim.getOutput().floatValue();
                 float centerY = getY() + offset;
-                int time = Math.toIntExact(-coolDown.time.elapsedTime() / 1000);
+                long elapsedTime = coolDown.time.elapsedTime();
+                int time = 0;
+                if (elapsedTime >= Integer.MIN_VALUE && elapsedTime <= Integer.MAX_VALUE) {
+                    time = (int) (-elapsedTime / 1000);
+                }
                 java.lang.String name = coolDown.item.getDefaultStack().getName().getString();
                 java.lang.String duration = StringHelper.getDuration(time);
                 int textColor = ColorAssist.getText();

@@ -248,10 +248,10 @@ public class BackgroundComponent extends AbstractComponent {
         } else {
             loadedConfigs = false;
         }
-        rectangle.render(ShapeProperties.create(context.getMatrices(), x + 42.5f, y, 0.5F, height)
+        rectangle.render(ShapeProperties.create(context.getMatrices(), x + 58.5f, y, 0.5F, height)
                 .color(ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines()).build());
 
-        rectangle.render(ShapeProperties.create(context.getMatrices(), x + 43F, y + 28, width - 43F, 0.5F)
+        rectangle.render(ShapeProperties.create(context.getMatrices(), x + 59F, y + 28, width - 59F, 0.5F)
                 .color(ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines(), ThemeColorsGetter.getLines()).build());
 
         rectangle.render(ShapeProperties.create(matrix, x + 10.5f, y + 10f, 20, 20).round(4)
@@ -266,39 +266,39 @@ public class BackgroundComponent extends AbstractComponent {
         switch (MenuScreen.INSTANCE.getCategory()) {
             case COMBAT -> {
                 icon = "A";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 55f, y + 14.5f, ThemeColorsGetter.getText());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14.5f, ThemeColorsGetter.getText());
             }
             case MOVEMENT -> {
                 icon = "B";
-                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
+                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14f, ThemeColorsGetter.getText());
             }
             case RENDER -> {
                 icon = "C";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14f, ThemeColorsGetter.getText());
             }
             case PLAYER -> {
                 icon = "D";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14f, ThemeColorsGetter.getText());
             }
             case MISC -> {
                 icon = "E";
-                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
+                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14f, ThemeColorsGetter.getText());
             }
             case CONFIGS -> {
                 icon = "F";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14f, ThemeColorsGetter.getText());
             }
             case AUTOBUY -> {
                 icon = "H";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14f, ThemeColorsGetter.getText());
             }
             case THEME -> {
                 icon = "G";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, ThemeColorsGetter.getText());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 14f, ThemeColorsGetter.getText());
             }
             default -> {
                 icon = MenuScreen.INSTANCE.getCategory().getReadableName().substring(0, 1);
-                Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 50f, y + 13.5f, ThemeColorsGetter.getText());
+                Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 65f, y + 13.5f, ThemeColorsGetter.getText());
             }
         }
 
@@ -319,9 +319,9 @@ public class BackgroundComponent extends AbstractComponent {
         }
 
         if (MenuScreen.INSTANCE.getCategory() == ModuleCategory.CONFIGS) {
-            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName() + " | Beta", x + 63, y + 13.5f, ThemeColorsGetter.getText(), ThemeColorsGetter.getText());
+            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName() + " | Beta", x + 76, y + 13.5f, ThemeColorsGetter.getText(), ThemeColorsGetter.getText());
         } else {
-            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName(), x + 63, y + 13.5f, ThemeColorsGetter.getText(), ThemeColorsGetter.getText());
+            Fonts.getSize(15, Fonts.Type.DEFAULT).drawGradientString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName(), x + 76, y + 13.5f, ThemeColorsGetter.getText(), ThemeColorsGetter.getText());
 
         }
 

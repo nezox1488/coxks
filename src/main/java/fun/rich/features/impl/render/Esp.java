@@ -48,6 +48,7 @@ import fun.rich.events.player.TickEvent;
 import fun.rich.events.render.DrawEvent;
 import fun.rich.events.render.WorldLoadEvent;
 import fun.rich.features.impl.combat.AntiBot;
+import fun.rich.utils.math.calc.Calculate;
 
 import java.awt.*;
 import java.lang.Math;
@@ -68,14 +69,18 @@ public class Esp extends Module {
     MultiSelectSetting playerSetting = new MultiSelectSetting("Настройки игрока", "Настройки для игроков")
             .value("Box", "Armor", "NameTags", "Hand Items").selected("Box", "Armor", "NameTags", "Hand Items").visible(() -> entityType.isSelected("Player"));
     public SelectSetting boxType = new SelectSetting("Тип бокса", "Тип бокса")
-            .value("Corner", "Full", "3D Box").selected("3D Box").visible(() -> playerSetting.isSelected("Box"));
+            .value("Corner", "Full", "3D Box", "Skeleton").selected("3D Box").visible(() -> playerSetting.isSelected("Box"));
     public BooleanSetting flatBoxOutline = new BooleanSetting("Контур", "Контур для плоских боксов").visible(() -> playerSetting.isSelected("Box") && (boxType.isSelected("Corner") || boxType.isSelected("Full")));
     public SliderSettings boxAlpha = new SliderSettings("Прозрачность", "Прозрачность бокса")
             .setValue(1.0F).range(0.1F, 1.0F).visible(() -> boxType.isSelected("3D Box"));
+    public SliderSettings skeletonWidth = new SliderSettings("Толщина линий", "Толщина линий скелета")
+            .setValue(2.5f).range(2.5f, 4.0f).visible(() -> boxType.isSelected("Skeleton"));
+
+    private static final float DISTANCE = 128.0f;
 
     public Esp() {
         super("Esp", "Esp", ModuleCategory.RENDER);
-        setup(entityType, playerSetting, boxType, flatBoxOutline, boxAlpha);
+        setup(entityType, playerSetting, boxType, flatBoxOutline, boxAlpha, skeletonWidth);
     }
 
     @EventHandler
@@ -100,6 +105,7 @@ public class Esp extends Module {
         float tickDelta = mc.getRenderTickCounter().getTickDelta(false);
         for (PlayerEntity player : players) {
             if (player == null) continue;
+            if (player == mc.player) continue;
             if (player.getCustomName() != null && player.getCustomName().getString().startsWith("Ghost_")) continue;
             double interpX = MathHelper.lerp(tickDelta, player.prevX, player.getX());
             double interpY = MathHelper.lerp(tickDelta, player.prevY, player.getY());
@@ -117,6 +123,9 @@ public class Esp extends Module {
                 Box interpBox = player.getDimensions(player.getPose()).getBoxAt(interpX, interpY, interpZ);
                 Render3D.drawBox(interpBox, fillColor, 2, true, true, true);
                 Render3D.drawBox(interpBox, outlineColor, 2, true, true, true);
+            } else if (boxType.isSelected("Skeleton") && playerSetting.isSelected("Box")) {
+                if (distance > DISTANCE) continue;
+                renderSkeleton(player, tickDelta, baseColor);
             }
         }
     }
@@ -130,13 +139,14 @@ public class Esp extends Module {
         if (entityType.isSelected("Player")) {
             for (PlayerEntity player : players) {
                 if (player == null) continue;
+                if (player == mc.player) continue;
                 if (player.getCustomName() != null && player.getCustomName().getString().startsWith("Ghost_")) continue;
                 Vector4d vec4d = Projection.getVector4D(player);
                 float distance = (float) mc.getEntityRenderDispatcher().camera.getPos().distanceTo(player.getBoundingBox().getCenter());
                 boolean friend = FriendUtils.isFriend(player);
                 if (distance < 1) continue;
                 if (Projection.cantSee(vec4d)) continue;
-                if (playerSetting.isSelected("Box")) drawBox(friend, vec4d, player);
+                if (playerSetting.isSelected("Box") && !boxType.isSelected("Skeleton")) drawBox(friend, vec4d, player);
                 if (playerSetting.isSelected("Armor")) drawArmor(context, player, vec4d, font);
                 if (playerSetting.isSelected("Hand Items")) drawHands(matrix, player, font, vec4d);
                 MutableText text = getTextPlayer(player, friend);
@@ -183,8 +193,124 @@ public class Esp extends Module {
         }
     }
 
+    private void renderSkeleton(PlayerEntity player, float partialTicks, int color) {
+        Vec3d pos = Calculate.interpolate(player);
+        float width = skeletonWidth.getValue();
+
+        float limbSwing = player.limbAnimator.getPos(partialTicks);
+        float limbSwingAmount = player.limbAnimator.getSpeed(partialTicks);
+
+        float bodyYaw = MathHelper.lerpAngleDegrees(partialTicks, player.prevBodyYaw, player.bodyYaw);
+        float bodyYawRad = (float) Math.toRadians(-bodyYaw + 90);
+
+        boolean isSwimming = player.isSwimming() || player.isGliding();
+        float sneakOffset = player.isSneaking() ? 0.2f : 0f;
+        float swimOffset = isSwimming ? 0.6f : 0f;
+
+        Vec3d head = pos.add(0, 1.62f - sneakOffset - swimOffset, 0);
+        Vec3d neck = pos.add(0, 1.4f - sneakOffset - swimOffset, 0);
+        Vec3d body = pos.add(0, 0.9f - sneakOffset - swimOffset, 0);
+        Vec3d pelvis = pos.add(0, 0.6f - sneakOffset - swimOffset, 0);
+
+        Render3D.drawLine(head, neck, color, width, false);
+        Render3D.drawLine(neck, body, color, width, false);
+        Render3D.drawLine(body, pelvis, color, width, false);
+
+        float rightArmSwing = MathHelper.cos(limbSwing * 0.6662f) * limbSwingAmount * 0.5f;
+        float leftArmSwing = MathHelper.cos(limbSwing * 0.6662f + (float)Math.PI) * limbSwingAmount * 0.5f;
+        float rightLegSwing = MathHelper.cos(limbSwing * 0.6662f + (float)Math.PI) * limbSwingAmount * 0.7f;
+        float leftLegSwing = MathHelper.cos(limbSwing * 0.6662f) * limbSwingAmount * 0.7f;
+
+        Vec3d rightShoulder = neck.add(
+                Math.sin(bodyYawRad) * 0.3,
+                -0.1,
+                Math.cos(bodyYawRad) * 0.3
+        );
+
+        Vec3d rightElbow = rightShoulder.add(
+                Math.sin(bodyYawRad) * 0.05 + Math.sin(bodyYawRad + Math.PI/2) * rightArmSwing * 0.15,
+                -0.25 - Math.abs(rightArmSwing) * 0.1,
+                Math.cos(bodyYawRad) * 0.05 + Math.cos(bodyYawRad + Math.PI/2) * rightArmSwing * 0.15
+        );
+
+        Vec3d rightHand = rightElbow.add(
+                Math.sin(bodyYawRad + Math.PI/2) * rightArmSwing * 0.1,
+                -0.25 - Math.abs(rightArmSwing) * 0.05,
+                Math.cos(bodyYawRad + Math.PI/2) * rightArmSwing * 0.1
+        );
+
+        Render3D.drawLine(rightShoulder, rightElbow, color, width, false);
+        Render3D.drawLine(rightElbow, rightHand, color, width, false);
+
+        Vec3d leftShoulder = neck.add(
+                -Math.sin(bodyYawRad) * 0.3,
+                -0.1,
+                -Math.cos(bodyYawRad) * 0.3
+        );
+
+        Vec3d leftElbow = leftShoulder.add(
+                -Math.sin(bodyYawRad) * 0.05 + Math.sin(bodyYawRad + Math.PI/2) * leftArmSwing * 0.15,
+                -0.25 - Math.abs(leftArmSwing) * 0.1,
+                -Math.cos(bodyYawRad) * 0.05 + Math.cos(bodyYawRad + Math.PI/2) * leftArmSwing * 0.15
+        );
+
+        Vec3d leftHand = leftElbow.add(
+                Math.sin(bodyYawRad + Math.PI/2) * leftArmSwing * 0.1,
+                -0.25 - Math.abs(leftArmSwing) * 0.05,
+                Math.cos(bodyYawRad + Math.PI/2) * leftArmSwing * 0.1
+        );
+
+        Render3D.drawLine(leftShoulder, leftElbow, color, width, false);
+        Render3D.drawLine(leftElbow, leftHand, color, width, false);
+
+        Vec3d rightHip = pelvis.add(
+                Math.sin(bodyYawRad) * 0.15,
+                0,
+                Math.cos(bodyYawRad) * 0.15
+        );
+
+        Vec3d rightKnee = rightHip.add(
+                Math.sin(bodyYawRad + Math.PI/2) * rightLegSwing * 0.1,
+                -0.35 + Math.max(0, rightLegSwing) * 0.05,
+                Math.cos(bodyYawRad + Math.PI/2) * rightLegSwing * 0.1
+        );
+
+        Vec3d rightFoot = rightKnee.add(
+                Math.sin(bodyYawRad + Math.PI/2) * rightLegSwing * 0.08,
+                -0.35 - Math.max(0, -rightLegSwing) * 0.05,
+                Math.cos(bodyYawRad + Math.PI/2) * rightLegSwing * 0.08
+        );
+
+        Render3D.drawLine(rightHip, rightKnee, color, width, false);
+        Render3D.drawLine(rightKnee, rightFoot, color, width, false);
+
+        Vec3d leftHip = pelvis.add(
+                -Math.sin(bodyYawRad) * 0.15,
+                0,
+                -Math.cos(bodyYawRad) * 0.15
+        );
+
+        Vec3d leftKnee = leftHip.add(
+                Math.sin(bodyYawRad + Math.PI/2) * leftLegSwing * 0.1,
+                -0.35 + Math.max(0, leftLegSwing) * 0.05,
+                Math.cos(bodyYawRad + Math.PI/2) * leftLegSwing * 0.1
+        );
+
+        Vec3d leftFoot = leftKnee.add(
+                Math.sin(bodyYawRad + Math.PI/2) * leftLegSwing * 0.08,
+                -0.35 - Math.max(0, -leftLegSwing) * 0.05,
+                Math.cos(bodyYawRad + Math.PI/2) * leftLegSwing * 0.08
+        );
+
+        Render3D.drawLine(leftHip, leftKnee, color, width, false);
+        Render3D.drawLine(leftKnee, leftFoot, color, width, false);
+
+        Render3D.drawLine(rightShoulder, leftShoulder, color, width, false);
+        Render3D.drawLine(rightHip, leftHip, color, width, false);
+    }
+
     private void drawBox(boolean friend, Vector4d vec, PlayerEntity player) {
-        if (boxType.isSelected("3D Box")) {
+        if (boxType.isSelected("3D Box") || boxType.isSelected("Skeleton")) {
             return;
         }
         int client = friend ? ColorAssist.getFriendColor() : ColorAssist.getClientColor();

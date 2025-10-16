@@ -39,7 +39,7 @@ public class MenuScreen extends Screen implements QuickImports {
     private final CategoryContainerComponent categoryContainerComponent = new CategoryContainerComponent();
     private final AutoBuyGuiComponent autoBuyGuiComponent = new AutoBuyGuiComponent();
     private final ThemeComponent themeComponent = new ThemeComponent();
-    public final EaseBackIn animation = new EaseBackIn(400, 1f, 1.5f);
+    public final EaseBackIn animation = new EaseBackIn(250, 1f, 1.4f);
     public ModuleCategory category = ModuleCategory.COMBAT;
     public int x, y, width, height;
 
@@ -68,18 +68,18 @@ public class MenuScreen extends Screen implements QuickImports {
         width = 400;
         height = 250;
         rectangle.render(ShapeProperties.create(context.getMatrices(), 0, 0, window.getScaledWidth(), window.getScaledHeight()).color(Calculate.applyOpacity(0xFF000000, 100 * getScaleAnimation())).build());
-        backgroundComponent.position(x - 20, y - 15).size(width + 40, height + 30);
-        userComponent.position(x + 165, y + height + 45);
-        autoBuyGuiComponent.position(x - 20, y - 15).size(width + 40, height + 30);
-        themeComponent.position(x - 20, y - 15).size(width + 40, height + 30);
+        backgroundComponent.position(x - 20, y).size(width + 40, height);
+//        userComponent.position(x + 165, y + height + 45);
+        autoBuyGuiComponent.position(x - 20, y).size(width + 40, height + 30);
+        themeComponent.position(x - 20, y).size(width + 40, height + 30);
 
         if (category == ModuleCategory.COMBAT || category == ModuleCategory.MOVEMENT || category == ModuleCategory.RENDER || category == ModuleCategory.PLAYER || category == ModuleCategory.MISC) {
-            searchComponent.position(x + 330, y - 7.5f);
+            searchComponent.position(x + 330, y + 7.5F);
         } else {
             searchComponent.position(x + 330, y - 1000f);
             searchComponent.setText("");
         }
-        categoryContainerComponent.position(x - 20, y - 15);
+        categoryContainerComponent.position(x - 20, y);
 
         Calculate.scale(context.getMatrices(), x + (float) width / 2, y + (float) height / 2, getScaleAnimation(), () -> {
             components.forEach(component -> component.render(context, mouseX, mouseY, delta));

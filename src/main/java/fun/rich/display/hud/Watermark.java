@@ -54,12 +54,19 @@ public class Watermark extends AbstractDraggable {
 
         setWidth((int) totalWidth + 14);
 
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), totalWidth + 14, getHeight() + 4)
+                .round(5f)
+                        .quality(16)
+                .softness(1)
+                .outlineColor(new Color(2, 2, 2, 255).getRGB())
+                .color(ColorAssist.getRect(0.7f))
+                .build());
+
         rectangle.render(ShapeProperties.create(matrix, getX(), getY(), totalWidth + 14, getHeight() + 4)
                 .round(5f)
                 .softness(1)
-                .thickness(2)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+                .outlineColor(new Color(33, 33, 33, 155).getRGB())
+                .color(ColorAssist.getRect(0.25f))
                 .build());
 
         Builder.text()
@@ -79,15 +86,8 @@ public class Watermark extends AbstractDraggable {
 
         currentX += 4;
 
-        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 5f, titleWidth + 6, getHeight() - 6)
-                .round(2)
-                .softness(1)
-                .thickness(2)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(new Color(18, 19, 20, 55).getRGB())
-                .build());
 
-        Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(matrix, title, currentX + 3, getY() + 9f, new Color(255, 101, 57, 255).getRGB());
+        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, title, currentX + 2.5f, getY() + 9f, new Color(255, 101, 57, 255).getRGB());
 
         currentX += titleWidth + 9;
 
@@ -98,7 +98,7 @@ public class Watermark extends AbstractDraggable {
 
         currentX += 5;
 
-        Fonts.getSize(12, Fonts.Type.BOLD).drawString(matrix, fps, currentX, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
+        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, fps, currentX, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
 
         currentX += fpsWidth + 2;
 
@@ -113,7 +113,7 @@ public class Watermark extends AbstractDraggable {
 
         currentX += 5;
 
-        Fonts.getSize(12, Fonts.Type.BOLD).drawString(matrix, serverIp, currentX, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
+        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, serverIp, currentX, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
 
         currentX += serverIpWidth;
 
@@ -123,6 +123,6 @@ public class Watermark extends AbstractDraggable {
                 .size(11)
                 .color(new Color(255, 101, 57, 255).getRGB())
                 .build()
-                .render(matrix4f, currentX + 2, getY() + 2f);
+                .render(matrix4f, currentX + 2.5f, getY() + 2f);
     }
 }

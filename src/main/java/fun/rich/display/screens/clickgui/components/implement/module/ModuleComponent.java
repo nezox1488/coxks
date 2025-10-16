@@ -89,7 +89,7 @@ public class ModuleComponent extends AbstractComponent {
         int bottomRightColor = topRightColor;
 
         rectangle.render(ShapeProperties.create(context.getMatrices(), x, y, width, height = getComponentHeight())
-                .round(5)
+                .round(7)
                 .thickness(2)
                 .outlineColor(new Color(55, 52, 55, 255).getRGB())
                 .color(topLeftColor, topRightColor, bottomLeftColor, bottomRightColor)
@@ -154,7 +154,7 @@ public class ModuleComponent extends AbstractComponent {
         if (Calculate.isHovered(mouseX, mouseY, x, y, width, getComponentHeight()) && button == 1 && !module.settings().isEmpty()) {
             if (MenuScreen.windowManager.getWindows().stream().noneMatch(w -> w instanceof ModuleSettingsWindow && ((ModuleSettingsWindow) w).module.equals(module))) {
                 ModuleSettingsWindow settingsWindow = new ModuleSettingsWindow(module);
-                settingsWindow.position(MenuScreen.INSTANCE.x + MenuScreen.INSTANCE.width + 24, MenuScreen.INSTANCE.y - 15).size(160, settingsWindow.getComponentHeight());
+                settingsWindow.position(MenuScreen.INSTANCE.x + MenuScreen.INSTANCE.width + 24, MenuScreen.INSTANCE.y).size(160, settingsWindow.getComponentHeight());
                 MenuScreen.windowManager.add(settingsWindow);
             }
             return true;
