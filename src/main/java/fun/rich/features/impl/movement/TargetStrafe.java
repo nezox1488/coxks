@@ -28,6 +28,9 @@ public class TargetStrafe extends Module {
             .value("Cube", "Center")
             .selected("Cube").visible(() -> mode.isSelected("Grim"));
 
+    SliderSettings grimRadius = new SliderSettings("Радиус куба", "Радиус обхода вокруг цели")
+            .setValue(0.87F).range(0.1F, 1.5F).visible(() -> mode.isSelected("Grim"));
+
     MultiSelectSetting setting = new MultiSelectSetting("Настройки", "Позволяет настроить работу стрейфов")
             .value("Auto Jump", "Only Key Pressed", "In front of the target")
             .selected("Auto Jump");
@@ -41,7 +44,7 @@ public class TargetStrafe extends Module {
 
     public TargetStrafe() {
         super("TargetStrafe", "Target Strafe", ModuleCategory.MOVEMENT);
-        setup(mode, type, radius, speed, setting);
+        setup(mode, type, grimRadius, radius, speed, setting);
     }
 
     public static TargetStrafe getInstance() {
@@ -68,7 +71,7 @@ public class TargetStrafe extends Module {
 
         Vec3d playerPos = mc.player.getPos();
         Vec3d targetPos = target.getPos();
-        double r = 0.87F;
+        double r = grimRadius.getValue();
 
         Vec3d nextPoint;
 
