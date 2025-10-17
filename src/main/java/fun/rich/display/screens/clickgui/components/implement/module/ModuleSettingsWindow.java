@@ -34,7 +34,7 @@ public class ModuleSettingsWindow extends AbstractWindow {
     public void drawWindow(DrawContext context, int mouseX, int mouseY, float delta) {
         MatrixStack matrix = context.getMatrices();
         ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
-        height = MathHelper.clamp(getComponentHeight() + 5, 0, 200);
+        height = MathHelper.clamp(getComponentHeight() + 5, 0, 250);
         blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(8)
                 .color(ThemeColorsGetter.getGuiBackground())
                 .build());
@@ -52,7 +52,7 @@ public class ModuleSettingsWindow extends AbstractWindow {
 
         Fonts.getSize(17, Fonts.Type.ICONS).drawString(context.getMatrices(), "K", x + 145, y + 10, ColorAssist.getText(0.5f));
 
-        boolean isLimitedHeight = MathHelper.clamp(height, 0, 200) == 200;
+        boolean isLimitedHeight = MathHelper.clamp(height, 0, 250) == 250;
         if (isLimitedHeight) scissorManager.push(matrix.peek().getPositionMatrix(), x, y + 23, width, height - 24);
         float offset = 0;
         int totalHeight = 0;
@@ -138,7 +138,7 @@ public class ModuleSettingsWindow extends AbstractWindow {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        boolean scrolled = MathHelper.clamp(height, 0, 200) == 200 && Calculate.isHovered(mouseX, mouseY, x, y, width, height);
+        boolean scrolled = MathHelper.clamp(height, 0, 250) == 250 && Calculate.isHovered(mouseX, mouseY, x, y, width, height);
         if (scrolled) scroll += amount * 20;
         components.forEach(abstractComponent -> abstractComponent.mouseScrolled(mouseX, mouseY, amount));
         return scrolled;

@@ -214,10 +214,10 @@ public class AutoBuyGuiComponent extends AbstractComponent {
                 .color(new Color(31, 27, 35, 0).getRGB())
                 .build());
         Render2D.defaultDrawStack(context, itemStack, itemX + 6, itemY + 13.5f, false, false, 1.0f);
-        Fonts.getSize(14, Fonts.Type.SEMI).drawGradientString(matrix, item.getDisplayName(), itemX + 30, itemY + 10, ColorAssist.getText(), ColorAssist.getText(0.65F));
-        Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, "Цена покупки: $" + item.getSettings().getBuyBelow(), itemX + 30, itemY + 19, ColorAssist.getText(0.65F));
-        Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, "Цена продажи: $" + item.getSettings().getSellAbove(), itemX + 30, itemY + 26, ColorAssist.getText(0.65F));
-        Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, "Каличество покупки от: " + item.getSettings().getMinQuantity(), itemX + 30, itemY + 33, ColorAssist.getText(0.65F));
+        Fonts.getSize(14, Fonts.Type.SEMI).drawGradientString(matrix, item.getDisplayName(), itemX + 30, itemY + 14, ColorAssist.getText(), ColorAssist.getText(0.65F));
+        Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, "Цена покупки: $" + item.getSettings().getBuyBelow(), itemX + 30, itemY + 23, ColorAssist.getText(0.65F));
+//        Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, "Цена продажи: $" + item.getSettings().getSellAbove(), itemX + 30, itemY + 26, ColorAssist.getText(0.65F));
+        Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, "Каличество покупки от: " + item.getSettings().getMinQuantity(), itemX + 30, itemY + 30, ColorAssist.getText(0.65F));
         if (index < itemStatusRenders.size()) {
             itemStatusRenders.get(index).position(itemX + 160, itemY + 18.5f).render(context, mouseX, mouseY, delta);
         }
