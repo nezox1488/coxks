@@ -123,3 +123,6 @@ accessible method net/minecraft/client/network/PlayerListEntry setGameMode (Lnet
 accessible method net/minecraft/client/network/PlayerListEntry setListOrder (I)V
 accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraft/client/render/Camera;FZ)F
 accessible method net/minecraft/client/gui/screen/Screen addDrawableChild (Lnet/minecraft/client/gui/Element;)Lnet/minecraft/client/gui/Element;
+accessible class net/minecraft/client/render/BackgroundRenderer$DarknessFogModifier
+accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier
+accessible class net/minecraft/client/render/BackgroundRenderer$FogData
