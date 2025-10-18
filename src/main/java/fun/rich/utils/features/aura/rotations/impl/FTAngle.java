@@ -96,7 +96,7 @@ public class FTAngle extends RotateConstructor {
                             currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + pitch
             );
 
-            if (count > 0 && count % 47 == 0 && !hasSwung) {
+            if (count > 0 && count % 47 == 0 && !hasSwung && Aura.getInstance().isState() && Aura.getInstance().getTarget() != null) {
                 moveAngle.setPitch(
                         MathHelper.lerp(Math.clamp(0.874F, 0, 1),
                                 currentAngle.getPitch(), -90)
