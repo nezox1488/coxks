@@ -42,7 +42,7 @@ public class ModuleDescriptions {
         if (module instanceof AutoTotem) return "Автоматически использует тотемы бессмертия.";
         if (module instanceof EnderChestPlus) return "Улучшает функционал эндер-сундука.";
         if (module instanceof FreeCam) return "Предоставляет инструменты для отладки камеры.";
-        if (module instanceof ContainerStealer) return "Быстро забирает предметы из контейнеров.";
+        if (module instanceof ChestStealer) return "Быстро забирает предметы из контейнеров.";
         if (module instanceof AutoTpAccept) return "Автоматически принимает запросы на телепортацию.";
         if (module instanceof Arrows) return "Улучшает механику стрельбы из лука.";
         if (module instanceof AutoLeave) return "Автоматически покидает сервер при угрозе.";
