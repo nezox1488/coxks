@@ -78,7 +78,7 @@ public class FTAngle extends RotateConstructor {
             float yaw = randomLerp(14, 18) * randomAngle.getYaw();
             float pitch = randomLerp(6, 10) * randomAngle.getPitch();
 
-            if (!aura.isState()) {
+            if (!aura.isState() || Aura.getInstance().getTarget() == null) {
                 speed = 0.4F;
                 yaw = 0;
                 pitch = 0;

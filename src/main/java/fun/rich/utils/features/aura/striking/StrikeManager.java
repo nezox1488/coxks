@@ -82,7 +82,6 @@ public class StrikeManager implements QuickImports {
             attackEntity(config);
         }
 
-
     }
 
     void preAttackEntity(StrikerConstructor.AttackPerpetratorConfigurable config) {
