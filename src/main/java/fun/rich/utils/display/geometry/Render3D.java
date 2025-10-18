@@ -488,7 +488,7 @@ public class Render3D implements QuickImports {
         float minY = 0.2f;
         float maxY = lastTarget.getHeight() - 0.2F;
         for (int j = 0; j < 4; j++) {
-            for (int i = 0, length = (int) 10f; i <= length; i++) {
+            for (int i = 0, length = (int) 10.6f; i <= length; i++) {
                 double radians = Math.toRadians(((i / 2F + iAge * speed * 2.0f) * length + (j * 90)) % (length * 180));
                 double sinQuad = Math.sin(Math.toRadians(iAge * 1.2 + i * (j + halfHeight)) * 1.1) / 2;
                 double adjustedSin = (j % 2 == 0) ? sinQuad : -sinQuad;
@@ -502,7 +502,7 @@ public class Render3D implements QuickImports {
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
                 MatrixStack.Entry entry = matrices.peek().copy();
                 int color = ColorAssist.multRedAndAlpha(TargetESP.getInstance().colorSetting.getColor(), 1 + red * 10, offset * anim);
-                float scale = 0.5f * offset * (0.7f + speed * 0.1f);
+                float scale = 0.585f * offset * (0.7f + speed * 0.1f);
                 Render3D.drawTexture(entry, Identifier.of("textures/features/particles/bloom.png"), -scale / 2, -scale / 2, scale, scale, new Vector4i(color), canSee);
             }
         }
