@@ -114,7 +114,7 @@ public class Simulations implements QuickImports {
             bodyYaw += yawOffsetDiff - (float)MathHelper.sign((double)yawOffsetDiff) * maxHeadRotation;
         }
 
-        return yaw;
+        return bodyYaw;
     }
 
     public static double kizdamati() {

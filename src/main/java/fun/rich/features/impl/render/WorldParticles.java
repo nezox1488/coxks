@@ -487,7 +487,7 @@ public class WorldParticles extends Module {
 
         private void drawBloomSphere(MatrixStack ms, int baseColor, Camera camera, float size, float bloomSizeMultiplier) {
             RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
-            RenderSystem.setShaderTexture(0, Identifier.of("textures/bloom.png"));
+            RenderSystem.setShaderTexture(0, Identifier.of("textures/features/particles/bloom.png"));
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE);
             RenderSystem.depthMask(false);

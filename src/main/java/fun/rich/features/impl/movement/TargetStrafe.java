@@ -29,7 +29,7 @@ public class TargetStrafe extends Module {
             .selected("Cube").visible(() -> mode.isSelected("Grim"));
 
     SliderSettings grimRadius = new SliderSettings("Радиус куба", "Радиус обхода вокруг цели")
-            .setValue(0.87F).range(0.1F, 1.5F).visible(() -> mode.isSelected("Grim"));
+            .setValue(0.87F).range(0.1F, 1.5F).visible(() -> mode.isSelected("Grim") && type.isSelected("Cube"));
 
     MultiSelectSetting setting = new MultiSelectSetting("Настройки", "Позволяет настроить работу стрейфов")
             .value("Auto Jump", "Only Key Pressed", "In front of the target")
@@ -54,7 +54,6 @@ public class TargetStrafe extends Module {
     @EventHandler
     public void onInput(InputEvent event) {
         if (mc.player == null || mc.world == null) return;
-
         LivingEntity target = Aura.getInstance().getTarget();
         if (target == null || !target.isAlive()) return;
 
@@ -181,7 +180,7 @@ public class TargetStrafe extends Module {
         }
 
         double angle = Math.atan2(playerPos.z - targetPos.z, playerPos.x - targetPos.x);
-        angle += speed.getValue() / Math.max(playerPos.distanceTo(targetPos), r);
+        angle += speed.getValue() / Math.max(playerPos.distanceTo(targetPos), r) ;
 
         double x = targetPos.x + r * Math.cos(angle);
         double z = targetPos.z + r * Math.sin(angle);

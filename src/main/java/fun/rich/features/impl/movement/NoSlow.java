@@ -29,7 +29,7 @@ public class NoSlow extends Module {
     private final Script script = new Script();
     private boolean finish;
 
-    public final SelectSetting itemMode = new SelectSetting("Режим предмета", "Выберите режим обхода").value("Grim New", "Grim Old", "SpookyTime"                           );
+    public final SelectSetting itemMode = new SelectSetting("Режим предмета", "Выберите режим обхода").value("Grim Old", "SpookyTime");
 
     public NoSlow() {
         super("NoSlow", "No Slow", ModuleCategory.MOVEMENT);
@@ -62,12 +62,6 @@ public class NoSlow extends Module {
                             PlayerInteractionHelper.interactItem(second);
                             e.cancel();
                         }
-                    }
-                    case "Grim New" -> {
-                        if (mc.player.getItemUseTime() < 7) {
-                            InventoryTask.updateSlots();
-                            InventoryTask.closeScreen(true);
-                        } else e.cancel();
                     }
                     case "SpookyTime" -> {
                         if (ticks > 1F && mc.player.getItemUseTime() > 1) {

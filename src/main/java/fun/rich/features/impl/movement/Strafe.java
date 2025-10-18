@@ -24,7 +24,7 @@ public class Strafe extends Module {
             .value("Matrix", "Grim")
             .selected("Matrix");
     SliderSettings speed = new SliderSettings("Скорость", "Выберите скорость для стрейфа")
-            .setValue(0.42F).range(0F, 1F);
+            .setValue(0.42F).range(0F, 1F).visible(() -> mode.isSelected("Matrix"));
 
     private float lastYaw, lastPitch;
     private final Turns rot = new Turns(0, 0);
