@@ -19,7 +19,6 @@ public class ModuleRepository {
     public void setup() {
         register(
 //                new Jesus(),
-                new SelfDestruct(),
                 new ProjectileHelper(),
                 new TargetStrafe(),
                 new Strafe(),

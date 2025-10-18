@@ -25,15 +25,25 @@ public class TargetStrafe extends Module {
             .selected("Matrix");
 
     SelectSetting type = new SelectSetting("Точка ходьбы", "Выбирете точку куда будет идти стрейф")
-            .value("Cube", "Center")
+            .value("Cube", "Center", "Circle")
             .selected("Cube").visible(() -> mode.isSelected("Grim"));
 
-    SliderSettings grimRadius = new SliderSettings("Радиус куба", "Радиус обхода вокруг цели")
-            .setValue(0.87F).range(0.1F, 1.5F).visible(() -> mode.isSelected("Grim") && type.isSelected("Cube"));
+    SelectSetting typeMatrix = new SelectSetting("Точка для обхода", "Выберите точку обхода в режиме Matrix")
+            .value("Cube", "Circle")
+            .selected("Circle")
+            .visible(() -> mode.isSelected("Matrix"));
+
+    SliderSettings grimRadius = new SliderSettings("Радиус обхода", "Радиус обхода вокруг цели")
+            .setValue(0.87F).range(0.1F, 1.5F).visible(() -> mode.isSelected("Grim") && type.isSelected("Cube") || type.isSelected("Circle"));
 
     MultiSelectSetting setting = new MultiSelectSetting("Настройки", "Позволяет настроить работу стрейфов")
-            .value("Auto Jump", "Only Key Pressed", "In front of the target")
+            .value("Auto Jump", "Only Key Pressed", "In front of the target", "Direction Mode")
             .selected("Auto Jump");
+
+    SelectSetting directionMode = new SelectSetting("Направление", "Выберите направление обхода")
+            .value("Clockwise", "Counterclockwise", "Random")
+            .selected("Clockwise")
+            .visible(() -> setting.isSelected("Direction Mode"));
 
     SliderSettings radius = new SliderSettings("Радиус", "Радиус обхода вокруг цели")
             .setValue(2.5F).range(0.1F, 7F).visible(() -> mode.isSelected("Matrix"));
@@ -44,7 +54,7 @@ public class TargetStrafe extends Module {
 
     public TargetStrafe() {
         super("TargetStrafe", "Target Strafe", ModuleCategory.MOVEMENT);
-        setup(mode, type, grimRadius, radius, speed, setting);
+        setup(mode, type, typeMatrix, grimRadius, radius, speed, setting, directionMode);
     }
 
     public static TargetStrafe getInstance() {
@@ -74,14 +84,24 @@ public class TargetStrafe extends Module {
 
         Vec3d nextPoint;
 
+        int directionMultiplier = 1;
+        if (directionMode.isSelected("Counterclockwise")) {
+            directionMultiplier = -1;
+        } else if (directionMode.isSelected("Random")) {
+            long time = System.currentTimeMillis() / 3000;
+            directionMultiplier = (time % 2 == 0) ? 1 : -1;
+        }
+
         if (setting.isSelected("In front of the target")) {
             float targetYaw = target.getYaw();
 
             if (type.isSelected("Center")) {
-                nextPoint = targetPos.add(-Math.sin(Math.toRadians(targetYaw)) * r, 0,
-                        Math.cos(Math.toRadians(targetYaw)) * r);
+                nextPoint = targetPos.add(
+                        -Math.sin(Math.toRadians(targetYaw)) * r * directionMultiplier,
+                        0,
+                        Math.cos(Math.toRadians(targetYaw)) * r * directionMultiplier);
             } else {
-                double offset = Math.cos(System.currentTimeMillis() / 500.0) * 1;
+                double offset = Math.cos(System.currentTimeMillis() / 500.0) * r * directionMultiplier;
                 nextPoint = targetPos.add(
                         -Math.sin(Math.toRadians(targetYaw)) * r + Math.cos(Math.toRadians(targetYaw)) * offset,
                         0,
@@ -98,11 +118,22 @@ public class TargetStrafe extends Module {
                         new Vec3d(targetPos.x + r, playerPos.y, targetPos.z - r)
                 };
 
-                nextPoint = points[grimPointIndex];
-                if (playerPos.distanceTo(nextPoint) < 0.5) {
-                    grimPointIndex = (grimPointIndex + 1) % points.length;
+                if (playerPos.distanceTo(points[grimPointIndex]) < 0.5) {
+                    grimPointIndex = (grimPointIndex + directionMultiplier + points.length) % points.length;
                 }
-            } else {
+
+                nextPoint = points[grimPointIndex];
+            } else if (type.isSelected("Circle")) {
+                double baseAngle = (System.currentTimeMillis() % 3600L) / 3600.0 * 4 * Math.PI;
+                double angle = directionMultiplier > 0 ? baseAngle : (2 * Math.PI - baseAngle);
+
+                nextPoint = new Vec3d(
+                        targetPos.x + Math.cos(angle) * r,
+                        playerPos.y,
+                        targetPos.z + Math.sin(angle) * r
+                );
+
+        } else {
                 nextPoint = new Vec3d(targetPos.x, playerPos.y, targetPos.z);
             }
         }
@@ -140,6 +171,7 @@ public class TargetStrafe extends Module {
         }
     }
 
+
     @EventHandler
     public void onTick(TickEvent event) {
         if (mc.player == null || mc.world == null) return;
@@ -166,10 +198,18 @@ public class TargetStrafe extends Module {
             mc.player.jump();
         }
 
+        int directionMultiplier = 1;
+        if (directionMode.isSelected("Counterclockwise")) {
+            directionMultiplier = -1;
+        } else if (directionMode.isSelected("Random")) {
+            long time = System.currentTimeMillis() / 3000;
+            directionMultiplier = (time % 2 == 0) ? 1 : -1;
+        }
+
         if (setting.isSelected("In front of the target")) {
             float targetYaw = target.getYaw();
-            double x = targetPos.x - Math.sin(Math.toRadians(targetYaw)) * r;
-            double z = targetPos.z + Math.cos(Math.toRadians(targetYaw)) * r;
+            double x = targetPos.x - Math.sin(Math.toRadians(targetYaw)) * r * directionMultiplier;
+            double z = targetPos.z + Math.cos(Math.toRadians(targetYaw)) * r * directionMultiplier;
 
             float yaw = (float) Math.toDegrees(Math.atan2(z - playerPos.z, x - playerPos.x)) - 90F;
             double motionSpeed = speed.getValue();
@@ -179,18 +219,45 @@ public class TargetStrafe extends Module {
             return;
         }
 
-        double angle = Math.atan2(playerPos.z - targetPos.z, playerPos.x - targetPos.x);
-        angle += speed.getValue() / Math.max(playerPos.distanceTo(targetPos), r) ;
+        if (typeMatrix.isSelected("Cube")) {
+            Vec3d[] points = new Vec3d[]{
+                    new Vec3d(targetPos.x - r, playerPos.y, targetPos.z - r),
+                    new Vec3d(targetPos.x - r, playerPos.y, targetPos.z + r),
+                    new Vec3d(targetPos.x + r, playerPos.y, targetPos.z + r),
+                    new Vec3d(targetPos.x + r, playerPos.y, targetPos.z - r)
+            };
 
-        double x = targetPos.x + r * Math.cos(angle);
-        double z = targetPos.z + r * Math.sin(angle);
+            if (playerPos.distanceTo(points[grimPointIndex]) < 0.5) {
+                grimPointIndex = (grimPointIndex + directionMultiplier + points.length) % points.length;
+            }
 
-        float yaw = (float) Math.toDegrees(Math.atan2(z - playerPos.z, x - playerPos.x)) - 90F;
-        double motionSpeed = speed.getValue();
-        mc.player.setVelocity(-Math.sin(Math.toRadians(yaw)) * motionSpeed,
-                mc.player.getVelocity().y,
-                Math.cos(Math.toRadians(yaw)) * motionSpeed);
+            Vec3d nextPoint = points[grimPointIndex];
+            Vec3d dirVec = nextPoint.subtract(playerPos).normalize();
+
+            float yaw = (float) Math.toDegrees(Math.atan2(dirVec.z, dirVec.x)) - 90F;
+            double motionSpeed = speed.getValue();
+
+            mc.player.setVelocity(-Math.sin(Math.toRadians(yaw)) * motionSpeed,
+                    mc.player.getVelocity().y,
+                    Math.cos(Math.toRadians(yaw)) * motionSpeed);
+
+        } else if (typeMatrix.isSelected("Circle")) {
+            double angle = Math.atan2(playerPos.z - targetPos.z, playerPos.x - targetPos.x);
+            angle += directionMultiplier * speed.getValue() / Math.max(playerPos.distanceTo(targetPos), r);
+
+            double x = targetPos.x + r * Math.cos(angle);
+            double z = targetPos.z + r * Math.sin(angle);
+
+            float yaw = (float) Math.toDegrees(Math.atan2(z - playerPos.z, x - playerPos.x)) - 90F;
+            double motionSpeed = speed.getValue();
+
+            mc.player.setVelocity(-Math.sin(Math.toRadians(yaw)) * motionSpeed,
+                    mc.player.getVelocity().y,
+                    Math.cos(Math.toRadians(yaw)) * motionSpeed);
+        }
     }
+
+
     @Override
     public void activate() {
         super.activate();

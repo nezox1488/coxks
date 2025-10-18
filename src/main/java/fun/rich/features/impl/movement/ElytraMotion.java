@@ -42,9 +42,9 @@ public class ElytraMotion extends Module {
 
         Aura aura = Instance.get(Aura.class);
 
-        if (timer.every(500)) {
-            InventoryTask.swapAndUse(Items.FIREWORK_ROCKET);
-        }
+//        if (timer.every(500)) {
+//            InventoryTask.swapAndUse(Items.FIREWORK_ROCKET);
+//        }
 
         if (aura.isState()) {
             if (aura.isState() && aura.getTarget() !=null && mc.player.distanceTo(aura.getTarget()) < aura.getAttackRange().getValue() - 0.425F) {

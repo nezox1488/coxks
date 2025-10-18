@@ -61,7 +61,9 @@ public class Strafe extends Module {
                 yaw = Simulations.moveYaw(mc.player.getYaw());
                 rot.setYaw(yaw);
                 rot.setPitch(mc.player.getPitch());
-                TurnsConnection.INSTANCE.rotateTo(rot, TurnsConfig.DEFAULT, TaskPriority.LOW_PRIORITY, this);
+                if (Aura.getInstance().getTarget() == null) {
+                    TurnsConnection.INSTANCE.rotateTo(rot, TurnsConfig.DEFAULT, TaskPriority.LOW_PRIORITY , this);
+                }
             }
         }
 

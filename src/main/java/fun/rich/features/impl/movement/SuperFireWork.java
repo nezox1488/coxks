@@ -16,7 +16,7 @@ import fun.rich.utils.features.aura.warp.TurnsConnection;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SuperFireWork extends Module {
     SelectSetting modeSetting = new SelectSetting("Режим", "Выберите тип режима")
-            .value("Grim", "Custom");
+            .value("Grim", "BravoHvH", "Custom");
 
     SliderSettings speedSetting = new SliderSettings("Скорость", "Скорость полета фейерверка")
             .range(1f, 50f)
@@ -53,6 +53,24 @@ public class SuperFireWork extends Module {
                     yAcceleration ? direction.y * finalSpeed : direction.y * speed,
                     direction.z * finalSpeed
             ));
+        } else if (modeSetting.isSelected("BravoHvH")) {
+            int ff = TurnsConnection.INSTANCE.getRotation().getYaw() > 0F ? 45 : -45;
+            double yaw = TurnsConnection.INSTANCE.getRotation().getYaw();
+
+            double accelerationNear45 = Math.abs((yaw + ff) % 90 - ff) / 45;
+
+            double strongMultiplier = 0.26;
+            double weakMultiplier = strongMultiplier / 2.2;
+            double strongBoost = strongMultiplier * accelerationNear45 * accelerationNear45;
+
+            double yawNormalized = Math.abs(yaw % 90) / 90.0;
+            double weakBoost = weakMultiplier * yawNormalized * yawNormalized;
+
+            double boost = 0.95 + strongBoost + weakBoost;
+
+            boolean yAcceleration = Math.abs(TurnsConnection.INSTANCE.getMoveRotation().getPitch()) > 60;
+            Vec3d vec3d = e.getVector();
+            e.setVector(new Vec3d(vec3d.x * boost, yAcceleration ? vec3d.y * boost : vec3d.y, vec3d.z * boost));
         }
     }
 }

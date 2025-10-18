@@ -1,403 +1,249 @@
 package fun.rich.features.impl.combat;
 
 import antidaunleak.api.annotation.Native;
-import fun.rich.events.packet.PacketEvent;
-import fun.rich.utils.interactions.inv.InventoryTask;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.experimental.FieldDefaults;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import fun.rich.utils.client.managers.event.EventHandler;
+import fun.rich.events.player.TickEvent;
 import fun.rich.features.module.Module;
 import fun.rich.features.module.ModuleCategory;
 import fun.rich.features.module.setting.implement.BooleanSetting;
-import fun.rich.features.module.setting.implement.MultiSelectSetting;
 import fun.rich.features.module.setting.implement.SelectSetting;
 import fun.rich.features.module.setting.implement.SliderSettings;
-import fun.rich.utils.math.time.StopWatch;
-import fun.rich.events.player.TickEvent;
-import fun.rich.utils.math.script.Script;
-
+import fun.rich.utils.client.chat.ChatMessage;
+import fun.rich.utils.client.managers.event.EventHandler;
+import fun.rich.utils.interactions.inv.InventoryResult;
+import fun.rich.utils.interactions.inv.InventoryToolkit;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.decoration.EndCrystalEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.math.Box;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
-@Getter
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class AutoTotem extends Module {
-    SelectSetting swapMode = new SelectSetting("Обход", "Режим обхода")
-            .value("Обычный", "Фантайм")
-            .selected("Обычный");
 
-    SliderSettings healthThreshold = new SliderSettings("Порог здоровья", "Минимальное здоровье для экипировки тотема")
+    private static final MinecraftClient MC = MinecraftClient.getInstance();
+
+    private final SelectSetting modeSetting = new SelectSetting("Режим", "Способ свопа")
+            .value("Default", "Legit")
+            .selected("Default");
+
+    private final SliderSettings healthThreshold = new SliderSettings("Порог здоровья", "Минимальное здоровье для экипировки тотема")
             .setValue(4.5F).range(1F, 20F);
 
-    BooleanSetting swapBack = new BooleanSetting("Вернуть предмет", "Возвращать предыдущий предмет обратно")
+    private final SliderSettings elytraHealth = new SliderSettings("Здоровье на элитре", "Минимальное здоровье при полете")
+            .setValue(8.5F).range(1F, 20F);
+
+    private final SliderSettings crystalDistance = new SliderSettings("Дистанция до кристалла", "Макс дистанция до кристалла")
+            .setValue(4F).range(1F, 6F);
+
+    private final BooleanSetting fallCheck = new BooleanSetting("Падение", "Экипировать тотем при падении")
             .setValue(true);
 
-    MultiSelectSetting modes = new MultiSelectSetting("Режимы", "Дополнительные условия для экипировки тотема")
-            .value("Здоровие на элитре", "Падение", "Не брать если ешь", "Золотые серца", "Кристалы", "Обсидиан", "Булава", "Сайв таликов")
-            .selected("Здоровие на элитре", "Падение", "Золотые серца", "Кристалы", "Обсидиан", "Булава", "Сайв таликов");
-
-    SliderSettings elytraHealth = new SliderSettings("Здоровие на элитре", "Здоровье для экипировки тотема при полёте на элитре")
-            .setValue(8.5F).range(1F, 20F)
-            .visible(() -> modes.isSelected("Здоровие на элитре"));
-
-    SliderSettings crystalDistance = new SliderSettings("Дистанция до криса", "Максимальная дистанция до кристалла для экипировки тотема")
-            .setValue(4F).range(1F, 6F)
-            .visible(() -> modes.isSelected("Кристалы"));
-
-    SliderSettings obsidianDistance = new SliderSettings("Дистанция до обсы", "Максимальная дистанция до обсидиана для экипировки тотема")
-            .setValue(4F).range(1F, 6F)
-            .visible(() -> modes.isSelected("Обсидиан"));
-
-    BooleanSetting noTakeIfBall = new BooleanSetting("Не брать если шар", " ")
+    private final BooleanSetting saveTaliks = new BooleanSetting("Сейв таликов", "Использовать обычные тотемы без чар")
             .setValue(true);
 
-    StopWatch swapCooldown = new StopWatch();
-    final Script script = new Script();
-    int oldSlot = -1;
-    ItemStack backItemStack = ItemStack.EMPTY;
-    boolean totemIsUsed = false;
-    long lastTotemUseTime = 0;
-    boolean funtimeBlocking = false;
+    private long lastActionTime = 0L;
+    private int savedSlot = -1;
+    private int totemSlot = -1;
+    private long actionStartTime = 0L;
+    private boolean keysOverridden = false;
+    private boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
+    private Phase phase = Phase.READY;
+
+    private enum Phase { READY, SLOWING_DOWN, WAITING_STOP, PREPARE, AWAIT_SWITCH, EQUIP, SPEEDING_UP, FINISH }
 
     public AutoTotem() {
         super("AutoTotem", "Auto Totem", ModuleCategory.COMBAT);
-        setup(healthThreshold, swapBack, modes, elytraHealth, crystalDistance, obsidianDistance, noTakeIfBall);
+        setup(modeSetting, healthThreshold, elytraHealth, crystalDistance, fallCheck, saveTaliks);
     }
 
     @EventHandler
     @Native(type = Native.Type.VMProtectBeginUltra)
-    public void onTick(TickEvent event) {
-        if (mc.player == null || mc.world == null || mc.interactionManager == null) {
+    public void onTick(TickEvent e) {
+        if (MC.player == null || MC.world == null) {
+            resetState();
             return;
         }
 
-//        if (swapMode.isSelected("Фантайм")) {
-//            handleFuntimeMode();
-//            return;
-//        }
-
-        float health = mc.player.getHealth();
-        float effectiveHealth = health;
-
-        if (modes.isSelected("Золотые серца")) {
-            effectiveHealth += mc.player.getAbsorptionAmount();
+        float health = MC.player.getHealth();
+        if (MC.player.isGliding() && health <= elytraHealth.getValue()) {
+            tryEquipTotem();
+        } else if (health <= healthThreshold.getValue()) {
+            tryEquipTotem();
+        } else if (fallCheck.isValue() && MC.player.fallDistance > 10) {
+            tryEquipTotem();
+        } else if (getClosestCrystalDistance() <= crystalDistance.getValue()) {
+            tryEquipTotem();
         }
 
-        boolean shouldSwap = effectiveHealth <= healthThreshold.getValue() ||
-                (totemIsUsed && getTotemCount() > 0 && System.currentTimeMillis() - lastTotemUseTime >= 1);
-
-        if (modes.isSelected("Здоровие на элитре") && mc.player.isGliding() && health <= elytraHealth.getValue()) {
-            shouldSwap = true;
-        }
-
-        if (modes.isSelected("Падение") && mc.player.fallDistance > 10) {
-            shouldSwap = true;
-        }
-
-        if (modes.isSelected("Кристалы")) {
-            double dist = getClosestCrystalDistance();
-            if (dist <= crystalDistance.getValue()) {
-                if (noTakeIfBall.isValue() && isHoldingSkull()) {
-                    shouldSwap = effectiveHealth <= healthThreshold.getValue();
-                } else {
-                    shouldSwap = true;
-                }
-            }
-        }
-
-        if (modes.isSelected("Обсидиан")) {
-            double dist = getClosestObsidianDistance();
-            if (dist <= obsidianDistance.getValue()) {
-                if (noTakeIfBall.isValue() && isHoldingSkull()) {
-                    shouldSwap = effectiveHealth <= healthThreshold.getValue();
-                } else {
-                    shouldSwap = true;
-                }
-            }
-        }
-
-        if (modes.isSelected("Булава") && checkForMaceInEnemyHand()) {
-            shouldSwap = true;
-        }
-
-        if (modes.isSelected("Не брать если ешь") && mc.player.isUsingItem() &&
-                mc.player.getActiveItem().contains(DataComponentTypes.FOOD)) {
-            shouldSwap = false;
-        }
-
-        ItemStack offhandStack = mc.player.getOffHandStack();
-        boolean isEnchantedTotemInOffhand = offhandStack.getItem() == Items.TOTEM_OF_UNDYING &&
-                EnchantmentHelper.hasEnchantments(offhandStack);
-
-        if (shouldSwap && (!isTotemInOffhand() || isEnchantedTotemInOffhand)) {
-            Slot totemSlot = findTotemSlot();
-            if (totemSlot != null) {
-                if (!offhandStack.isEmpty() && oldSlot == -1 && swapBack.isValue()) {
-                    backItemStack = offhandStack.copy();
-                    oldSlot = getSlotWithStack(backItemStack);
-                }
-                InventoryTask.swapHand(totemSlot, Hand.OFF_HAND, false, true);
-                totemIsUsed = false;
-            }
-        } else if (!shouldSwap && swapBack.isValue() && isTotemInOffhand() && backItemStack != ItemStack.EMPTY) {
-            int slot = getSlotWithStack(backItemStack);
-            if (slot != -1) {
-                Slot slotObj = InventoryTask.slots().filter(s -> s.id == slot).findFirst().orElse(null);
-                if (slotObj != null) {
-                    InventoryTask.swapHand(slotObj, Hand.OFF_HAND, false, true);
-                    backItemStack = ItemStack.EMPTY;
-                    oldSlot = -1;
-                }
-            }
-        }
+        if (phase != Phase.READY) execute();
     }
 
-    private void handleFuntimeMode() {
-        if (funtimeBlocking) {
-            script.update();
-            if (script.isFinished()) {
-                funtimeBlocking = false;
-            }
+    private void tryEquipTotem() {
+        if (phase != Phase.READY) return;
+        if (isTotemInOffhand()) return;
+        if (MC.currentScreen != null) return;
+
+        savedSlot = MC.player.getInventory().selectedSlot;
+        InventoryResult hotbar = InventoryToolkit.findItemInHotBar(Items.TOTEM_OF_UNDYING);
+        if (hotbar.found()) {
+            totemSlot = hotbar.slot();
+            startEquip();
             return;
         }
 
-        float health = mc.player.getHealth();
-        float effectiveHealth = health;
+        InventoryResult inv = saveTaliks.isValue() ? findTotemWithSaveTalics() : InventoryToolkit.findItemInInventory(Items.TOTEM_OF_UNDYING);
+        if (inv.found()) {
+            totemSlot = inv.slot();
+            if (modeSetting.getSelected().equals("Legit")) {
+                wasForwardPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
+                wasBackPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
+                wasLeftPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
+                wasRightPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
+                phase = Phase.SLOWING_DOWN;
+                actionStartTime = System.currentTimeMillis();
+            } else {
+                phase = Phase.PREPARE;
+            }
+        } else {
+            ChatMessage.brandmessage("Нет тотема");
+            resetState();
+        }
+    }
 
-        if (modes.isSelected("Золотые серца")) {
-            effectiveHealth += mc.player.getAbsorptionAmount();
+    private void startEquip() {
+        phase = Phase.PREPARE;
+    }
+
+    private void execute() {
+        if (MC.player == null || MC.currentScreen != null) {
+            resetState();
+            return;
         }
 
-        boolean shouldSwap = effectiveHealth <= healthThreshold.getValue() ||
-                (totemIsUsed && getTotemCount() > 0 && System.currentTimeMillis() - lastTotemUseTime >= 1);
+        long elapsed = System.currentTimeMillis() - actionStartTime;
 
-        if (modes.isSelected("Здоровие на элитре") && mc.player.isGliding() && health <= elytraHealth.getValue()) {
-            shouldSwap = true;
-        }
-
-        if (modes.isSelected("Падение") && mc.player.fallDistance > 10) {
-            shouldSwap = true;
-        }
-
-        if (modes.isSelected("Кристалы")) {
-            double dist = getClosestCrystalDistance();
-            if (dist <= crystalDistance.getValue()) {
-                if (noTakeIfBall.isValue() && isHoldingSkull()) {
-                    shouldSwap = effectiveHealth <= healthThreshold.getValue();
-                } else {
-                    shouldSwap = true;
+        switch (phase) {
+            case SLOWING_DOWN -> {
+                MC.player.input.movementForward = 0;
+                MC.player.input.movementSideways = 0;
+                if (!keysOverridden) {
+                    MC.options.forwardKey.setPressed(false);
+                    MC.options.backKey.setPressed(false);
+                    MC.options.leftKey.setPressed(false);
+                    MC.options.rightKey.setPressed(false);
+                    keysOverridden = true;
                 }
+                if (elapsed > 1) phase = Phase.WAITING_STOP;
             }
-        }
-
-        if (modes.isSelected("Обсидиан")) {
-            double dist = getClosestObsidianDistance();
-            if (dist <= obsidianDistance.getValue()) {
-                if (noTakeIfBall.isValue() && isHoldingSkull()) {
-                    shouldSwap = effectiveHealth <= healthThreshold.getValue();
-                } else {
-                    shouldSwap = true;
+            case WAITING_STOP -> {
+                MC.player.input.movementForward = 0;
+                MC.player.input.movementSideways = 0;
+                double vx = Math.abs(MC.player.getVelocity().x);
+                double vz = Math.abs(MC.player.getVelocity().z);
+                if ((vx < 0.001 && vz < 0.001) || elapsed > 15) phase = Phase.PREPARE;
+            }
+            case PREPARE -> {
+                if (totemSlot < 0) {
+                    resetState();
+                    return;
                 }
-            }
-        }
 
-        if (modes.isSelected("Булава") && checkForMaceInEnemyHand()) {
-            shouldSwap = true;
-        }
+                int slotIndex = totemSlot;
+                if (slotIndex >= 0 && slotIndex <= 8) slotIndex += 36;
 
-        if (modes.isSelected("Не брать если ешь") && mc.player.isUsingItem() &&
-                mc.player.getActiveItem().contains(DataComponentTypes.FOOD)) {
-            shouldSwap = false;
-        }
-
-        ItemStack offhandStack = mc.player.getOffHandStack();
-        boolean isEnchantedTotemInOffhand = offhandStack.getItem() == Items.TOTEM_OF_UNDYING &&
-                EnchantmentHelper.hasEnchantments(offhandStack);
-
-        if (shouldSwap && (!isTotemInOffhand() || isEnchantedTotemInOffhand)) {
-            Slot totemSlot = findTotemSlot();
-            if (totemSlot != null) {
-                funtimeBlocking = true;
-                script.cleanup();
-                script.addStep(1, () -> {
-                    ItemStack currentOffhand = mc.player.getOffHandStack();
-                    if (!currentOffhand.isEmpty() && oldSlot == -1 && swapBack.isValue()) {
-                        backItemStack = currentOffhand.copy();
-                        oldSlot = getSlotWithStack(backItemStack);
-                    }
-                    InventoryTask.swapHand(totemSlot, Hand.OFF_HAND, false, true);
-                    totemIsUsed = false;
-                });
-                script.addStep(2000, () -> {
-                });
-            }
-        } else if (!shouldSwap && swapBack.isValue() && isTotemInOffhand() && backItemStack != ItemStack.EMPTY) {
-            int slot = getSlotWithStack(backItemStack);
-            if (slot != -1) {
-                Slot slotObj = InventoryTask.slots().filter(s -> s.id == slot).findFirst().orElse(null);
-                if (slotObj != null) {
-                    InventoryTask.swapHand(slotObj, Hand.OFF_HAND, false, true);
-                    backItemStack = ItemStack.EMPTY;
-                    oldSlot = -1;
+                if (MC.interactionManager != null && MC.player != null && MC.player.playerScreenHandler != null) {
+                    MC.interactionManager.clickSlot(
+                            MC.player.playerScreenHandler.syncId,
+                            slotIndex,
+                            40,
+                            SlotActionType.SWAP,
+                            MC.player
+                    );
                 }
+
+                phase = Phase.AWAIT_SWITCH;
             }
+
+            case AWAIT_SWITCH -> {
+                if (isTotemInOffhand()) phase = Phase.EQUIP;
+            }
+            case EQUIP -> {
+                InventoryToolkit.switchTo(savedSlot);
+                if (modeSetting.getSelected().equals("Legit")) {
+                    restoreKeyStates();
+                    actionStartTime = System.currentTimeMillis();
+                    phase = Phase.SPEEDING_UP;
+                } else phase = Phase.FINISH;
+            }
+            case SPEEDING_UP -> {
+                long speedupElapsed = System.currentTimeMillis() - actionStartTime;
+                float progress = Math.min(1.0f, speedupElapsed / 20.0f);
+                if (MC.player.input != null) {
+                    boolean forward = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
+                    float targetForward = forward ? 1.0f : 0;
+                    MC.player.input.movementForward = lerp(MC.player.input.movementForward, targetForward * progress, 0.4f);
+                }
+                if (speedupElapsed > 25) phase = Phase.FINISH;
+            }
+            case FINISH -> resetState();
         }
     }
 
-//    public boolean isFuntimeBlocking() {
-//        return funtimeBlocking && swapMode.isSelected("Фантайм");
-//    }
-
-    private boolean isHoldingSkull() {
-        ItemStack mainHand = mc.player.getMainHandStack();
-        ItemStack offHand = mc.player.getOffHandStack();
-
-        return isSkull(mainHand) || isSkull(offHand);
-    }
-
-    private boolean isSkull(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-
-        return stack.getItem() == Items.SKELETON_SKULL ||
-                stack.getItem() == Items.WITHER_SKELETON_SKULL ||
-                stack.getItem() == Items.ZOMBIE_HEAD ||
-                stack.getItem() == Items.PLAYER_HEAD ||
-                stack.getItem() == Items.CREEPER_HEAD ||
-                stack.getItem() == Items.DRAGON_HEAD ||
-                stack.getItem() == Items.PIGLIN_HEAD;
-    }
-
-    @EventHandler
-    public void onPacket(PacketEvent event) {
-        if (event.getPacket() instanceof EntityStatusS2CPacket statusPacket) {
-            if (statusPacket.getStatus() == 35 && statusPacket.getEntity(mc.world) == mc.player) {
-                totemIsUsed = true;
-                lastTotemUseTime = System.currentTimeMillis();
-            }
-        }
-    }
-
-    private boolean checkForMaceInEnemyHand() {
-        if (!modes.isSelected("Булава")) return false;
-        Box box = mc.player.getBoundingBox().expand(30.0);
-        List<AbstractClientPlayerEntity> players = mc.world.getEntitiesByClass(
-                AbstractClientPlayerEntity.class, box, e -> true);
-        for (AbstractClientPlayerEntity enemy : players) {
-            if (enemy == mc.player) continue;
-            ItemStack main = enemy.getMainHandStack();
-            ItemStack off = enemy.getOffHandStack();
-            if (main.getItem() == Items.MACE || off.getItem() == Items.MACE) {
-                return true;
-            }
-        }
-        return false;
+    private InventoryResult findTotemWithSaveTalics() {
+        InventoryResult nonEnchanted = InventoryToolkit.findInInventory(i -> i.getItem() == Items.TOTEM_OF_UNDYING && !i.hasEnchantments());
+        if (nonEnchanted.found()) return nonEnchanted;
+        return InventoryToolkit.findItemInInventory(Items.TOTEM_OF_UNDYING);
     }
 
     private double getClosestCrystalDistance() {
         double minDist = Double.MAX_VALUE;
-        Vec3d playerPos = mc.player.getPos();
-        Box box = mc.player.getBoundingBox().expand(crystalDistance.getValue());
-        List<EndCrystalEntity> crystals = mc.world.getEntitiesByClass(EndCrystalEntity.class, box, e -> true);
+        if (MC.player == null || MC.world == null) return minDist;
+        Box box = MC.player.getBoundingBox().expand(crystalDistance.getValue());
+        List<EndCrystalEntity> crystals = MC.world.getEntitiesByClass(EndCrystalEntity.class, box, e -> true);
         for (EndCrystalEntity crystal : crystals) {
-            double dist = playerPos.distanceTo(crystal.getPos());
-            if (dist < minDist) {
-                minDist = dist;
-            }
-        }
-        return minDist;
-    }
-
-    private double getClosestObsidianDistance() {
-        double minDist = Double.MAX_VALUE;
-        BlockPos playerBlockPos = mc.player.getBlockPos();
-        int dist = (int) Math.ceil(obsidianDistance.getValue());
-        for (int x = -dist; x <= dist; x++) {
-            for (int y = -dist; y <= dist; y++) {
-                for (int z = -dist; z <= dist; z++) {
-                    BlockPos pos = playerBlockPos.add(x, y, z);
-                    if (mc.world.getBlockState(pos).isOf(Blocks.OBSIDIAN)) {
-                        double d = MathHelper.sqrt((float) playerBlockPos.getSquaredDistance(pos));
-                        if (d < minDist) {
-                            minDist = d;
-                        }
-                    }
-                }
-            }
+            double dist = MC.player.getPos().distanceTo(crystal.getPos());
+            if (dist < minDist) minDist = dist;
         }
         return minDist;
     }
 
     private boolean isTotemInOffhand() {
-        ItemStack offhandStack = mc.player.getOffHandStack();
-        return offhandStack.getItem() == Items.TOTEM_OF_UNDYING;
+        ItemStack stack = MC.player.getOffHandStack();
+        return stack.getItem() == Items.TOTEM_OF_UNDYING;
     }
 
-    private Slot findTotemSlot() {
-        if (modes.isSelected("Сайв таликов")) {
-            Slot nonEnchantedSlot = null;
-            Slot enchantedSlot = null;
-            for (Slot slot : InventoryTask.slots().toList()) {
-                ItemStack stack = slot.getStack();
-                if (stack.getItem() == Items.TOTEM_OF_UNDYING) {
-                    if (!EnchantmentHelper.hasEnchantments(stack)) {
-                        nonEnchantedSlot = slot;
-                    } else {
-                        enchantedSlot = slot;
-                    }
-                }
-            }
-            if (nonEnchantedSlot != null) {
-                return nonEnchantedSlot;
-            }
-            if (enchantedSlot != null) {
-                return enchantedSlot;
-            }
-        } else {
-            return InventoryTask.getSlot(Items.TOTEM_OF_UNDYING);
-        }
-        return null;
+    private float lerp(float start, float end, float delta) {
+        return start + (end - start) * delta;
     }
 
-    private int getTotemCount() {
-        return (int) mc.player.getInventory().main.stream()
-                .filter(s -> s.getItem() == Items.TOTEM_OF_UNDYING)
-                .count();
+    private void restoreKeyStates() {
+        if (!keysOverridden) return;
+        boolean currentForward = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
+        boolean currentBack = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
+        boolean currentLeft = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
+        boolean currentRight = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
+        MC.options.forwardKey.setPressed(wasForwardPressed && currentForward);
+        MC.options.backKey.setPressed(wasBackPressed && currentBack);
+        MC.options.leftKey.setPressed(wasLeftPressed && currentLeft);
+        MC.options.rightKey.setPressed(wasRightPressed && currentRight);
+        keysOverridden = false;
     }
 
-    private int getSlotWithStack(ItemStack stack) {
-        for (int i = 0; i < mc.player.getInventory().size(); i++) {
-            ItemStack invStack = mc.player.getInventory().getStack(i);
-            if (ItemStack.areEqual(invStack, stack)) {
-                return i;
-            }
-        }
-        return -1;
+    private void resetState() {
+        if (keysOverridden) restoreKeyStates();
+        totemSlot = -1;
+        savedSlot = -1;
+        actionStartTime = 0L;
+        phase = Phase.READY;
     }
 
     @Override
     public void deactivate() {
-        oldSlot = -1;
-        backItemStack = ItemStack.EMPTY;
-        totemIsUsed = false;
-        lastTotemUseTime = 0;
-        swapCooldown.reset();
-        funtimeBlocking = false;
-        script.cleanup();
+        resetState();
         super.deactivate();
     }
 }

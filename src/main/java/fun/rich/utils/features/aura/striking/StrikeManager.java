@@ -1,5 +1,7 @@
 package fun.rich.utils.features.aura.striking;
 
+import fun.rich.features.impl.movement.Blink;
+import fun.rich.utils.client.Instance;
 import fun.rich.utils.display.interfaces.QuickImports;
 import fun.rich.utils.client.managers.event.types.EventType;
 import fun.rich.features.impl.combat.Aura;
@@ -62,7 +64,11 @@ public class StrikeManager implements QuickImports {
     private static final long SPRINT_COOLDOWN_MS = 200;
     void handleAttack(StrikerConstructor.AttackPerpetratorConfigurable config) {
         if (canAttack(config, 1)) preAttackEntity(config);
-        if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;
+        if (Aura.getInstance().getTarget() !=null && Aura.getInstance().getTarget().distanceTo(mc.player) <= Aura.getInstance().getAttackRange().getValue() && Aura.getInstance().getTarget().isGliding() && mc.player.isGliding() && Aura.getInstance().getAttackSetting().isSelected("Elytra possibilities")) {
+            if (!canAttack(config, 1)) return;
+        } else {
+            if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;
+        }
 
         String sprintMode = Aura.getInstance().getSprintReset().getSelected();
 
@@ -102,6 +108,9 @@ public class StrikeManager implements QuickImports {
     }
 
     void attackEntity(StrikerConstructor.AttackPerpetratorConfigurable config) {
+        if (Aura.getInstance().getAttackSetting().isSelected("Combine with Blink")) {
+            Blink.tickStop = 1;
+        }
         attack(config);
         breakShield(config);
         attackTimer.reset();

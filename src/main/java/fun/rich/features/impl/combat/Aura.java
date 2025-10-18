@@ -2,6 +2,7 @@ package fun.rich.features.impl.combat;
 
 import fun.rich.features.impl.movement.Strafe;
 import fun.rich.features.impl.movement.TargetStrafe;
+import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.features.aura.point.MultiPoint;
 import fun.rich.utils.features.aura.rotations.constructor.LinearConstructor;
 import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
@@ -37,6 +38,7 @@ import fun.rich.utils.features.aura.striking.StrikeManager;
 import fun.rich.utils.features.aura.striking.StrikerConstructor;
 import fun.rich.utils.features.aura.target.TargetFinder;
 import fun.rich.features.impl.render.Hud;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.Map;
 import java.util.Objects;
@@ -90,7 +92,7 @@ public class Aura extends Module {
             .setValue(1.5f).range(0F, 10F);
 
     MultiSelectSetting attackSetting = new MultiSelectSetting("Настройки", "Позволяет настроить работу функции")
-            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities")
+            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Combine with Blink")
             .selected("Only Critical", "Break Shield", "Elytra possibilities");
 
     SelectSetting correctionType = new SelectSetting("Коррекции движения", "Выбор коррекции движения игрока")
@@ -102,12 +104,17 @@ public class Aura extends Module {
     SliderSettings elytraFindRange = new SliderSettings("Дистанция элитры", "Дальность поиска цели во время полета на элитре")
             .setValue(16).range(6F, 32F).visible(() -> attackSetting.isSelected("Elytra possibilities"));
 
+    private final BindSetting forward = new BindSetting("Кнопка перегона", "Кнопка для вкл или выкл перегона").visible(() -> attackSetting.isSelected("Elytra possibilities"));
+
+    SliderSettings elytraForward = new SliderSettings("Значение перегона", "Дальность перегона цели во время полета на элитре")
+            .setValue(3).range(0F, 6F).visible(() -> attackSetting.isSelected("Elytra possibilities"));
+
     BooleanSetting smartCrits = new BooleanSetting("Удары на земле", "Криты только при нажатии пробела")
             .setValue(true).visible(() -> attackSetting.isSelected("Only Critical"));
 
     public Aura() {
         super("Aura", ModuleCategory.COMBAT);
-        setup(aimMode, targetType, attackRange, lookRange, attackSetting, correctionType, sprintReset, elytraFindRange, smartCrits);
+        setup(aimMode, targetType, attackRange, lookRange, attackSetting, correctionType, sprintReset, elytraFindRange, forward, elytraForward, smartCrits);
     }
 
     @Override
@@ -129,6 +136,8 @@ public class Aura extends Module {
 
     @EventHandler
     public void onRotationUpdate(RotationUpdateEvent e) {
+        checkForwardToggle();
+
         switch (e.getType()) {
             case EventType.PRE -> {
                 target = updateTarget();
@@ -187,23 +196,73 @@ public class Aura extends Module {
             default -> false;
         };
 
-        if (shouldRotate) {
+        if (shouldRotate && !aimMode.isSelected("Trigger Bot")) {
             controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
         }
 
-        if (elytraMode) {
+        if (elytraMode && !aimMode.isSelected("Trigger Bot")) {
             controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
         }
     }
 
+    @NonFinal
+    public boolean elytraStateForward = false;
+    private boolean wasForwardPressed = false;
+
+    private void toggleElytraStateForward() {
+        if (!attackSetting.isSelected("Elytra possibilities")) {
+            return;
+        }
+        elytraStateForward = !elytraStateForward;
+        ChatMessage.brandmessage("Elytra forward state: " + elytraStateForward);
+    }
+
+    private void checkForwardToggle() {
+        if (!attackSetting.isSelected("Elytra possibilities")) {
+            return;
+        }
+        boolean isPressedNow = GLFW.glfwGetKey(mc.getWindow().getHandle(), forward.getKey()) == GLFW.GLFW_PRESS;
+
+         if (isPressedNow && !wasForwardPressed) {
+            toggleElytraStateForward();
+        }
+
+        wasForwardPressed = isPressedNow;
+    }
 
     public StrikerConstructor.AttackPerpetratorConfigurable getConfig() {
-        float range = attackRange.getValue() + RANGE_MARGIN;
-        Pair<Vec3d, Box> point = pointFinder.computeVector(target, range, TurnsConnection.INSTANCE.getRotation(), getSmoothMode().randomValue(), attackSetting.isSelected("Ignore The Walls"));
-        Turns angle = MathAngle.fromVec3d(point.getLeft().subtract(Objects.requireNonNull(mc.player).getEyePos()));
-        Box box = point.getRight();
-        return new StrikerConstructor.AttackPerpetratorConfigurable(target, angle, range, attackSetting.getSelected(), aimMode, box);
+        float baseRange = attackRange.getValue() + RANGE_MARGIN;
+
+        Pair<Vec3d, Box> pointData = pointFinder.computeVector(
+                target,
+                baseRange,
+                TurnsConnection.INSTANCE.getRotation(),
+                getSmoothMode().randomValue(),
+                attackSetting.isSelected("Ignore The Walls")
+        );
+
+        Vec3d computedPoint = pointData.getLeft();
+
+        if (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities") && target.isGliding() && !aimMode.isSelected("Trigger Bot")) {
+            Vec3d lookVec = target.getRotationVec(1.0F).normalize();
+            if (elytraStateForward) {
+                computedPoint = computedPoint.add(lookVec.multiply(elytraForward.getValue()));
+            }
+        }
+
+        Turns angle = MathAngle.fromVec3d(computedPoint.subtract(Objects.requireNonNull(mc.player).getEyePos()));
+        Box hitbox = pointData.getRight();
+
+        return new StrikerConstructor.AttackPerpetratorConfigurable(
+                target,
+                angle,
+                baseRange,
+                attackSetting.getSelected(),
+                aimMode,
+                hitbox
+        );
     }
+
 
     public TurnsConfig getRotationConfig() {
         boolean visibleCorrection = !correctionType.isSelected("Not visible");
@@ -213,7 +272,7 @@ public class Aura extends Module {
     }
 
     public RotateConstructor getSmoothMode() {
-        if (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities")) {
+        if (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities") && !aimMode.isSelected("Trigger Bot")) {
             return new LinearConstructor();
         }
         return switch (aimMode.getSelected()) {

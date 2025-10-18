@@ -9,6 +9,7 @@ import fun.rich.features.module.ModuleCategory;
 import fun.rich.features.module.setting.implement.BindSetting;
 import fun.rich.features.module.setting.implement.BooleanSetting;
 import fun.rich.features.module.setting.implement.SelectSetting;
+import fun.rich.features.module.setting.implement.SliderSettings;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
@@ -31,13 +32,13 @@ import java.util.Objects;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ElytraHelper extends Module {
 
-    final SelectSetting modeSetting = new SelectSetting("Режим", "Способ замены")
-            .value("Default", "Legit")
-            .selected("Default");
+    final SelectSetting modeSetting = new SelectSetting("Режим", "Способ замены").value("Default", "Legit").selected("Default");
     final BindSetting elytraSetting = new BindSetting("Замена элитр", "Меняет нагрудник на элитры");
     final BindSetting fireworkSetting = new BindSetting("Использовать фейерверк", "Меняет и использует фейерверки");
     final BooleanSetting startSetting = new BooleanSetting("Быстрый старт", "При замене на элитры автоматически взлетает и использует фейерверки").setValue(false);
     final BooleanSetting recast = new BooleanSetting("Авто взлет", "Автоматически начинает полет").setValue(false);
+    final BooleanSetting autoFireworkSetting = new BooleanSetting("Авто фейерверк", "Автоматически использовать фейерверк каждые X мс").setValue(false);
+    final SliderSettings fireworkDelay = new SliderSettings("Задержка использования в мс", "Задержка использования фейерверка в мс").setValue(500F).range(10F, 1500F).visible(() -> autoFireworkSetting.isValue());
 
     final Script script = new Script();
 
@@ -58,10 +59,11 @@ public class ElytraHelper extends Module {
     int savedHotbarSlot = -1;
     int originalHotbarSlot = -1;
     long useDelayStartTime = 0L;
+    long lastAutoFireworkTime = 0L;
 
     public ElytraHelper() {
         super("ElytraHelper", "Elytra Helper", ModuleCategory.MISC);
-        setup(modeSetting, elytraSetting, fireworkSetting, startSetting, recast);
+        setup(modeSetting, elytraSetting, fireworkSetting, startSetting, recast, autoFireworkSetting, fireworkDelay);
     }
 
     @EventHandler
@@ -75,7 +77,6 @@ public class ElytraHelper extends Module {
             if (elytraPhase == ElytraPhase.SLOWING_DOWN || elytraPhase == ElytraPhase.WAITING_STOP) {
                 mc.player.input.movementForward = 0;
                 mc.player.input.movementSideways = 0;
-
                 if (mc.player.isSprinting()) {
                     mc.player.setSprinting(false);
                     AutoSprint.tickStop = 10;
@@ -112,6 +113,34 @@ public class ElytraHelper extends Module {
                 processDefaultFireworkUsage();
             } else {
                 processLegitFireworkUsage();
+            }
+        }
+
+        if (autoFireworkSetting.isValue() && mc.player != null && mc.player.isGliding()) {
+            long now = System.currentTimeMillis();
+            if (now - lastAutoFireworkTime >= (long) fireworkDelay.getValue()) {
+                if (fireworkPhase == FireworkPhase.READY) {
+                    if (modeSetting.getSelected().equals("Default")) {
+                        InventoryResult hotbar = InventoryToolkit.findItemInHotBar(Items.FIREWORK_ROCKET);
+                        if (hotbar.found()) {
+                            InventoryTask.swapAndUse(Items.FIREWORK_ROCKET);
+                            lastAutoFireworkTime = now;
+                        } else {
+                            InventoryResult inv = InventoryToolkit.findItemInInventory(Items.FIREWORK_ROCKET);
+                            if (inv.found()) {
+                                int fireworkInvSlot = inv.slot();
+                                int currentHotbarSlot = mc.player.getInventory().selectedSlot;
+                                InventoryToolkit.clickSlot(fireworkInvSlot, currentHotbarSlot, SlotActionType.SWAP);
+                                PlayerInteractionHelper.interactItem(Hand.MAIN_HAND);
+                                InventoryToolkit.clickSlot(fireworkInvSlot, currentHotbarSlot, SlotActionType.SWAP);
+                                lastAutoFireworkTime = now;
+                            }
+                        }
+                    } else {
+                        fireworkPhase = FireworkPhase.START;
+                        lastAutoFireworkTime = now;
+                    }
+                }
             }
         }
     }
@@ -253,12 +282,10 @@ public class ElytraHelper extends Module {
             case SLOWING_DOWN -> {
                 mc.player.input.movementForward = 0;
                 mc.player.input.movementSideways = 0;
-
                 if (mc.player.isSprinting()) {
                     mc.player.setSprinting(false);
                     AutoSprint.tickStop = 10;
                 }
-
                 if (!keysOverridden) {
                     mc.options.forwardKey.setPressed(false);
                     mc.options.backKey.setPressed(false);
@@ -266,7 +293,6 @@ public class ElytraHelper extends Module {
                     mc.options.rightKey.setPressed(false);
                     keysOverridden = true;
                 }
-
                 if (elapsed > 1) {
                     elytraPhase = ElytraPhase.WAITING_STOP;
                 }
@@ -274,13 +300,10 @@ public class ElytraHelper extends Module {
             case WAITING_STOP -> {
                 mc.player.input.movementForward = 0;
                 mc.player.input.movementSideways = 0;
-
                 double velocityX = Math.abs(mc.player.getVelocity().x);
                 double velocityZ = Math.abs(mc.player.getVelocity().z);
                 double velocityY = Math.abs(mc.player.getVelocity().y);
-
                 boolean isCompletelyStill = velocityX < 0.001 && velocityZ < 0.001 && (mc.player.isOnGround() || velocityY < 0.001);
-
                 if (isCompletelyStill || elapsed > 5) {
                     playerFullyStopped = true;
                     elytraPhase = ElytraPhase.SWAP;
@@ -291,7 +314,6 @@ public class ElytraHelper extends Module {
                     if (targetSlot != null) {
                         boolean elytra = targetSlot.getStack().getItem().equals(Items.ELYTRA);
                         InventoryTask.moveItem(targetSlot, 6, true, true);
-
                         if (startSetting.isValue() && elytra) {
                             Slot fireWork = InventoryTask.getSlot(Items.FIREWORK_ROCKET);
                             if (fireWork != null) {
@@ -308,7 +330,6 @@ public class ElytraHelper extends Module {
                     slowdownFactor = 0.0f;
                     swapStartTime = System.currentTimeMillis();
                     slowingDown = false;
-
                     if (keysOverridden) {
                         restoreKeyStates();
                     }
@@ -318,27 +339,22 @@ public class ElytraHelper extends Module {
                 long speedupElapsed = System.currentTimeMillis() - swapStartTime;
                 float speedupProgress = Math.min(1.0f, speedupElapsed / 20.0f);
                 slowdownFactor = speedupProgress;
-
                 if (mc.player.input != null) {
                     boolean forward = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.forwardKey.getDefaultKey().getCode());
                     boolean back = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
                     boolean left = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
                     boolean right = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
-
                     float targetForward = 0, targetStrafe = 0;
                     if (forward) targetForward = 1.0f;
                     if (back) targetForward = -1.0f;
                     if (left) targetStrafe = 1.0f;
                     if (right) targetStrafe = -1.0f;
-
                     mc.player.input.movementForward = lerp(mc.player.input.movementForward, targetForward * slowdownFactor, 0.4f);
                     mc.player.input.movementSideways = lerp(mc.player.input.movementSideways, targetStrafe * slowdownFactor, 0.4f);
-
                     if (speedupProgress > 0.4f && forward && !mc.player.isSprinting()) {
                         mc.player.setSprinting(true);
                     }
                 }
-
                 if (speedupElapsed > 25) {
                     elytraPhase = ElytraPhase.FINISHED;
                 }
@@ -369,7 +385,6 @@ public class ElytraHelper extends Module {
         if (keysOverridden) {
             restoreKeyStates();
         }
-
         slowingDown = false;
         slowdownFactor = 1.0f;
         targetSlot = null;
@@ -387,9 +402,9 @@ public class ElytraHelper extends Module {
             return InventoryTask.getSlot(List.of(
                     Items.NETHERITE_CHESTPLATE,
                     Items.DIAMOND_CHESTPLATE,
-                    Items.CHAINMAIL_CHESTPLATE,
                     Items.IRON_CHESTPLATE,
                     Items.GOLDEN_CHESTPLATE,
+                    Items.CHAINMAIL_CHESTPLATE,
                     Items.LEATHER_CHESTPLATE
             ));
         } else {
