@@ -1,8 +1,12 @@
 package fun.rich.features.impl.combat;
 
+import fun.rich.events.player.TickEvent;
+import fun.rich.events.render.WorldRenderEvent;
 import fun.rich.features.impl.movement.Strafe;
 import fun.rich.features.impl.movement.TargetStrafe;
 import fun.rich.utils.client.chat.ChatMessage;
+import fun.rich.utils.display.color.ColorAssist;
+import fun.rich.utils.display.geometry.Render3D;
 import fun.rich.utils.features.aura.point.MultiPoint;
 import fun.rich.utils.features.aura.rotations.constructor.LinearConstructor;
 import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
@@ -11,6 +15,7 @@ import fun.rich.utils.features.aura.utils.MathAngle;
 import fun.rich.utils.features.aura.warp.TurnsConfig;
 import fun.rich.utils.features.aura.warp.Turns;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
+import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import fun.rich.utils.interactions.simulate.PlayerSimulation;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,7 +24,11 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.*;
@@ -40,8 +49,10 @@ import fun.rich.utils.features.aura.target.TargetFinder;
 import fun.rich.features.impl.render.Hud;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Setter
 @Getter
@@ -92,7 +103,7 @@ public class Aura extends Module {
             .setValue(1.5f).range(0F, 10F);
 
     MultiSelectSetting attackSetting = new MultiSelectSetting("Настройки", "Позволяет настроить работу функции")
-            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Combine with Blink")
+            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Fake Lag")
             .selected("Only Critical", "Break Shield", "Elytra possibilities");
 
     SelectSetting correctionType = new SelectSetting("Коррекции движения", "Выбор коррекции движения игрока")
@@ -121,8 +132,14 @@ public class Aura extends Module {
     public void deactivate() {
         targetSelector.releaseTarget();
         target = null;
+        packets.forEach(PlayerInteractionHelper::sendPacketWithOutEvent);
+        packets.clear();
         super.deactivate();
     }
+
+    private final List<Packet<?>> packets = new CopyOnWriteArrayList<>();
+    private Box box;
+    public static int tickStop = -1;
 
     @EventHandler
     public void onPacket(PacketEvent e) {
@@ -131,6 +148,46 @@ public class Aura extends Module {
             if (entity != null && entity.equals(target) && Hud.getInstance().notificationSettings.isSelected("Break Shield")) {
                 Notifications.getInstance().addList(Text.literal("Сломали щит игроку - ").append(entity.getDisplayName()), 2000);
             }
+        }
+
+        if (attackSetting.isSelected("Fake Lag") && target !=null) {
+            if (PlayerInteractionHelper.nullCheck()) return;
+            switch (e.getPacket()) {
+                case PlayerRespawnS2CPacket respawn -> setState(false);
+                case GameJoinS2CPacket join -> setState(false);
+                case ClientStatusC2SPacket status when status.getMode().equals(ClientStatusC2SPacket.Mode.PERFORM_RESPAWN) ->
+                        setState(false);
+                default -> {
+                    if (e.isSend() && tickStop < 0) {
+                        packets.add(e.getPacket());
+                        e.cancel();
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onWorldRender(WorldRenderEvent e) {
+        if (box != null || attackSetting.isSelected("Fake Lag") && target !=null) {
+            Render3D.drawBox(box, ColorAssist.getClientColor(), 1);
+        }
+    }
+
+    @EventHandler
+    public void tick(TickEvent e) {
+        if (PlayerInteractionHelper.nullCheck()) return;
+
+
+        tickStop--;
+        if (tickStop >= 0 && !packets.isEmpty() && attackSetting.isSelected("Fake Lag")) {
+            box = mc.player.getBoundingBox();
+            packets.forEach(PlayerInteractionHelper::sendPacketWithOutEvent);
+            packets.clear();
+        }
+        if (mc.player.distanceTo(target) > attackRange.getValue() && attackSetting.isSelected("Fake Lag")) {
+            packets.forEach(PlayerInteractionHelper::sendPacketWithOutEvent);
+            packets.clear();
         }
     }
 
@@ -190,7 +247,7 @@ public class Aura extends Module {
             case "Matrix" -> true;
             case "HolyWorld" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
-                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.04;
+                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.06;
                 yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
             }
             default -> false;

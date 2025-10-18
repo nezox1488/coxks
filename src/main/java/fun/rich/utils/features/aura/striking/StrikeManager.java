@@ -107,8 +107,8 @@ public class StrikeManager implements QuickImports {
     }
 
     void attackEntity(StrikerConstructor.AttackPerpetratorConfigurable config) {
-        if (Aura.getInstance().getAttackSetting().isSelected("Combine with Blink")) {
-            Blink.tickStop = 1;
+        if (Aura.getInstance().getAttackSetting().isSelected("Fake Lag")) {
+            Aura.getInstance().tickStop = 1;
         }
         attack(config);
         breakShield(config);

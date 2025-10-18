@@ -37,7 +37,7 @@ public class Blink extends Module {
 
     @Override
     public void activate() {
-
+        box = mc.player.getBoundingBox();
     }
 
     @Override
