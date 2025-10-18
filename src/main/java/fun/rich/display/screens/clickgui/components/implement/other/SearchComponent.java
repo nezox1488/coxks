@@ -39,42 +39,42 @@ public class SearchComponent extends AbstractComponent {
         width = 80;
         height = 15;
 
-//        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(3).quality(64)
-//                .color(new Color(0, 0, 0, 200).getRGB())
-//                .build());
-//
-//        rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(3)
-//                .softness(2)
-//                .thickness(0.5f)
-//                .outlineColor(new Color(18, 19, 20, 225).getRGB())
-//                .color(
-//                        new Color(18, 19, 20, 155).getRGB(),
-//                        new Color(5, 6, 7, 155).getRGB(),
-//                        new Color(5, 6, 7, 155).getRGB(),
-//                        new Color(18, 19, 20, 155).getRGB())
-//                .build());
-//
-//
-//
-//        rectangle.render(ShapeProperties.create(matrix, x + 65.5f, y + 4, 0.5f, height - 8)
-//                .color(new Color(155, 155, 155, 55).getRGB()).build());
-//
-//        Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "U", x + width - 14, y + 3.5f, typing ? -1 : 0xFF878894);
-//        String displayText = text.equalsIgnoreCase("") && !typing ? "Search" : text;
-//        ScissorAssist scissor = Rich.getInstance().getScissorManager();
-//        scissor.push(matrix.peek().getPositionMatrix(), x + 1, y, width - 3, height);
-//        if (typing && selectionStart != -1 && selectionEnd != -1 && selectionStart != selectionEnd) {
-//            int start = Math.max(0, Math.min(getStartOfSelection(), text.length()));
-//            int end = Math.max(0, Math.min(getEndOfSelection(), text.length()));
-//            if (start < end) {
-//                float selectionXStart = x + 4 - xOffset + font.getStringWidth(text.substring(0, start));
-//                float selectionXEnd = x + 4 - xOffset + font.getStringWidth(text.substring(0, end));
-//                float selectionWidth = selectionXEnd - selectionXStart;
-//                rectangle.render(ShapeProperties.create(matrix, selectionXStart, y + (height / 2) - 4, selectionWidth, 8).color(0xFF5585E8).build());
-//            }
-//        }
-//        font.drawString(context.getMatrices(), displayText, x + 4, y + (height / 2) - 1.0F, typing ? -1 : 0xFF878894);
-//        scissor.pop();
+        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(3).quality(64)
+                .color(new Color(0, 0, 0, 200).getRGB())
+                .build());
+
+        rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(3)
+                .softness(2)
+                .thickness(0.5f)
+                .outlineColor(new Color(18, 19, 20, 225).getRGB())
+                .color(
+                        new Color(18, 19, 20, 155).getRGB(),
+                        new Color(5, 6, 7, 155).getRGB(),
+                        new Color(5, 6, 7, 155).getRGB(),
+                        new Color(18, 19, 20, 155).getRGB())
+                .build());
+
+
+
+        rectangle.render(ShapeProperties.create(matrix, x + 65.5f, y + 4, 0.5f, height - 8)
+                .color(new Color(155, 155, 155, 55).getRGB()).build());
+
+        Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "U", x + width - 14, y + 3.5f, typing ? -1 : 0xFF878894);
+        String displayText = text.equalsIgnoreCase("") && !typing ? "Search" : text;
+        ScissorAssist scissor = Rich.getInstance().getScissorManager();
+        scissor.push(matrix.peek().getPositionMatrix(), x + 1, y, width - 3, height);
+        if (typing && selectionStart != -1 && selectionEnd != -1 && selectionStart != selectionEnd) {
+            int start = Math.max(0, Math.min(getStartOfSelection(), text.length()));
+            int end = Math.max(0, Math.min(getEndOfSelection(), text.length()));
+            if (start < end) {
+                float selectionXStart = x + 4 - xOffset + font.getStringWidth(text.substring(0, start));
+                float selectionXEnd = x + 4 - xOffset + font.getStringWidth(text.substring(0, end));
+                float selectionWidth = selectionXEnd - selectionXStart;
+                rectangle.render(ShapeProperties.create(matrix, selectionXStart, y + (height / 2) - 4, selectionWidth, 8).color(0xFF5585E8).build());
+            }
+        }
+        font.drawString(context.getMatrices(), displayText, x + 4, y + (height / 2) - 1.0F, typing ? -1 : 0xFF878894);
+        scissor.pop();
         long currentTime = System.currentTimeMillis();
         boolean focused = typing && (currentTime % 1000 < 500);
         if (focused && (selectionStart == -1 || selectionStart == selectionEnd)) {
