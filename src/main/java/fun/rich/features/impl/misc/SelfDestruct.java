@@ -1,6 +1,8 @@
 package fun.rich.features.impl.misc;
 
+import antidaunleak.api.UserProfile;
 import fun.rich.Rich;
+import fun.rich.common.discord.DiscordManager;
 import fun.rich.events.chat.ChatEvent;
 import fun.rich.features.module.Module;
 import fun.rich.features.module.ModuleCategory;
@@ -10,6 +12,8 @@ import fun.rich.utils.client.managers.file.FileRepository;
 import fun.rich.utils.client.managers.file.exception.FileLoadException;
 import fun.rich.utils.client.managers.file.impl.PrefixFile;
 import fun.rich.utils.math.calc.Calculate;
+import fun.rich.utils.math.time.StopWatch;
+import lombok.experimental.NonFinal;
 import org.apache.logging.log4j.core.appender.rolling.action.IfAll;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MathUtil;
@@ -20,15 +24,25 @@ public class SelfDestruct extends Module {
     public SelfDestruct() {
         super("SelfDestruct", "Self Destruct", ModuleCategory.MISC);
     }
+    @NonFinal
+    StopWatch timer = new StopWatch();
 
     @Override
     public void activate() {
         unhooked = true;
 
+        Rich.getInstance().getDiscordManager().stopRPC();
+
         for (Module module : Rich.getInstance().getModuleProvider().getModules()) {
             if (module != this && module.isState()) {
                 module.setState(false);
             }
+        }
+
+        ChatMessage.brandmessage("Для возвращения чита впишите в чат ваш username в чите");
+        ChatMessage.brandmessage("Сообщение удалится через пол секунды");
+        if (timer.every(500)) {
+            mc.inGameHud.getChatHud().clear(true);
         }
 
         for (Module module : Rich.getInstance().getModuleProvider().getModules()) {
@@ -43,8 +57,9 @@ public class SelfDestruct extends Module {
     @EventHandler
     public void onChat(ChatEvent event) {
         String msg = event.getMessage().trim();
-        if (msg.equalsIgnoreCase("UNHOOK=FALSE")) {
+        if (msg.equalsIgnoreCase(UserProfile.getInstance().profile("username"))) {
             unhooked = false;
+            Rich.getInstance().getDiscordManager().setRunning(true);
             state = false;
             Rich.getInstance().getCommandDispatcher().prefix = ".";
             ChatMessage.brandmessage("Unhook reset to FALSE");
