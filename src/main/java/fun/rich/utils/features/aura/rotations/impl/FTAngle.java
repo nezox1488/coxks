@@ -33,10 +33,6 @@ public class FTAngle extends RotateConstructor {
         if (disableRotation) {
             return new Turns(currentAngle.getYaw(), currentAngle.getPitch());
         }
-        if (entity !=null) {
-            Vec3d aimPoint = Vector.hitbox(entity, 1, 1, 1, 2);
-            targetAngle = MathAngle.calculateAngle(aimPoint);
-        }
         Aura aura = Aura.getInstance();
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         int count = attackHandler.getCount();

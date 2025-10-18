@@ -46,11 +46,6 @@ public class SPAngle extends RotateConstructor {
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
         float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
-        if (entity != null && entity.getBoundingBox().contains(mc.player.getPos())) {
-            moveYaw = 0;
-            movePitch = 90;
-        }
-
 
         if (entity instanceof LivingEntity livingEntity) {
             double targetHeight = livingEntity.getHeight();

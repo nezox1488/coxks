@@ -2,6 +2,7 @@ package fun.rich.mixin.client.screen.ingame;
 
 import fun.rich.features.impl.misc.SelfDestruct;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.entity.Entity;
@@ -22,7 +23,10 @@ public abstract class DebugHudMixin {
     )
     private List<String> modifyLeftText(List<String> list) {
         if (SelfDestruct.unhooked) return list;
-
+        if (!list.isEmpty()) {
+            String fps = MinecraftClient.getInstance().fpsDebugString.split(" ")[0] ;
+            list.set(0, "Rich 1.21.4 // VERSION 0,2 BETA // " + fps + "FPS");
+        }
         list.removeIf(s ->
                 s.contains("fps") ||
                         s.startsWith("Chunks") ||

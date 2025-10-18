@@ -15,33 +15,60 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 @Mixin(ServerList.class)
 public class ServerListMixin {
-    @Unique private final List<ServerInfo> sponsorServers = List.of(
-            new ServerInfo("FunTime", "mc.funtime.su", ServerInfo.ServerType.LAN)
-            , new ServerInfo("HolyWorld", "mc.holyworld.ru", ServerInfo.ServerType.LAN)
-            , new ServerInfo("ReallyWorld", "mc.reallyworld.ru", ServerInfo.ServerType.LAN)
-            , new ServerInfo("SpookyTime", "mc.spookytime.net", ServerInfo.ServerType.LAN)
-            , new ServerInfo("AresMine", "mc.aresmine.ru", ServerInfo.ServerType.LAN)
-
+    @Unique
+    private final List<ServerInfo> sponsorServers = List.of(
+            new ServerInfo("FunTime", "mc.funtime.su", ServerInfo.ServerType.LAN),
+            new ServerInfo("HolyWorld", "mc.holyworld.ru", ServerInfo.ServerType.LAN),
+            new ServerInfo("ReallyWorld", "mc.reallyworld.ru", ServerInfo.ServerType.LAN),
+            new ServerInfo("SpookyTime", "mc.spookytime.net", ServerInfo.ServerType.LAN),
+            new ServerInfo("AresMine", "mc.aresmine.ru", ServerInfo.ServerType.LAN)
     );
 
-    @Shadow @Final private List<ServerInfo> servers;
+    @Shadow
+    @Final
+    private List<ServerInfo> servers;
 
     @Inject(method = "loadFile", at = @At(value = "FIELD", target = "Lnet/minecraft/client/option/ServerList;hiddenServers:Ljava/util/List;", ordinal = 0))
     private void loadFileHook(CallbackInfo ci) {
         if (SelfDestruct.unhooked) return;
 
-        servers.addAll(sponsorServers);
+        removeDuplicateSponsors();
+
+        for (ServerInfo sponsor : sponsorServers) {
+            boolean exists = servers.stream().anyMatch(s -> s.address.equalsIgnoreCase(sponsor.address));
+            if (!exists) {
+                servers.add(sponsor);
+            }
+        }
     }
 
     @Redirect(method = "saveFile", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NbtList;add(Ljava/lang/Object;)Z", ordinal = 0))
     private boolean saveFileHook(NbtList instance, Object o, @Local(ordinal = 0) ServerInfo info) {
         if (sponsorServers.contains(info)) return true;
         if (SelfDestruct.unhooked) return false;
-
         return instance.add((NbtElement) o);
+    }
+
+    @Unique
+    private void removeDuplicateSponsors() {
+        Iterator<ServerInfo> iterator = servers.iterator();
+        List<String> seenAddresses = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            ServerInfo server = iterator.next();
+            if (sponsorServers.stream().anyMatch(s -> s.address.equalsIgnoreCase(server.address))) {
+                if (seenAddresses.contains(server.address.toLowerCase())) {
+                    iterator.remove();
+                } else {
+                    seenAddresses.add(server.address.toLowerCase());
+                }
+            }
+        }
     }
 }

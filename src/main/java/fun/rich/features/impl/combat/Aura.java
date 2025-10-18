@@ -169,7 +169,7 @@ public class Aura extends Module {
 
     @EventHandler
     public void onWorldRender(WorldRenderEvent e) {
-        if (box != null || attackSetting.isSelected("Fake Lag") && target !=null) {
+        if (box != null && attackSetting.isSelected("Fake Lag") && target !=null) {
             Render3D.drawBox(box, ColorAssist.getClientColor(), 1);
         }
     }
@@ -275,7 +275,7 @@ public class Aura extends Module {
     }
 
     private void checkForwardToggle() {
-        if (!attackSetting.isSelected("Elytra possibilities")) {
+        if (!attackSetting.isSelected("Elytra possibilities") || mc.currentScreen != null) {
             return;
         }
         boolean isPressedNow = GLFW.glfwGetKey(mc.getWindow().getHandle(), forward.getKey()) == GLFW.GLFW_PRESS;
