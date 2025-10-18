@@ -109,7 +109,6 @@ public class AutoTotem extends Module {
                 phase = Phase.PREPARE;
             }
         } else {
-            ChatMessage.brandmessage("Нет тотема");
             resetState();
         }
     }

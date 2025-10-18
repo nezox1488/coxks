@@ -89,6 +89,13 @@ public class FTAngle extends RotateConstructor {
                 pitch = !attackTimer.finished(5000)
                         ? randomLerp(0, 6) * randomAngle.getPitch() + pitch2
                         : 0;
+
+            }
+
+            if (!aura.isState()) {
+                speed = 0.25F;
+                yaw = 0;
+                pitch = 0;
             }
 
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
