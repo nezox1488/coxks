@@ -1,6 +1,5 @@
 package fun.rich.display.screens.clickgui.components.implement.window.implement.settings.color;
 
-import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import net.minecraft.client.gui.DrawContext;
 
 import fun.rich.features.module.setting.implement.ColorSetting;
@@ -36,17 +35,11 @@ public class ColorWindow extends AbstractWindow {
                 )
         );
     }
-    
+
     @Override
     public void drawWindow(DrawContext context, int mouseX, int mouseY, float delta) {
-
-        blur.render(ShapeProperties.create(context.getMatrices(), x, y + 10, width, height - 10).round(6).quality(8)
-                .color(ThemeColorsGetter.getGuiBackground())
-                .build());
-
-        rectangle.render(ShapeProperties.create(context.getMatrices(), x, y + 10, width, height - 10).round(6)
-                .color(ThemeColorsGetter.getGuiBackground())
-                .build());
+        rectangle.render(ShapeProperties.create(context.getMatrices(), x, y + 10, width, height - 10)
+                .round(6).thickness(2).softness(1).outlineColor(ColorAssist.getOutline()).color(ColorAssist.getMainGuiColor()).build());
 
         alphaComponent.position(x, y);
         hueComponent.position(x, y);
@@ -58,20 +51,20 @@ public class ColorWindow extends AbstractWindow {
 
         components.forEach(component -> component.render(context, mouseX, mouseY, delta));
     }
-    
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         draggable(Calculate.isHovered(mouseX, mouseY, x, y, width, 17));
         components.forEach(component -> component.mouseClicked(mouseX, mouseY, button));
         return super.mouseClicked(mouseX, mouseY, button);
     }
-    
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         components.forEach(component -> component.mouseScrolled(mouseX, mouseY, amount));
         return super.mouseScrolled(mouseX, mouseY, amount);
     }
-    
+
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         components.forEach(component -> component.mouseReleased(mouseX, mouseY, button));

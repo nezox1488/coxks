@@ -4,7 +4,6 @@ import fun.rich.display.screens.clickgui.components.AbstractComponent;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.items.AutoBuyableItem;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.settings.AutoBuyItemSettings;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.settings.AutoBuySettingsComponent;
-import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
 import fun.rich.display.screens.clickgui.components.implement.window.AbstractWindow;
 import fun.rich.utils.display.color.ColorAssist;
 import fun.rich.utils.display.font.Fonts;
@@ -48,16 +47,23 @@ public class AutoBuyItemSettingsWindow extends AbstractWindow {
         ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
         height = MathHelper.clamp(getComponentHeight() + 5, 0, 200);
 
-        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(8)
-                .color(ThemeColorsGetter.getGuiBackground())
+        blur.render(ShapeProperties.create(context.getMatrices(), x, y, width, height).round(8).quality(64)
+                .color(new Color(0, 0, 0, 200).getRGB())
                 .build());
 
-        rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(8)
-                .color(ThemeColorsGetter.getGuiBackground())
+        rectangle.render(ShapeProperties.create(context.getMatrices(), x, y, width, height).round(8)
+                .softness(2)
+                .thickness(0.5f)
+                .outlineColor(new Color(18, 19, 20, 225).getRGB())
+                .color(
+                        new Color(18, 19, 20, 175).getRGB(),
+                        new Color(0, 2, 5, 175).getRGB(),
+                        new Color(0, 2, 5, 175).getRGB(),
+                        new Color(18, 19, 20, 175).getRGB())
                 .build());
 
         rectangle.render(ShapeProperties.create(matrix, x, y + 22, width, 0.5f).round(8)
-                .color(ThemeColorsGetter.getGuiBackground())
+                .color(new Color(155, 155, 155, 55).getRGB())
                 .build());
 
         ItemStack itemStack = item.createItemStack();
