@@ -42,7 +42,6 @@
     "client.screen.IScreen",
     "client.screen.chat.ChatScreenMixin",
     "client.screen.ingame.BossBarHudMixin",
-    "client.screen.ingame.DarknessFogModifierMixin",
     "client.screen.ingame.DeathScreenMixin",
     "client.screen.ingame.DebugHudMixin",
     "client.screen.ingame.HandledScreenMixin",
