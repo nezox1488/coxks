@@ -7,7 +7,6 @@ import net.minecraft.client.render.FogShape;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,6 +25,9 @@ public class BackGroundRendererMixin {
     private static void onGetFogModifier(Entity entity, float tickDelta, CallbackInfoReturnable<Object> info) {
         NoRender noRender = NoRender.getInstance();
         if (noRender.isState() && noRender.modeSetting.isSelected("Bad Effects")) info.setReturnValue(null);
+        if (noRender.isState() && noRender.modeSetting.isSelected("Darkness") && entity instanceof LivingEntity) {
+            info.setReturnValue(null);
+        }
     }
 
     @Inject(method = "getFogColor", at = @At(value = "HEAD"), cancellable = true)
@@ -44,7 +46,7 @@ public class BackGroundRendererMixin {
         EventManager.callEvent(event);
         if (event.isCancelled()) {
             int color = event.getColor();
-            cir.setReturnValue(new Fog(2.0F, event.getDistance(),  FogShape.CYLINDER, ColorAssist.redf(color), ColorAssist.greenf(color), ColorAssist.bluef(color), ColorAssist.alphaf(color)));
+            cir.setReturnValue(new Fog(2.0F, event.getDistance(), FogShape.CYLINDER, ColorAssist.redf(color), ColorAssist.greenf(color), ColorAssist.bluef(color), ColorAssist.alphaf(color)));
         }
     }
 }
