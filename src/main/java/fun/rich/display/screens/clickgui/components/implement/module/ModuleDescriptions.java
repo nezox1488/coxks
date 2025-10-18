@@ -76,7 +76,6 @@ public class ModuleDescriptions {
         if (module instanceof NoFallDamage) return "Предотвращает получение урона от падения.";
         if (module instanceof ElytraMotion) return "Улучшает управление и скорость полета на элитрах.";
         if (module instanceof WorldParticles) return "Добавляет или изменяет частицы в мире для визуального эффекта.";
-        if (module instanceof GrimGlide) return "Позволяет плавно скользить при движении.";
         if (module instanceof BlockESP) return "Подсвечивает определенные блоки через стены.";
         if (module instanceof KillEffect) return "Добавляет визуальные эффекты при убийстве.";
         return "Описание модуля отсутствует.";

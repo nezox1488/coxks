@@ -1,6 +1,10 @@
 package fun.rich.features.impl.misc;
 
 import antidaunleak.api.annotation.Native;
+import fun.rich.utils.features.aura.warp.Turns;
+import fun.rich.utils.features.aura.warp.TurnsConfig;
+import fun.rich.utils.features.aura.warp.TurnsConnection;
+import fun.rich.utils.math.task.TaskPriority;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import net.minecraft.item.Items;
@@ -25,7 +29,7 @@ import java.util.List;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WindJump extends Module {
-
+    private final Turns rot = new Turns(0, 0);
     BindSetting windChargeBind = new BindSetting("Заряд ветра", "Бросить заряд ветра");
     StopWatch stopWatch = new StopWatch();
     Script script = new Script();
@@ -48,13 +52,18 @@ public class WindJump extends Module {
     @EventHandler
     public void onKey(KeyEvent e) {
         if (e.isKeyReleased(windChargeBind.getKey())) {
-            InventoryTask.swapAndUse(Items.WIND_CHARGE);
+            if (stopWatch.finished(0)) {
+                InventoryTask.swapAndUse(Items.WIND_CHARGE);
+            }
         }
     }
 
     @EventHandler
     public void onWorldRender(WorldRenderEvent e) {
         if (PlayerInteractionHelper.isKey(windChargeBind)) {
+            rot.setYaw(mc.player.getYaw());
+            rot.setPitch(90);
+            TurnsConnection.INSTANCE.rotateTo(rot, TurnsConfig.DEFAULT, TaskPriority.LOW_PRIORITY, this);
             ItemStack stack = Items.WIND_CHARGE.getDefaultStack();
             ProjectilePrediction.getInstance().drawPredictionInHand(e.getStack(), List.of(stack), MathAngle.cameraAngle());
         }
