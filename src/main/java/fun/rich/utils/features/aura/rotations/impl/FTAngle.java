@@ -1,6 +1,7 @@
 package fun.rich.utils.features.aura.rotations.impl;
 
 import fun.rich.utils.client.chat.ChatMessage;
+import fun.rich.utils.features.aura.point.Vector;
 import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
 import fun.rich.utils.math.time.StopWatch;
 import net.minecraft.entity.Entity;
@@ -32,6 +33,10 @@ public class FTAngle extends RotateConstructor {
         if (disableRotation) {
             return new Turns(currentAngle.getYaw(), currentAngle.getPitch());
         }
+        if (entity !=null) {
+            Vec3d aimPoint = Vector.hitbox(entity, 1, 1, 1, 2);
+            targetAngle = MathAngle.calculateAngle(aimPoint);
+        }
         Aura aura = Aura.getInstance();
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         int count = attackHandler.getCount();
@@ -40,10 +45,8 @@ public class FTAngle extends RotateConstructor {
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
 
         if (entity != null) {
-            float speed = attackHandler.canAttack(Aura.getInstance().getConfig(), 0)
-                    ? 0.72F
-                    : 0.33F;
-
+            float speed = 0.8F;
+            StopWatch attackTimer = attackHandler.getAttackTimer();
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
 
@@ -60,10 +63,10 @@ public class FTAngle extends RotateConstructor {
         } else {
             StopWatch attackTimer = attackHandler.getAttackTimer();
             int suck = count % 3;
-            float speed =  attackTimer.finished(500)
+            float speed =  attackTimer.finished(470)
                     ? 0.15f
-                    : -0.3F;
-            float random = attackTimer.elapsedTime() / (!attackTimer.finished(560) ? 70 : 35) + (count % 6);
+                    : -0.1F;
+            float random = attackTimer.elapsedTime() / 40 + (count % 6);
 
             Turns randomAngle = switch (suck) {
                 case 0 -> new Turns((float) Math.cos(random), (float) Math.sin(random));
@@ -72,28 +75,11 @@ public class FTAngle extends RotateConstructor {
                 default -> new Turns((float) -Math.cos(random), (float) Math.sin(random));
             };
 
-            float yaw = !attackTimer.finished(3000)
-                    ? randomLerp(10, 30) * randomAngle.getYaw()
-                    : 0;
-            if (!attackTimer.finished(700)) {
-                yaw = !attackTimer.finished(3000)
-                        ? randomLerp(5, 20) * randomAngle.getYaw()
-                        : 0;
-            }
-            float pitch2 = randomLerp(0, 4) *
-                    (float) Math.cos((double) System.currentTimeMillis() / 3000);
-            float pitch = !attackTimer.finished(5000)
-                    ? randomLerp(0, 3) * randomAngle.getPitch() + pitch2
-                    : 0;
-            if (!attackTimer.finished(700)) {
-                pitch = !attackTimer.finished(5000)
-                        ? randomLerp(0, 6) * randomAngle.getPitch() + pitch2
-                        : 0;
-
-            }
+            float yaw = randomLerp(14, 18) * randomAngle.getYaw();
+            float pitch = randomLerp(6, 10) * randomAngle.getPitch();
 
             if (!aura.isState()) {
-                speed = 0.25F;
+                speed = 0.4F;
                 yaw = 0;
                 pitch = 0;
             }
@@ -113,6 +99,7 @@ public class FTAngle extends RotateConstructor {
                     MathHelper.lerp(Math.clamp(randomLerp(speed, speed + 0.2F), 0, 1),
                             currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + pitch
             );
+
             if (count > 0 && count % 47 == 0 && !hasSwung) {
                 moveAngle.setPitch(
                         MathHelper.lerp(Math.clamp(0.874F, 0, 1),
@@ -123,6 +110,7 @@ public class FTAngle extends RotateConstructor {
                     hasSwung = true;
                 }
             }
+
             return moveAngle;
         }
     }
