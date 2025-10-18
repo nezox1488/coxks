@@ -126,6 +126,16 @@ public class ServerHelper extends Module {
     Map<java.lang.String, Boolean> itemStates = new HashMap<>();
     Map<java.lang.String, Boolean> lastKeyStates = new HashMap<>();
     Map<java.lang.String, Boolean> keyPressedThisTick = new HashMap<>();
+    @NonFinal int originalSlot = -1;
+    @NonFinal int targetSlot = -1;
+    @NonFinal ActionState actionState = ActionState.IDLE;
+    @NonFinal long actionTimer = 0;
+    @NonFinal java.lang.String pendingItemKey = null;
+    @NonFinal long stopMovementUntil = 0;
+
+    private enum ActionState {
+        IDLE, SWAP_TO_ITEM, USE_ITEM, SWAP_BACK
+    }
 
     private static class ItemInfo {
         java.lang.String searchName;
@@ -244,6 +254,11 @@ public class ServerHelper extends Module {
         itemStates.replaceAll((k, v) -> false);
         lastKeyStates.replaceAll((k, v) -> false);
         keyPressedThisTick.replaceAll((k, v) -> false);
+        actionState = ActionState.IDLE;
+        originalSlot = -1;
+        targetSlot = -1;
+        pendingItemKey = null;
+        stopMovementUntil = 0;
     }
 
     @Override
@@ -253,6 +268,11 @@ public class ServerHelper extends Module {
         keyPressedThisTick.replaceAll((k, v) -> false);
         potionQueue.clear();
         potionTimer.reset();
+        actionState = ActionState.IDLE;
+        originalSlot = -1;
+        targetSlot = -1;
+        pendingItemKey = null;
+        stopMovementUntil = 0;
     }
 
     @EventHandler
@@ -347,6 +367,15 @@ public class ServerHelper extends Module {
         if (e.getType() != EventType.PRE || mc.currentScreen != null) {
             return;
         }
+
+        boolean noMoveOrAction = System.currentTimeMillis() < stopMovementUntil || actionState != ActionState.IDLE;
+        if (noMoveOrAction) {
+            mc.options.forwardKey.setPressed(false);
+            mc.options.backKey.setPressed(false);
+            mc.options.leftKey.setPressed(false);
+            mc.options.rightKey.setPressed(false);
+        }
+
         for (KeyBind bind : keyBindings) {
             java.lang.String key = switch (bind.setting.getName()) {
                 case "Анти полет" -> "antiflight";
@@ -388,12 +417,11 @@ public class ServerHelper extends Module {
                     }
                 }
                 boolean wasPressedLastTick = lastKeyStates.getOrDefault(key, false);
-                if (wasPressedLastTick && !currentKey && keyPressedThisTick.getOrDefault(key, false)) {
-                    itemStates.put(key, true);
+                if (currentKey && !wasPressedLastTick) {
                     ItemInfo info = itemConfig.get(key);
                     if (info != null) {
                         Slot slot = InventoryTask.getSlot(s -> s.getStack().getItem().equals(info.item) && InventoryTask.getCleanName(s.getStack().getName()).contains(info.searchName.toLowerCase()));
-                        boolean addStarPrefix = info.displayName.equals("Дезориентация") || info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Ком Снега") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
+                        boolean addStarPrefix = info.displayName.equals("Дезориентация")|| info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Ком Снега") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
                         if (slot != null) {
                             ItemStack stack = slot.getStack();
                             if (mc.player.getItemCooldownManager().isCoolingDown(stack)) {
@@ -409,12 +437,10 @@ public class ServerHelper extends Module {
                                                     .append(Text.literal(duration).formatted(Formatting.GRAY));
                                             Notifications.getInstance().addList(text, 4000);
                                         });
-                            } else if (!potionQueue.contains(key)) {
-                                potionQueue.add(key);
-                                MutableText text = Text.empty()
-                                        .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
-                                        .append("  использована");
-                                Notifications.getInstance().addList(text, 4000);
+                            } else {
+                                if (!potionQueue.contains(key)) {
+                                    potionQueue.add(key);
+                                }
                             }
                         } else {
                             MutableText text = Text.empty()
@@ -428,7 +454,10 @@ public class ServerHelper extends Module {
                 keyPressedThisTick.put(key, currentKey);
             }
         }
-        if (!potionQueue.isEmpty() && potionTimer.finished(150)) {
+        if (actionState != ActionState.IDLE) {
+            processItemAction();
+        }
+        if (actionState == ActionState.IDLE && !potionQueue.isEmpty() && potionTimer.finished(150)) {
             java.lang.String potionKey = potionQueue.remove(0);
             ItemInfo info = itemConfig.get(potionKey);
             if (info != null) {
@@ -437,7 +466,7 @@ public class ServerHelper extends Module {
                 if (slot != null) {
                     ItemStack stack = slot.getStack();
                     if (!mc.player.getItemCooldownManager().isCoolingDown(stack)) {
-                        InventoryTask.swapAndUse(slot, info.searchName, true);
+                        startItemUse(slot, info, addStarPrefix);
                     } else {
                         CoolDowns.getInstance().list.stream()
                                 .filter(c -> c.item().equals(info.item))
@@ -525,6 +554,68 @@ public class ServerHelper extends Module {
         blockStateMap.clear();
         structures.removeIf(cons -> cons.time - System.currentTimeMillis() <= 0);
         serverEvents.removeIf(event -> event.timeEnd + 90000 - System.currentTimeMillis() <= 0);
+    }
+
+    private void startItemUse(Slot slot, ItemInfo info, boolean addStarPrefix) {
+        originalSlot = mc.player.getInventory().selectedSlot;
+        targetSlot = slot.id;
+        pendingItemKey = info.searchName;
+        actionState = ActionState.SWAP_TO_ITEM;
+        actionTimer = System.currentTimeMillis();
+        stopMovementUntil = System.currentTimeMillis() + 400;
+
+        if (slot.id >= 0 && slot.id < 9) {
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot.id));
+            mc.player.getInventory().selectedSlot = slot.id;
+        } else if (slot.id >= 36 && slot.id < 45) {
+            int hotbarSlot = slot.id - 36;
+            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(hotbarSlot));
+            mc.player.getInventory().selectedSlot = hotbarSlot;
+        } else {
+            int targetHotbarSlot = 8;
+            InventoryTask.clickSlot(slot.id, targetHotbarSlot, SlotActionType.SWAP, false);
+            targetSlot = targetHotbarSlot;
+        }
+
+        MutableText text = Text.empty()
+                .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
+                .append("  использована");
+        Notifications.getInstance().addList(text, 4000);
+    }
+
+    private void processItemAction() {
+        long currentTime = System.currentTimeMillis();
+        switch (actionState) {
+            case SWAP_TO_ITEM:
+                if (currentTime - actionTimer > 150) {
+                    actionState = ActionState.USE_ITEM;
+                    actionTimer = currentTime;
+                    mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(targetSlot));
+                    mc.player.getInventory().selectedSlot = targetSlot;
+                }
+                break;
+            case USE_ITEM:
+                if (currentTime - actionTimer > 100) {
+                    mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0, mc.player.getYaw(), mc.player.getPitch()));
+                    mc.player.swingHand(Hand.MAIN_HAND);
+                    actionState = ActionState.SWAP_BACK;
+                    actionTimer = currentTime;
+                }
+                break;
+            case SWAP_BACK:
+                if (currentTime - actionTimer > 100) {
+                    if (targetSlot != originalSlot) {
+                        InventoryTask.clickSlot(targetSlot, 8, SlotActionType.SWAP, false);
+                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(originalSlot));
+                        mc.player.getInventory().selectedSlot = originalSlot;
+                    }
+                    actionState = ActionState.IDLE;
+                    originalSlot = -1;
+                    targetSlot = -1;
+                    pendingItemKey = null;
+                }
+                break;
+        }
     }
 
     @EventHandler
@@ -728,16 +819,18 @@ public class ServerHelper extends Module {
 
     private void drawVerticalLines(Vec3d vec3d, int color, float width, int i, boolean ff) {
         float x = ff ? i : -i;
-        Render3D.drawLine(vec3d, vec3d.add(0, 5, 0), color, width, true);
-        Render3D.drawLine(vec3d = vec3d.add(x, 0, 0), vec3d.add(0, 5, 0), color, width, true);
+        Render3D.drawLine(vec3d, vec3d = vec3d.add(x, 0, 0), color, width, true);
         for (int f = 0; f < 4; f++) {
-            Render3D.drawLine(vec3d = vec3d.add(x, 0, i), vec3d.add(0, 5, 0), color, width, true);
+            Render3D.drawLine(vec3d, vec3d = vec3d.add(0, 0, i), color, width, true);
+            Render3D.drawLine(vec3d, vec3d = vec3d.add(x, 0, 0), color, width, true);
         }
-        Render3D.drawLine(vec3d = vec3d.add(0, 0, i), vec3d.add(0, 5, 0), color, width, true);
-        Render3D.drawLine(vec3d = vec3d.add(x * -2, 0, 0), vec3d.add(0, 5, 0), color, width, true);
+        Render3D.drawLine(vec3d, vec3d = vec3d.add(0, 0, i), color, width, true);
+        Render3D.drawLine(vec3d, vec3d = vec3d.add(x * -2, 0, 0), color, width, true);
         for (int f = 0; f < 3; f++) {
-            Render3D.drawLine(vec3d = vec3d.add(x * -1, 0, i * -1), vec3d.add(0, 5, 0), color, width, true);
+            Render3D.drawLine(vec3d, vec3d = vec3d.add(0, 0, i* -1), color, width, true);
+            Render3D.drawLine(vec3d, vec3d = vec3d.add(x * -1, 0, 0), color, width, true);
         }
+        Render3D.drawLine(vec3d, vec3d.add(0, 0, i * -2), color, width, true);
     }
 
     private void drawHorizontalQuads(Vec3d vec3d, int color, int i, boolean ff) {

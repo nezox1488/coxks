@@ -69,10 +69,10 @@ public class AutoBuyGuiComponent extends AbstractComponent {
         float listWidth = width - 43f - 15f;
         float listHeight = height - 48f;
         float contentHeight = calculateContentHeight();
-        float maxScrollAmount = Math.max(0f, contentHeight - listHeight - 85f);
+        float maxScrollAmount = Math.max(0f, contentHeight - listHeight);
         scroll = MathHelper.clamp(scroll, -maxScrollAmount, 0f);
         smoothedScroll = Calculate.interpolate(smoothedScroll, scroll, 0.15f);
-        scissorManager.push(positionMatrix, listX, listY + 4, listWidth, listHeight + 18);
+        scissorManager.push(positionMatrix, listX, listY + 4, listWidth, listHeight - 11);
         float itemY = listY + 10f + smoothedScroll;
         int globalIndex = 0;
         List<AutoBuyableItem> krushItems = ItemRegistry.getKrush();
@@ -194,6 +194,7 @@ public class AutoBuyGuiComponent extends AbstractComponent {
     private void renderCategoryHeader(MatrixStack matrix, float x, float y, float width, String categoryName) {
         float textWidth = Fonts.getSize(14, Fonts.Type.SEMI).getStringWidth(categoryName);
         float lineWidth = (width - textWidth - 20f) / 2f;
+
         rectangle.render(ShapeProperties.create(matrix, x, y + 6, lineWidth - 10, 1)
                 .color(new Color(54, 54, 56, 255).getRGB())
                 .build());
@@ -206,13 +207,24 @@ public class AutoBuyGuiComponent extends AbstractComponent {
     private void renderItem(DrawContext context, MatrixStack matrix, AutoBuyableItem item, float itemX, float itemY, int mouseX, int mouseY, float delta, int index) {
         FontRenderer font = Fonts.getSize(16, Fonts.Type.SEMI);
         ItemStack itemStack = item.createItemStack();
+
+        blur.render(ShapeProperties.create(matrix, itemX, itemY, 175, 45)
+                .round(6).quality(64)
+                .color(new Color(0, 0, 0, 200).getRGB())
+                .build());
+
         rectangle.render(ShapeProperties.create(matrix, itemX, itemY, 175, 45)
                 .round(6)
-                .thickness(2)
-                .softness(1)
-                .outlineColor(new Color(54, 54, 56, 255).getRGB())
-                .color(new Color(31, 27, 35, 0).getRGB())
+                .softness(2)
+                .thickness(0.1f)
+                .outlineColor(new Color(18, 19, 20, 225).getRGB())
+                .color(
+                        new Color(18, 19, 20, 175).getRGB(),
+                        new Color(0, 2, 5, 175).getRGB(),
+                        new Color(0, 2, 5, 175).getRGB(),
+                        new Color(18, 19, 20, 175).getRGB())
                 .build());
+
         Render2D.defaultDrawStack(context, itemStack, itemX + 6, itemY + 13.5f, false, false, 1.0f);
         Fonts.getSize(14, Fonts.Type.SEMI).drawGradientString(matrix, item.getDisplayName(), itemX + 30, itemY + 14, ColorAssist.getText(), ColorAssist.getText(0.65F));
         Fonts.getSize(12, Fonts.Type.REGULAR).drawString(matrix, "Цена покупки: $" + item.getSettings().getBuyBelow(), itemX + 30, itemY + 23, ColorAssist.getText(0.65F));
@@ -405,7 +417,7 @@ public class AutoBuyGuiComponent extends AbstractComponent {
     private void openSettingsWindow(AutoBuyableItem item) {
         if (MenuScreen.windowManager.getWindows().stream().noneMatch(w -> w instanceof AutoBuyItemSettingsWindow && ((AutoBuyItemSettingsWindow) w).item.equals(item))) {
             AutoBuyItemSettingsWindow settingsWindow = new AutoBuyItemSettingsWindow(item, item.getSettings());
-            settingsWindow.position(MenuScreen.INSTANCE.x + MenuScreen.INSTANCE.width + 24, MenuScreen.INSTANCE.y - 15).size(180, settingsWindow.getComponentHeight());
+            settingsWindow.position(MenuScreen.INSTANCE.x + MenuScreen.INSTANCE.width + 24, MenuScreen.INSTANCE.y).size(180, settingsWindow.getComponentHeight());
             MenuScreen.windowManager.add(settingsWindow);
         }
     }

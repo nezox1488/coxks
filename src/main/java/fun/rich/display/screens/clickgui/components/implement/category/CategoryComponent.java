@@ -1,6 +1,6 @@
 package fun.rich.display.screens.clickgui.components.implement.category;
 
-import fun.rich.display.screens.clickgui.components.implement.themes.ThemeColorsGetter;
+
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -91,9 +91,9 @@ public class CategoryComponent extends AbstractComponent {
             ModuleComponent component = moduleComponents.get(i);
             if (shouldRenderComponent(component)) {
                 int componentHeight = component.getComponentHeight() + 9;
-                component.x = menuScreen.x + 48 + (column * (columnWidth + 40));
+                component.x = menuScreen.x + 32 + (column * (columnWidth + 48));
                 component.y = (float) (menuScreen.y + 35 + offsets[column] - componentHeight + smoothedScroll);
-                component.width = columnWidth + 30;
+                component.width = columnWidth + 40;
                 if (component.y > menuScreen.y - componentHeight && menuScreen.y + menuScreen.height + 15 > component.y) {
                     component.render(context, mouseX, mouseY, delta);
                 }
@@ -115,7 +115,11 @@ public class CategoryComponent extends AbstractComponent {
 
             rectangle.render(ShapeProperties.create(context.getMatrices(), scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight)
                     .round(2F)
-                    .color(new Color(30, 30, 30, 100).getRGB())
+                    .color(
+                            new Color(35, 35, 35, 75).getRGB(),
+                            new Color(45, 45, 45, 95).getRGB(),
+                            new Color(45, 45, 45, 95).getRGB(),
+                            new Color(35, 35, 35, 75).getRGB())
                     .build());
 
             float contentHeight = clamped;
@@ -126,7 +130,11 @@ public class CategoryComponent extends AbstractComponent {
 
             rectangle.render(ShapeProperties.create(context.getMatrices(), scrollbarX, handleY, scrollbarWidth, handleHeight)
                     .round(2F)
-                    .color(new Color(100, 100, 100, 150).getRGB())
+                    .color(
+                            new Color(44, 44, 44, 75).getRGB(),
+                            new Color(101, 101, 101, 95).getRGB(),
+                            new Color(101, 101, 101, 95).getRGB(),
+                            new Color(44, 44, 44, 75).getRGB())
                     .build());
         }
     }
@@ -266,35 +274,33 @@ public class CategoryComponent extends AbstractComponent {
         }
 
         rectangle.render(ShapeProperties.create(matrix, scaledX, scaledY, scaledWidth, scaledHeight)
-                .round(4F)
-                .color(new Color(41, 41, 41, alpha).getRGB(),
-                        new Color(41, 41, 41, alpha).getRGB(),
-                        new Color(41, 41, 41, alpha).getRGB(),
-                        new Color(41, 41, 41, alpha).getRGB()).build());
+                .round(5F)
+                .color(new Color(21, 21, 21, alpha).getRGB(),
+                        new Color(61, 61, 61, alpha).getRGB(),
+                        new Color(61, 61, 61, alpha).getRGB(),
+                        new Color(21, 21, 21, alpha).getRGB()).build());
+
 
         if (ModuleCategory.COMBAT.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "A", x + 16f, y + 7.5f, ThemeColorsGetter.getText());
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "A", x + 16f, y + 8.5f, ColorAssist.getText());
         }
         if (ModuleCategory.MOVEMENT.equals(category)) {
-            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "B", x + 15f, y + 7f, ThemeColorsGetter.getText());
+            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "B", x + 15f, y + 7.5f, ColorAssist.getText());
         }
         if (ModuleCategory.RENDER.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "C", x + 15f, y + 7f, ThemeColorsGetter.getText());
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "C", x + 15f, y + 7.5f, ColorAssist.getText());
         }
         if (ModuleCategory.PLAYER.equals(category)) {
-            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "D", x + 15f, y + 7f, ThemeColorsGetter.getText());
+            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "D", x + 15f, y + 7.5f, ColorAssist.getText());
         }
         if (ModuleCategory.MISC.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "E", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "E", x + 15.5f, y + 7.5f, ColorAssist.getText());
         }
         if (ModuleCategory.CONFIGS.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "F", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "F", x + 15.5f, y + 7.5f, ColorAssist.getText());
         }
         if (ModuleCategory.AUTOBUY.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "H", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
-        }
-        if (ModuleCategory.THEME.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "G", x + 15.5f, y + 7f, ThemeColorsGetter.getText());
+            Fonts.getSize(33, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "H", x + 15.5f, y + 4f, ColorAssist.getText());
         }
     }
 
