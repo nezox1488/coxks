@@ -22,7 +22,7 @@ import fun.rich.utils.math.time.StopWatch;
 import fun.rich.events.player.TickEvent;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class ContainerStealer extends Module {
+public class ChestStealer extends Module {
     StopWatch stopWatch = new StopWatch();
 
     SelectSetting modeSetting = new SelectSetting("Тип", "Выбирает тип стила")
@@ -33,8 +33,8 @@ public class ContainerStealer extends Module {
             .value("Player Head", "Totem Of Undying", "Elytra", "Netherite Sword", "Netherite Helmet", "Netherite ChestPlate", "Netherite Leggings", "Netherite Boots", "Netherite Ingot", "Netherite Scrap")
             .visible(() -> modeSetting.isSelected("WhiteList"));
 
-    public ContainerStealer() {
-        super("ContainerStealer", "Container Stealer", ModuleCategory.MISC);
+    public ChestStealer() {
+        super("ChestStealer", "Chest Stealer", ModuleCategory.MISC);
         setup(modeSetting, delaySetting, itemSettings);
     }
 

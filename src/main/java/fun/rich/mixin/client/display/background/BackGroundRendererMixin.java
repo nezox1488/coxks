@@ -6,6 +6,8 @@ import net.minecraft.client.render.Fog;
 import net.minecraft.client.render.FogShape;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,6 +25,14 @@ public class BackGroundRendererMixin {
     private static void onGetFogModifier(Entity entity, float tickDelta, CallbackInfoReturnable<Object> info) {
         NoRender noRender = NoRender.getInstance();
         if (noRender.isState() && noRender.modeSetting.isSelected("Bad Effects")) info.setReturnValue(null);
+    }
+
+    @Inject(method = "applyStartEndModifier", at = @At("HEAD"), cancellable = true)
+    private void onApplyStartEndModifier(BackgroundRenderer.FogData fogData, LivingEntity entity, StatusEffectInstance effect, float viewDistance, float tickDelta, CallbackInfoReturnable<Void> cir) {
+        NoRender noRender = NoRender.getInstance();
+        if (noRender.isState() && noRender.modeSetting.isSelected("Darkness")) {
+            cir.cancel();
+        }
     }
 
     @Inject(method = "getFogColor", at = @At(value = "HEAD"), cancellable = true)
