@@ -343,7 +343,7 @@ public class Binds extends AbstractDraggable {
                 float textX = posX + offsetX + iconSize + padding;
                 float textY = currentY + padding + (iconSize - Fonts.getSize(11, Fonts.Type.DEFAULT).getStringHeight(keys[i])) / 2;
                 int textAlpha = (int) Math.min(255, Math.max(0, 255 * animationValue));
-                Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(matrix, keys[i], textX + 1.5f, textY + 4f, new Color(225, 225, 255, textAlpha).getRGB());
+                Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(matrix, keys[i], textX + 1f, textY + 3f, new Color(225, 225, 255, textAlpha).getRGB());
 
                 Fonts.getSize(10, Fonts.Type.DEFAULT).drawString(matrix, "64", posX + offsetX + 7, currentY + rowHeight - 12, new Color(255, 255, 255, textAlpha).getRGB());
 
@@ -448,7 +448,7 @@ public class Binds extends AbstractDraggable {
                     float textX = posX + offsetX + iconSize + padding;
                     float textY = currentY + padding + (iconSize - Fonts.getSize(11, Fonts.Type.DEFAULT).getStringHeight(keyName)) / 2;
                     int textAlpha = (int) Math.min(255, Math.max(0, 255 * animationValue));
-                    Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(matrix, keyName, textX + 1.5f, textY + 4f, new Color(225, 225, 255, textAlpha).getRGB());
+                    Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, keyName, textX + 1f, textY + 3f, new Color(225, 225, 255, textAlpha).getRGB());
 
                     Fonts.getSize(10, Fonts.Type.DEFAULT).drawString(matrix, String.valueOf(itemCount), posX + offsetX + 7, currentY + rowHeight - 12, new Color(255, 255, 255, textAlpha).getRGB());
 

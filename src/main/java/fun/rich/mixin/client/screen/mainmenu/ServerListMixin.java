@@ -15,9 +15,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 @Mixin(ServerList.class)
 public class ServerListMixin {
@@ -39,36 +40,67 @@ public class ServerListMixin {
         if (SelfDestruct.unhooked) return;
 
         removeDuplicateSponsors();
-
-        for (ServerInfo sponsor : sponsorServers) {
-            boolean exists = servers.stream().anyMatch(s -> s.address.equalsIgnoreCase(sponsor.address));
-            if (!exists) {
-                servers.add(sponsor);
-            }
-        }
+        addMissingSponsors();
     }
 
     @Redirect(method = "saveFile", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NbtList;add(Ljava/lang/Object;)Z", ordinal = 0))
     private boolean saveFileHook(NbtList instance, Object o, @Local(ordinal = 0) ServerInfo info) {
-        if (sponsorServers.contains(info)) return true;
-        if (SelfDestruct.unhooked) return false;
+        if (SelfDestruct.unhooked) {
+            return instance.add((NbtElement) o);
+        }
+
+        if (isSponsorServer(info)) {
+            return true;
+        }
+
         return instance.add((NbtElement) o);
     }
 
     @Unique
     private void removeDuplicateSponsors() {
+        Set<String> sponsorAddresses = new HashSet<>();
+        for (ServerInfo sponsor : sponsorServers) {
+            sponsorAddresses.add(sponsor.address.toLowerCase());
+        }
+
         Iterator<ServerInfo> iterator = servers.iterator();
-        List<String> seenAddresses = new ArrayList<>();
+        Set<String> seenAddresses = new HashSet<>();
 
         while (iterator.hasNext()) {
             ServerInfo server = iterator.next();
-            if (sponsorServers.stream().anyMatch(s -> s.address.equalsIgnoreCase(server.address))) {
-                if (seenAddresses.contains(server.address.toLowerCase())) {
+            String address = server.address.toLowerCase();
+
+            if (sponsorAddresses.contains(address)) {
+                if (seenAddresses.contains(address)) {
                     iterator.remove();
                 } else {
-                    seenAddresses.add(server.address.toLowerCase());
+                    seenAddresses.add(address);
                 }
             }
         }
+    }
+
+    @Unique
+    private void addMissingSponsors() {
+        Set<String> existingAddresses = new HashSet<>();
+        for (ServerInfo server : servers) {
+            existingAddresses.add(server.address.toLowerCase());
+        }
+
+        for (ServerInfo sponsor : sponsorServers) {
+            if (!existingAddresses.contains(sponsor.address.toLowerCase())) {
+                servers.add(sponsor);
+            }
+        }
+    }
+
+    @Unique
+    private boolean isSponsorServer(ServerInfo info) {
+        for (ServerInfo sponsor : sponsorServers) {
+            if (sponsor.address.equalsIgnoreCase(info.address)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
