@@ -2,6 +2,7 @@ package fun.rich.utils.features.aura.striking;
 
 import fun.rich.features.impl.movement.Blink;
 import fun.rich.utils.client.Instance;
+import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.display.interfaces.QuickImports;
 import fun.rich.utils.client.managers.event.types.EventType;
 import fun.rich.features.impl.combat.Aura;
@@ -91,7 +92,7 @@ public class StrikeManager implements QuickImports {
         }
         String sprintMode = Aura.getInstance().getSprintReset().getSelected();
         if (sprintMode.equals("Legit")) {
-            if (mc.player.isSprinting()) {
+            if (mc.player.isSprinting() && mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue()) {
                 AutoSprint.tickStop = 2;
                 mc.options.sprintKey.setPressed(false);
                 mc.player.setSprinting(false);
@@ -179,7 +180,7 @@ public class StrikeManager implements QuickImports {
     }
 
     private boolean isPlayerInCriticalState(PlayerSimulation simulated, int ticks) {
-        boolean fall = simulated.fallDistance > 0 && (simulated.fallDistance < 0.08 || !PlayerSimulation.simulateLocalPlayer(ticks + 1).onGround);;
+        boolean fall = simulated.fallDistance > 0 && (simulated.fallDistance < 0.08 || !PlayerSimulation.simulateLocalPlayer(ticks).onGround);;
         if (Aura.getInstance().getSmartCrits().isValue() && !mc.options.jumpKey.isPressed()) {
             return simulated.onGround || (!simulated.onGround && fall);
         }//mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue() + 0.3F

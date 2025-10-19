@@ -30,38 +30,44 @@ public class SPAngle extends RotateConstructor {
         StopWatch attackTimer = attackHandler.getAttackTimer();
         Aura aura = Aura.getInstance();
         int count = attackHandler.getCount();
-        if (entity !=null) {
-            Vec3d aimPoint = Vector.hitbox(entity, 1, 1.5F, 1, 90);
-            targetAngle = MathAngle.calculateAngle(aimPoint);
-        }
+
         Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
         float yawDelta = angleDelta.getYaw();
         float pitchDelta = angleDelta.getPitch();
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        float speed = 0.85F;
-        float jitterYaw = canAttack ? 0 : (float) (randomLerp(0, 8) * Math.sin(System.currentTimeMillis() / 45D));
-        float jitterPitch = canAttack ? 0 : (float) (randomLerp(0, 6) * Math.sin(System.currentTimeMillis() / 45D));
-
-        if (!aura.isState() || entity == null) {
-            speed = 1;
-            jitterYaw = 0;
-            jitterPitch = 0;
-        }
+        float speed = canAttack ? 0.8f : 0.67F;
+        float jitterYaw = canAttack ? 0 : Calculate.getRandom(-4, 4);
+        float jitterPitch = canAttack ? 0 : Calculate.getRandom(-3, 3);
 
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 100);
 
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
         float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
+        if (entity instanceof LivingEntity livingEntity) {
+            double targetHeight = livingEntity.getHeight();
+            double torsoHeight = targetHeight * 0.36;
+            Vec3d playerPos = MinecraftClient.getInstance().player.getPos().add(0, 1.5, 0);
+            Vec3d entityPos = livingEntity.getPos();
+            double deltaY = (entityPos.y + torsoHeight) - playerPos.y;
+            double deltaX = entityPos.x - playerPos.x;
+            double deltaZ = entityPos.z - playerPos.z;
+            double horizontalDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+            float torsoPitch = (float) Math.toDegrees(-Math.atan2(deltaY, horizontalDistance));
+            torsoPitch = MathHelper.clamp(torsoPitch, -90.0f, 90.0f);
 
+            if (currentAngle.getPitch() > torsoPitch) {
+                float pitchAdjustment = Math.min(8.0f, currentAngle.getPitch() - torsoPitch);
+                movePitch -= pitchAdjustment;
+            }
+        }
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
         moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed), currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
 
-        float pitchSpeed = pitchDelta < 0 ? 0.3F : 0.85F;
+        float pitchSpeed = pitchDelta < 0 ? 0.45F : 0.8F;
         moveAngle.setPitch(MathHelper.lerp(pitchSpeed, currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
-
         return new Turns(moveAngle.getYaw(), moveAngle.getPitch());
     }
 
