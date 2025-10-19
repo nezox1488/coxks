@@ -91,31 +91,45 @@ public class CoolDowns extends AbstractDraggable {
         float textWidth = items.getStringWidth(cooldownCountText);
         float boxWidth = textWidth + 6;
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
-                .round(4f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
-        rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - boxWidth - 25, getY() + 3, boxWidth + 20, 10F)
-                .round(2)
-                .thickness(2)
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0)
+                .thickness(0.1f)
                 .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(new Color(18, 19, 20, 55).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
                 .build());
 
         items.drawString(matrix, "Active:", getX() + getWidth() - boxWidth - 22, getY() + 7, ColorAssist.getText());
-        items.drawString(matrix, cooldownCountText, getX() + getWidth() - boxWidth - 2.5f, getY() + 7, new Color(255, 101, 57, 255).getRGB());
+        items.drawString(matrix, cooldownCountText, getX() + getWidth() - boxWidth - 2.5f, getY() + 7, new Color(225, 225, 255, 255).getRGB());
 
         rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6)
                 .color(ColorAssist.getText(0.5F)).round(0F).build());
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(4f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+
+        blur.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
+                .round(0,4,0,4).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
-        icon.drawString(matrix, "D", getX() + 4f, getY() + 5.5f, new Color(255, 101, 57, 255).getRGB());
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
+                .round(0,4,0,4)
+                .thickness(0.1f)
+                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
+                .build());
+
+        icon.drawString(matrix, "D", getX() + 4f, getY() + 5.5f, new Color(225, 225, 255, 255).getRGB());
         font.drawString(matrix, "CoolDowns", getX() + 22, getY() + 6.5f, ColorAssist.getText());
 
         float centerX = getX() + getWidth() / 2.0F;
@@ -130,20 +144,14 @@ public class CoolDowns extends AbstractDraggable {
             int textColor = ColorAssist.getText();
             int textAlpha = 255;
             int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-            int orangeColor = new Color(255, 101, 57, 255).getRGB();
+            int color = new Color(225, 225, 255, 255).getRGB();
             float durationWidth = fontCoolDown.getStringWidth(duration);
             float durationBoxWidth = durationWidth + 6;
             Calculate.scale(matrix, centerX, centerY, 1, 1, () -> {
                 Render2D.drawStack(matrix, item.getDefaultStack(), getX() + 3.5f, centerY - 3, false, 0.5F);
                 rectangle.render(ShapeProperties.create(matrix, getX() + 14, centerY - 1, 0.5F, 6).color(ColorAssist.getOutline(1, 0.5F)).build());
                 fontCoolDown.drawString(matrix, name, getX() + 18, centerY + 1, colorWithAlpha);
-                rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - durationBoxWidth - 5, centerY - 2.5f, durationBoxWidth, 10F)
-                        .round(2)
-                        .thickness(2)
-                        .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                        .color(new Color(18, 19, 20, 55).getRGB())
-                        .build());
-                fontCoolDown.drawString(matrix, duration, getX() + getWidth() - durationWidth - 8, centerY + 1, orangeColor);
+                fontCoolDown.drawString(matrix, duration, getX() + getWidth() - durationWidth - 8, centerY + 1, color);
             });
             int width = (int) fontCoolDown.getStringWidth(name + duration) + 30;
             maxWidth = Math.max(width, maxWidth);
@@ -162,20 +170,14 @@ public class CoolDowns extends AbstractDraggable {
                 int textColor = ColorAssist.getText();
                 int textAlpha = 255;
                 int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-                int orangeColor = new Color(255, 101, 57, 255).getRGB();
+                int color = new Color(225, 225, 255, 255).getRGB();
                 float durationWidth = fontCoolDown.getStringWidth(duration);
                 float durationBoxWidth = durationWidth + 6;
                 Calculate.scale(matrix, centerX, centerY, 1, animation, () -> {
                     Render2D.drawStack(matrix, coolDown.item.getDefaultStack(), getX() + 3.5f, centerY - 3, false, 0.5F);
                     rectangle.render(ShapeProperties.create(matrix, getX() + 15, centerY - 1, 0.5F, 6).color(ColorAssist.getOutline(1, 0.5F)).build());
                     fontCoolDown.drawString(matrix, name, getX() + 18, centerY + 1, colorWithAlpha);
-                    rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - durationBoxWidth - 5, centerY - 2.5f, durationBoxWidth, 10F)
-                            .round(2)
-                            .thickness(2)
-                            .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                            .color(new Color(18, 19, 20, 55).getRGB())
-                            .build());
-                    fontCoolDown.drawString(matrix, duration, getX() + getWidth() - durationWidth - 8, centerY + 1, orangeColor);
+                    fontCoolDown.drawString(matrix, duration, getX() + getWidth() - durationWidth - 8, centerY + 1, color);
                 });
                 int width = (int) fontCoolDown.getStringWidth(name + duration) + 30;
                 maxWidth = Math.max(width, maxWidth);

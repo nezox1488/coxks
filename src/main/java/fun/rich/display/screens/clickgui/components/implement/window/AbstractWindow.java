@@ -2,9 +2,8 @@ package fun.rich.display.screens.clickgui.components.implement.window;
 
 import lombok.Getter;
 import net.minecraft.client.gui.DrawContext;
-import fun.rich.common.animation.Animation;
-import fun.rich.common.animation.Direction;
-import fun.rich.common.animation.implement.Decelerate;
+import fun.rich.common.animation.Easy.EaseBackIn;
+import fun.rich.common.animation.Easy.Direction;
 import fun.rich.utils.math.calc.Calculate;
 import fun.rich.display.screens.clickgui.components.AbstractComponent;
 
@@ -13,11 +12,7 @@ public abstract class AbstractWindow extends AbstractComponent {
     private boolean draggable;
     protected int dragX, dragY;
     @Getter
-    private final Animation scaleAnimation = new Decelerate().setValue(1).setMs(200);
-
-    public AbstractWindow() {
-        scaleAnimation.setDirection(Direction.FORWARDS);
-    }
+    private final EaseBackIn scaleAnimation = new EaseBackIn(320, 1, 1.5f, Direction.FORWARDS);
 
     public AbstractWindow draggable(boolean draggable) {
         this.draggable = draggable;
@@ -55,7 +50,7 @@ public abstract class AbstractWindow extends AbstractComponent {
             x = mouseX + dragX;
             y = mouseY + dragY;
         }
-        float scale = scaleAnimation.getOutput().floatValue();
+        float scale = (float) scaleAnimation.getOutput();
         Calculate.scale(context.getMatrices(), x + width / 2, y + height / 2, scale, () -> drawWindow(context, mouseX, mouseY, delta));
     }
 
@@ -76,6 +71,6 @@ public abstract class AbstractWindow extends AbstractComponent {
     }
 
     public boolean isCloseAnimationFinished() {
-        return scaleAnimation.isFinished(Direction.BACKWARDS);
+        return scaleAnimation.finished(Direction.BACKWARDS);
     }
 }

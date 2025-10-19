@@ -33,6 +33,6 @@ public class PlayerInfo extends AbstractDraggable {
 
         float width = font.getStringWidth(text) + 10;
         setWidth((int) width);
-        font.drawGradientString(context.getMatrices(), text, getX() + 3, getY() + 6.5F, new Color(255, 101, 57, 255).getRGB(), new Color(255, 255, 255, 255).getRGB());
+        font.drawGradientString(context.getMatrices(), text, getX() + 3, getY() + 6.5F, new Color(225, 225, 255, 255).getRGB(), new Color(255, 255, 255, 255).getRGB());
     }
 }

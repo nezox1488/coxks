@@ -45,31 +45,43 @@ public class Inventory extends AbstractDraggable {
         float textWidth =  items.getStringWidth(itemCountText);
         float boxWidth = textWidth + 6;
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth() + 1, 15.5F)
-                .round(4f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
-        rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - boxWidth - 24, getY() + 3, boxWidth + 20, 10F)
-                .round(2)
-                .thickness(2)
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0)
+                .thickness(0.1f)
                 .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(new Color(18, 19, 20, 55).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
                 .build());
 
         items.drawString(matrix, "Items:", getX() + getWidth() - boxWidth - 21, getY() + 7, ColorAssist.getText());
-        items.drawString(matrix, itemCountText, getX() + getWidth() - boxWidth - 2, getY() + 7, new Color(255, 101, 57, 255).getRGB());
+        items.drawString(matrix, itemCountText, getX() + getWidth() - boxWidth - 2, getY() + 7, new Color(225, 225, 255, 255).getRGB());
 
         rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6).color(ColorAssist.getText(0.5F)).round(0F).build());
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.40f, getWidth() + 1, getHeight() - 15)
-                .round(4f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+        blur.render(ShapeProperties.create(matrix, getX(), getY() + 16.40f, getWidth(), getHeight() - 15)
+                .round(0,4,0,4).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
-        icon.drawString(matrix, "F", getX() + 4.5f, getY() + 6, new Color(255, 101, 57, 255).getRGB());
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.40f, getWidth(), getHeight() - 15)
+                .round(0,4,0,4)
+                .thickness(0.1f)
+                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
+                .build());
+        icon.drawString(matrix, "F", getX() + 4.5f, getY() + 6,  new Color(225, 225, 255, 255).getRGB());
 
         font.drawString(matrix, getName(), getX() + 22, getY() + 6.5f, ColorAssist.getText());
 
