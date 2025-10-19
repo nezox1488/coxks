@@ -56,7 +56,6 @@ public class ModuleRepository {
                 new JoinerHelper(),
                 new NoDelay(),
                 new Velocity(),
-                new SelfDestruct(),
                 new AutoRespawn(),
                 new NoSlow(),
                 new InventoryMove(),

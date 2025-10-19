@@ -26,14 +26,14 @@ public class BackGroundRendererMixin {
         NoRender noRender = NoRender.getInstance();
         if (noRender.isState() && noRender.modeSetting.isSelected("Bad Effects")) info.setReturnValue(null);
     }
-
-    @Inject(method = "applyStartEndModifier", at = @At("HEAD"), cancellable = true)
-    private void onApplyStartEndModifier(BackgroundRenderer.FogData fogData, LivingEntity entity, StatusEffectInstance effect, float viewDistance, float tickDelta, CallbackInfoReturnable<Void> cir) {
-        NoRender noRender = NoRender.getInstance();
-        if (noRender.isState() && noRender.modeSetting.isSelected("Darkness")) {
-            cir.cancel();
-        }
-    }
+//
+//    @Inject(method = "applyStartEndModifier", at = @At("HEAD"), cancellable = true)
+//    private void onApplyStartEndModifier(BackgroundRenderer.FogData fogData, LivingEntity entity, StatusEffectInstance effect, float viewDistance, float tickDelta, CallbackInfoReturnable<Void> cir) {
+//        NoRender noRender = NoRender.getInstance();
+//        if (noRender.isState() && noRender.modeSetting.isSelected("Darkness")) {
+//            cir.cancel();
+//        }
+//    }
 
     @Inject(method = "getFogColor", at = @At(value = "HEAD"), cancellable = true)
     private static void getFogColorHook(Camera camera, float tickDelta, ClientWorld world, int clampedViewDistance, float skyDarkness, CallbackInfoReturnable<Vector4f> cir) {
