@@ -45,6 +45,9 @@ public class AutoTotem extends Module {
     private final BooleanSetting saveTaliks = new BooleanSetting("Сейв таликов", "Использовать обычные тотемы без чар")
             .setValue(true);
 
+    private final BooleanSetting returnItem = new BooleanSetting("Возвращать предмет", "Вернуть предыдущий предмет в руку/хотбар после использования тотема")
+            .setValue(true);
+
     private long lastActionTime = 0L;
     private int savedSlot = -1;
     private int totemSlot = -1;
@@ -52,12 +55,14 @@ public class AutoTotem extends Module {
     private boolean keysOverridden = false;
     private boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
     private Phase phase = Phase.READY;
+    private ItemStack previousMainHandStack = ItemStack.EMPTY;
+    private int previousMainHandSlot = -1;
 
     private enum Phase { READY, SLOWING_DOWN, WAITING_STOP, PREPARE, AWAIT_SWITCH, EQUIP, SPEEDING_UP, FINISH }
 
     public AutoTotem() {
         super("AutoTotem", "Auto Totem", ModuleCategory.COMBAT);
-        setup(modeSetting, healthThreshold, elytraHealth, crystalDistance, fallCheck, saveTaliks);
+        setup(modeSetting, healthThreshold, elytraHealth, crystalDistance, fallCheck, saveTaliks, returnItem);
     }
 
     @EventHandler
@@ -80,6 +85,14 @@ public class AutoTotem extends Module {
         }
 
         if (phase != Phase.READY) execute();
+
+        if (phase == Phase.READY && returnItem.isValue() && previousMainHandSlot >= 0 && !previousMainHandStack.isEmpty()) {
+            if (MC.player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
+                attemptReturnPreviousItem();
+                previousMainHandStack = ItemStack.EMPTY;
+                previousMainHandSlot = -1;
+            }
+        }
     }
 
     private void tryEquipTotem() {
@@ -95,9 +108,14 @@ public class AutoTotem extends Module {
             return;
         }
 
-        InventoryResult inv = saveTaliks.isValue() ? findTotemWithSaveTalics() : InventoryToolkit.findItemInInventory(Items.TOTEM_OF_UNDYING);
+        InventoryResult inv;
+        if (saveTaliks.isValue()) inv = findTotemWithSaveTalics();
+        else inv = InventoryToolkit.findItemInInventory(Items.TOTEM_OF_UNDYING);
+
         if (inv.found()) {
             totemSlot = inv.slot();
+            previousMainHandSlot = MC.player.getInventory().selectedSlot;
+            previousMainHandStack = MC.player.getMainHandStack().copy();
             if (modeSetting.getSelected().equals("Legit")) {
                 wasForwardPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
                 wasBackPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
@@ -193,6 +211,11 @@ public class AutoTotem extends Module {
     }
 
     private InventoryResult findTotemWithSaveTalics() {
+        boolean offhandHasEnchantedTotem = false;
+        if (MC.player != null) {
+            ItemStack off = MC.player.getOffHandStack();
+            if (off.getItem() == Items.TOTEM_OF_UNDYING && off.hasEnchantments()) offhandHasEnchantedTotem = true;
+        }
         InventoryResult nonEnchanted = InventoryToolkit.findInInventory(i -> i.getItem() == Items.TOTEM_OF_UNDYING && !i.hasEnchantments());
         if (nonEnchanted.found()) return nonEnchanted;
         return InventoryToolkit.findItemInInventory(Items.TOTEM_OF_UNDYING);
@@ -232,12 +255,48 @@ public class AutoTotem extends Module {
         keysOverridden = false;
     }
 
+    private void attemptReturnPreviousItem() {
+        if (!returnItem.isValue()) return;
+        if (previousMainHandStack == null || previousMainHandStack.isEmpty()) return;
+        if (MC.player == null || MC.player.playerScreenHandler == null || MC.interactionManager == null) return;
+        int targetHotbar = previousMainHandSlot;
+        if (targetHotbar < 0 || targetHotbar > 8) targetHotbar = savedSlot >= 0 ? savedSlot : -1;
+        if (targetHotbar < 0) return;
+        ItemStack currentStackInTarget = MC.player.getInventory().getStack(targetHotbar);
+        if (!currentStackInTarget.isEmpty() && currentStackInTarget.getItem() == previousMainHandStack.getItem()) {
+            InventoryToolkit.switchTo(targetHotbar);
+            return;
+        }
+        InventoryResult found = InventoryToolkit.findInInventory(i -> i.getItem() == previousMainHandStack.getItem());
+        if (!found.found()) {
+            InventoryToolkit.switchTo(targetHotbar);
+            return;
+        }
+        int fromSlot = found.slot();
+        int fromIndex = fromSlot;
+        if (fromIndex >= 0 && fromIndex <= 8) fromIndex += 36;
+        int toIndex = targetHotbar;
+        if (toIndex >= 0 && toIndex <= 8) toIndex += 36;
+        MC.interactionManager.clickSlot(MC.player.playerScreenHandler.syncId, fromIndex, toIndex, SlotActionType.SWAP, MC.player);
+        InventoryToolkit.switchTo(targetHotbar);
+    }
+
     private void resetState() {
         if (keysOverridden) restoreKeyStates();
         totemSlot = -1;
         savedSlot = -1;
         actionStartTime = 0L;
         phase = Phase.READY;
+        if (returnItem.isValue()) {
+            if (previousMainHandSlot >= 0 && !previousMainHandStack.isEmpty()) {
+                attemptReturnPreviousItem();
+            }
+            previousMainHandStack = ItemStack.EMPTY;
+            previousMainHandSlot = -1;
+        } else {
+            previousMainHandStack = ItemStack.EMPTY;
+            previousMainHandSlot = -1;
+        }
     }
 
     @Override

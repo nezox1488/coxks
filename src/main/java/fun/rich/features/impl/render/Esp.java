@@ -125,7 +125,7 @@ public class Esp extends Module {
                 Render3D.drawBox(interpBox, outlineColor, 2, true, true, true);
             } else if (boxType.isSelected("Skeleton") && playerSetting.isSelected("Box")) {
                 if (distance > DISTANCE) continue;
-                renderSkeleton(player, tickDelta, baseColor);
+                    renderSkeleton(player, tickDelta, baseColor);
             }
         }
     }

@@ -89,7 +89,7 @@ public class Aura extends Module {
     public static float legitSprintNeed;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("Matrix", "Snap", "FunTime", "HolyWorld", "SpookyTime", "LonyGrief", "Trigger Bot")
+            .value("HvH", "Matrix", "Snap", "FunTime", "HolyWorld", "SpookyTime", "LonyGrief", "Trigger Bot")
             .selected("Matrix");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")
@@ -244,6 +244,7 @@ public class Aura extends Module {
             case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
             case "SpookyTime" -> true;
             case "LonyGrief" -> true;
+            case "HvH" -> true;
             case "Matrix" -> true;
             case "HolyWorld" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
@@ -335,6 +336,7 @@ public class Aura extends Module {
         return switch (aimMode.getSelected()) {
             case "FunTime" -> new FTAngle();
             case "HolyWorld" -> new HWAngle();
+            case "HvH" -> new HAngle();
             case "LonyGrief" -> new LGAngle();
             case "SpookyTime" -> new SPAngle();
             case "Snap" -> new SnapAngle();
