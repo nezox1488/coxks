@@ -12,8 +12,6 @@ import java.util.List;
 public class DraggableRepository {
     List<AbstractDraggable> draggable = new ArrayList<>();
 
-    
-    
     public void setup() {
         register(
                 new TargetHud(),

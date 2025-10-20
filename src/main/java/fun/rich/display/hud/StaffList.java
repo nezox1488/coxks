@@ -230,32 +230,88 @@ public class StaffList extends AbstractDraggable {
         String staffCountText = String.valueOf(activeStaff);
         float textWidth = items.getStringWidth(staffCountText);
         float boxWidth = textWidth + 6;
+
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
+                .build());
+
         rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
-                .round(4f)
+                .round(4,0,4,0)
+                .thickness(0.1f)
                 .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
                 .build());
-        rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - boxWidth - 25, getY() + 3, boxWidth + 20, 10F)
-                .round(2)
-                .thickness(2)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(new Color(18, 19, 20, 55).getRGB())
-                .build());
+
         items.drawString(matrix, "Active:", getX() + getWidth() - boxWidth - 22, getY() + 7, ColorAssist.getText());
-        items.drawString(matrix, staffCountText, getX() + getWidth() - boxWidth - 3, getY() + 7, new Color(255, 101, 57, 255).getRGB());
+        items.drawString(matrix, staffCountText, getX() + getWidth() - boxWidth - 3, getY() + 7, new Color(225, 225, 255, 255).getRGB());
+
         rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6)
                 .color(ColorAssist.getText(0.5F)).round(0F).build());
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(4f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+
+        blur.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
+                .round(0,4,0,4).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
-        icon.drawString(matrix, "E", getX() + 5f, getY() + 6.5f, new Color(255, 101, 57, 255).getRGB());
+
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
+                .round(0,4,0,4)
+                .thickness(0.1f)
+                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
+                .build());
+
+        icon.drawString(matrix, "E", getX() + 5f, getY() + 6f, new Color(225, 225, 255, 255).getRGB());
         font.drawString(matrix, getName(), getX() + 22, getY() + 6.5F, ColorAssist.getText());
         float centerX = getX() + getWidth() / 2.0F;
         int offset = 23;
         int maxWidth = 80;
         Collection<PlayerListEntry> playerList = Objects.requireNonNull(mc.player).networkHandler.getPlayerList();
+
+        for (Map.Entry<PlayerListEntry, Animation> staff : list.entrySet()) {
+            PlayerListEntry player = staff.getKey();
+            if (player == null) {
+                continue;
+            }
+            String name = player.getProfile().getName();
+            float centerY = getY() + offset;
+            float animation = staff.getValue().getOutput().floatValue();
+            boolean isVisible = playerList.stream().anyMatch(p -> p.getProfile().getName().equals(name));
+            PlayerListEntry renderEntry = isVisible ?
+                    playerList.stream().filter(p -> p.getProfile().getName().equals(name)).findFirst().orElse(player) :
+                    player;
+            String displayName = renderEntry.getDisplayName() != null ? renderEntry.getDisplayName().getString() : name;
+            final String prefix = CHAR_TO_NAME.entrySet().stream()
+                    .filter(e -> displayName.contains(e.getKey()))
+                    .map(Map.Entry::getValue)
+                    .findFirst()
+                    .orElse("Vanish");
+            int prefixColor = PREFIX_COLORS.getOrDefault(prefix, new Color(255, 0, 0, 255).getRGB());
+            Identifier skinTexture = renderEntry.getSkinTextures().texture();
+            int textColor = ColorAssist.getText();
+            int textAlpha = 255;
+            int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
+            float prefixWidth = fontPlayer.getStringWidth(prefix);
+            float prefixBoxWidth = prefixWidth + 6;
+            Calculate.scale(matrix, centerX, centerY, 1, animation, () -> {
+                Render2D.drawTexture(context, skinTexture, getX() + 4.5f, centerY - 1.5f, 8, 3.5f, 8, 8, 64, ColorAssist.getRect(1));
+                rectangle.render(ShapeProperties.create(matrix, getX() + 15F, centerY - 1, 0.5F, 7).color(ColorAssist.getOutline(1, 0.5F)).build());
+                fontPlayer.drawString(matrix, name, getX() + 19, centerY + 1, colorWithAlpha);
+                fontPlayer.drawString(matrix, prefix, getX() + getWidth() - prefixWidth - 8, centerY + 1, prefixColor);
+            });
+            float width = fontPlayer.getStringWidth(name) + 25 + 10;
+            maxWidth = (int) Math.max(width, maxWidth);
+            offset += (int) (11 * animation);
+        }
+
         if (list.isEmpty() && PlayerInteractionHelper.isChat(mc.currentScreen)) {
             float centerY = getY() + offset;
             String name = "Example Staff";
@@ -263,7 +319,7 @@ public class StaffList extends AbstractDraggable {
             int textColor = ColorAssist.getText();
             int textAlpha = 255;
             int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-            int prefixColor = PREFIX_COLORS.getOrDefault(prefix, new Color(255, 0, 0, 255).getRGB());
+            int prefixColor = PREFIX_COLORS.getOrDefault(prefix, new Color(225, 225, 255, 255).getRGB());
             float prefixWidth = fontPlayer.getStringWidth(prefix);
             float prefixBoxWidth = prefixWidth + 6;
             Calculate.scale(matrix, centerX, centerY, 1, 1, () -> {
@@ -272,71 +328,17 @@ public class StaffList extends AbstractDraggable {
                     LivingEntityRenderer<LivingEntity, LivingEntityRenderState, ?> renderer = (LivingEntityRenderer<LivingEntity, LivingEntityRenderState, ?>) baseRenderer;
                     LivingEntityRenderState state = renderer.getAndUpdateRenderState(mc.player, tickCounter.getTickDelta(false));
                     Identifier textureLocation = renderer.getTexture(state);
-                    Render2D.drawTexture(context, textureLocation, getX() + 4.5f, centerY - 1.5f, 8, 1, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1));
+                    Render2D.drawTexture(context, textureLocation, getX() + 4.5f, centerY - 1.5f, 8, 3, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1));
                 }
                 rectangle.render(ShapeProperties.create(matrix, getX() + 15F, centerY - 1, 0.5F, 7).color(ColorAssist.getOutline(1, 0.5F)).build());
                 fontPlayer.drawString(matrix, name, getX() + 19, centerY + 1, colorWithAlpha);
-                rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - prefixBoxWidth - 5, centerY - 2.5f, prefixBoxWidth, 10F)
-                        .round(2)
-                        .thickness(2)
-                        .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                        .color(new Color(18, 19, 20, 55).getRGB())
-                        .build());
                 fontPlayer.drawString(matrix, prefix, getX() + getWidth() - prefixWidth - 8, centerY + 1, prefixColor);
             });
             int width = (int) fontPlayer.getStringWidth(name) + 25 + 10;
             maxWidth = Math.max(width, maxWidth);
             offset += 11;
-        } else {
-            for (Map.Entry<PlayerListEntry, Animation> staff : list.entrySet()) {
-                PlayerListEntry player = staff.getKey();
-                if (player == null) {
-                    continue;
-                }
-                String name = player.getProfile().getName();
-                float centerY = getY() + offset;
-                float animation = staff.getValue().getOutput().floatValue();
-                boolean isVisible = playerList.stream().anyMatch(p -> p.getProfile().getName().equals(name));
-                PlayerListEntry renderEntry = isVisible ?
-                        playerList.stream().filter(p -> p.getProfile().getName().equals(name)).findFirst().orElse(player) :
-                        player;
-                String displayName = renderEntry.getDisplayName() != null ? renderEntry.getDisplayName().getString() : name;
-                final String prefix = CHAR_TO_NAME.entrySet().stream()
-                        .filter(e -> displayName.contains(e.getKey()))
-                        .map(Map.Entry::getValue)
-                        .findFirst()
-                        .orElse("Vanish");
-                int prefixColor = PREFIX_COLORS.getOrDefault(prefix, new Color(255, 0, 0, 255).getRGB());
-                Identifier skinTexture = renderEntry.getSkinTextures().texture();
-                int textColor = ColorAssist.getText();
-                int textAlpha = 255;
-                int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-                float prefixWidth = fontPlayer.getStringWidth(prefix);
-                float prefixBoxWidth = prefixWidth + 6;
-                Calculate.scale(matrix, centerX, centerY, 1, animation, () -> {
-                    Render2D.drawTexture(context, skinTexture, getX() + 4.5f, centerY - 1.5f, 8, 1, 8, 8, 64, ColorAssist.getRect(1));
-                    rectangle.render(ShapeProperties.create(matrix, getX() + 15F, centerY - 1, 0.5F, 7).color(ColorAssist.getOutline(1, 0.5F)).build());
-                    if (Network.isReallyWorld()) {
-                        fontPlayer.drawString(matrix, name, getX() + 19, centerY + 1, colorWithAlpha);
-                        rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - prefixBoxWidth - 5, centerY - 2.5f, prefixBoxWidth, 10F)
-                                .round(2)
-                                .thickness(2)
-                                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                                .color(new Color(18, 19, 20, 55).getRGB())
-                                .build());
-                        fontPlayer.drawString(matrix, prefix, getX() + getWidth() - prefixWidth - 8, centerY + 1, prefixColor);
-                    } else {
-                        fontPlayer.drawString(matrix, prefix, getX() + 19, centerY + 1, prefixColor);
-                        fontPlayer.drawString(matrix, name, getX() + 19 + fontPlayer.getStringWidth(prefix) + 2, centerY + 1, colorWithAlpha);
-                    }
-                });
-                float width = Network.isReallyWorld() ?
-                        fontPlayer.getStringWidth(name) + 25 + 10 :
-                        fontPlayer.getStringWidth(prefix) + fontPlayer.getStringWidth(name) + 27;
-                maxWidth = (int) Math.max(width, maxWidth);
-                offset += (int) (11 * animation);
-            }
         }
+
         setWidth(maxWidth + 20);
         setHeight(offset);
     }

@@ -20,8 +20,9 @@ import fun.rich.utils.display.font.Fonts;
 import fun.rich.utils.display.shape.ShapeProperties;
 import fun.rich.utils.display.color.ColorAssist;
 import fun.rich.utils.client.chat.StringHelper;
-import fun.rich.utils.display.geometry.Render2D;
+import net.minecraft.client.render.DiffuseLighting;
 import fun.rich.events.container.SetScreenEvent;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.awt.*;
 import java.util.*;
@@ -32,6 +33,7 @@ public class Binds extends AbstractDraggable {
     private final ServerHelper serverHelper;
     private final List<BindInfo> binds = new ArrayList<>();
     private final Map<Item, Long> cooldownStartTimes = new HashMap<>();
+    private final Map<Item, Integer> itemCounts = new HashMap<>();
     private final Set<Item> activeCooldowns = new HashSet<>();
     private static final int BINDS_PER_ROW = 5;
     private float width;
@@ -111,6 +113,66 @@ public class Binds extends AbstractDraggable {
         return stack;
     }
 
+    private void renderItemStack(DrawContext context, ItemStack stack, float x, float y, float scale) {
+        MatrixStack matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(x, y, 100);
+        matrices.scale(scale, scale, 1);
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        DiffuseLighting.enableGuiDepthLighting();
+
+        context.drawItem(stack, 0, 0);
+
+        DiffuseLighting.disableGuiDepthLighting();
+        matrices.pop();
+    }
+
+    private int countItemInInventory(Item targetItem, java.lang.String searchName) {
+        if (PlayerInteractionHelper.nullCheck()) return 0;
+
+        int count = 0;
+        for (int i = 0; i < mc.player.getInventory().size(); i++) {
+            ItemStack itemStack = mc.player.getInventory().getStack(i);
+            if (itemStack.isEmpty()) continue;
+
+            if (searchName != null && targetItem == Items.SPLASH_POTION) {
+                if (itemStack.getItem() == targetItem &&
+                        InventoryTask.getCleanName(itemStack.getName()).contains(searchName.toLowerCase())) {
+                    count += itemStack.getCount();
+                }
+            } else {
+                if (itemStack.getItem() == targetItem) {
+                    count += itemStack.getCount();
+                }
+            }
+        }
+        return count;
+    }
+
+    private float getCooldownProgress(Item item) {
+        if (PlayerInteractionHelper.nullCheck()) return 0;
+        ItemStack stack = new ItemStack(item);
+        return mc.player.getItemCooldownManager().getCooldownProgress(stack, mc.getRenderTickCounter().getTickDelta(false));
+    }
+
+    private Color getProgressColor(float progress) {
+        if (progress <= 0.5f) {
+            float t = progress * 2f;
+            int r = (int) (255 * (1 - t) + 255 * t);
+            int g = (int) (0 * (1 - t) + 165 * t);
+            int b = 0;
+            return new Color(r, g, b);
+        } else {
+            float t = (progress - 0.5f) * 2f;
+            int r = (int) (255 * (1 - t) + 0 * t);
+            int g = (int) (165 * (1 - t) + 255 * t);
+            int b = 0;
+            return new Color(r, g, b);
+        }
+    }
+
     @Override
     public boolean visible() {
         return Hud.getInstance().interfaceSettings.isSelected("Binds") && Hud.getInstance().state && !animation.isFinished(Direction.BACKWARDS);
@@ -130,6 +192,13 @@ public class Binds extends AbstractDraggable {
         } else {
             animation.setDirection(Direction.BACKWARDS);
         }
+
+        itemCounts.clear();
+        for (BindInfo bind : binds) {
+            int count = countItemInInventory(bind.keyBind.item(), bind.searchName);
+            itemCounts.put(bind.keyBind.item(), count);
+        }
+
         activeCooldowns.clear();
         long currentTime = System.currentTimeMillis();
         for (int i = 0; i < mc.player.getInventory().size(); i++) {
@@ -161,10 +230,7 @@ public class Binds extends AbstractDraggable {
         if (PlayerInteractionHelper.nullCheck() || !bind.keyBind.setting().isVisible() || bind.keyBind.setting().getKey() == -1 || bind.keyBind.setting().getKey() == 0) {
             return false;
         }
-        if (bind.searchName != null && bind.keyBind.item() == Items.SPLASH_POTION) {
-            return InventoryTask.getSlot(s -> s.getStack().getItem() == bind.keyBind.item() && InventoryTask.getCleanName(s.getStack().getName()).contains(bind.searchName.toLowerCase())) != null && !activeCooldowns.contains(bind.keyBind.item());
-        }
-        return InventoryTask.getSlot(s -> s.getStack().getItem() == bind.keyBind.item()) != null && !activeCooldowns.contains(bind.keyBind.item());
+        return true;
     }
 
     @Override
@@ -193,8 +259,8 @@ public class Binds extends AbstractDraggable {
         float animationValue = animation.getOutput().floatValue();
         if (animationValue <= 0) return;
         List<BindInfo> activeBinds = binds.stream().filter(this::isBindActive).collect(Collectors.toList());
-        float padding = 2;
-        float iconSize = 12;
+        float padding = 3;
+        float iconSize = 16;
         float spacing = 3;
         float rowHeight = iconSize + 2 * padding;
         float posX = getX();
@@ -209,7 +275,7 @@ public class Binds extends AbstractDraggable {
             java.lang.String name = "Example Bind";
             java.lang.String[] keys = {currentRandomKey1, currentRandomKey2, currentRandomKey3};
             float textWidth = font.getStringWidth(Arrays.stream(keys).max((a, b) -> Float.compare(font.getStringWidth(a), font.getStringWidth(b))).orElse(""));
-            float bindWidth = iconSize + padding + textWidth + padding;
+            float bindWidth = iconSize + padding + textWidth + padding + 4;
             float totalWidth = bindWidth * 3 + spacing * 2;
             rowWidths.add(totalWidth);
             firstRowWidth = totalWidth;
@@ -222,7 +288,7 @@ public class Binds extends AbstractDraggable {
                     BindInfo bind = activeBinds.get(bindIndex);
                     java.lang.String keyName = StringHelper.getBindName(bind.keyBind.setting().getKey());
                     float textWidth = font.getStringWidth(keyName);
-                    float bindWidth = iconSize + padding + textWidth + padding;
+                    float bindWidth = iconSize + padding + textWidth + padding + 4;
                     currentX += bindWidth + spacing;
                 }
                 if (bindsInThisRow > 0) {
@@ -244,25 +310,43 @@ public class Binds extends AbstractDraggable {
             float currentY = posY;
             for (int i = 0; i < 3; i++) {
                 float textWidth = Fonts.getSize(11, Fonts.Type.DEFAULT).getStringWidth(keys[i]) + 1.5f;
-                float backgroundWidth = iconSize + padding + textWidth + padding;
+                float backgroundWidth = iconSize + padding + textWidth + padding + 4;
 
-                rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth + 1, rowHeight - 5)
-                        .round(2)
+                blur.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth, rowHeight - 6)
+                        .round(3).quality(12)
+                        .color(new Color(0, 0, 0, 150).getRGB())
+                        .build());
+
+                rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth, rowHeight - 6)
+                        .round(3)
+                        .thickness(0.1f)
                         .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                        .color(ColorAssist.getRect(1.0f))
+                        .color(
+                                new Color(18, 19, 20, 75).getRGB(),
+                                new Color(18, 19, 20, 75).getRGB(),
+                                new Color(0, 2, 5, 75).getRGB(),
+                                new Color(0, 2, 5, 75).getRGB())
                         .build());
 
-                rectangle.render(ShapeProperties.create(matrix, posX + offsetX + 10, currentY, backgroundWidth - 10, rowHeight - 5)
-                        .round(2, 2, 0, 0).color(ColorAssist.rgba(65, 65, 65, (int) (45 * animationValue)))
+                rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, 16, rowHeight - 6)
+                        .round(0, 0, 3, 3)
+                        .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                        .color(
+                                new Color(18, 19, 20, 75).getRGB(),
+                                new Color(18, 19, 20, 75).getRGB(),
+                                new Color(0, 2, 5, 75).getRGB(),
+                                new Color(0, 2, 5, 75).getRGB())
                         .build());
 
-                matrix.push();
-                matrix.translate(posX + offsetX, currentY + padding - 1.5f, 0);
-                Render2D.defaultDrawStack(context, stacks[i], 0, 0, false, false, 0.5f);
-                matrix.pop();
+                renderItemStack(context, stacks[i], posX + offsetX + 2, currentY + padding + 0.5f, 0.5f);
+
                 float textX = posX + offsetX + iconSize + padding;
                 float textY = currentY + padding + (iconSize - Fonts.getSize(11, Fonts.Type.DEFAULT).getStringHeight(keys[i])) / 2;
-                Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(matrix, keys[i], textX - 0.5f, textY + 4f, new Color(255, 101, 57, (int)(255 * animationValue)).getRGB() );
+                int textAlpha = (int) Math.min(255, Math.max(0, 255 * animationValue));
+                Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(matrix, keys[i], textX + 1f, textY + 3f, new Color(225, 225, 255, textAlpha).getRGB());
+
+                Fonts.getSize(10, Fonts.Type.DEFAULT).drawString(matrix, "64", posX + offsetX + 7, currentY + rowHeight - 12, new Color(255, 255, 255, textAlpha).getRGB());
+
                 offsetX += backgroundWidth + spacing;
             }
         } else {
@@ -277,23 +361,97 @@ public class Binds extends AbstractDraggable {
                     ItemStack stack = createColoredPotion(bind.keyBind.item(), bind.color);
                     java.lang.String keyName = StringHelper.getBindName(bind.keyBind.setting().getKey());
                     float textWidth = Fonts.getSize(11, Fonts.Type.DEFAULT).getStringWidth(keyName) + 1.5f;
-                    float backgroundWidth = iconSize + padding + textWidth + padding;
-                    rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth + 1, rowHeight - 5)
-                            .round(2)
-                            .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                            .color(ColorAssist.getRect(1.0f))
+                    float backgroundWidth = iconSize + padding + textWidth + padding + 4;
+
+                    int itemCount = itemCounts.getOrDefault(bind.keyBind.item(), 0);
+                    boolean isEmpty = itemCount == 0;
+
+                    float cooldownProgress = getCooldownProgress(bind.keyBind.item());
+                    float totalHeight = rowHeight - 6;
+                    float cooldownHeight = totalHeight * cooldownProgress;
+                    float cooldownStartY = currentY + totalHeight - cooldownHeight;
+
+                    blur.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth, rowHeight - 6)
+                            .round(3).quality(12)
+                            .color(new Color(0, 0, 0, 150).getRGB())
                             .build());
 
-                    rectangle.render(ShapeProperties.create(matrix, posX + offsetX + 10, currentY, backgroundWidth - 10, rowHeight - 5)
-                            .round(2, 2, 0, 0).color(ColorAssist.rgba(65, 65, 65, (int) (45 * animationValue)))
-                            .build());
-                    matrix.push();
-                    matrix.translate(posX + offsetX, currentY + padding - 1.5f, 0);
-                    Render2D.defaultDrawStack(context, stack, 0, 0, false, false, 0.5f);
-                    matrix.pop();
+                    if (isEmpty) {
+                        rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth, rowHeight - 6)
+                                .round(3)
+                                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                                .color(
+                                        new Color(250, 10, 10, 35).getRGB(),
+                                        new Color(250, 10, 10, 35).getRGB(),
+                                        new Color(250, 5, 5, 35).getRGB(),
+                                        new Color(250, 5, 5, 35).getRGB())
+                                .build());
+
+                        rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, 16, rowHeight - 6)
+                                .round(0, 0, 3, 3)
+                                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                                .color(
+                                        new Color(80, 10, 10, 65).getRGB(),
+                                        new Color(20, 5, 5, 65).getRGB(),
+                                        new Color(20, 5, 5, 65).getRGB(),
+                                        new Color(20, 5, 5, 65).getRGB())
+                                .build());
+                    } else {
+                        rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth, rowHeight - 6)
+                                .round(3)
+                                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                                .color(
+                                        new Color(18, 19, 20, 75).getRGB(),
+                                        new Color(18, 19, 20, 75).getRGB(),
+                                        new Color(0, 2, 5, 75).getRGB(),
+                                        new Color(0, 2, 5, 75).getRGB())
+                                .build());
+
+                        if (cooldownProgress > 0) {
+                            Color progressColor = getProgressColor(cooldownProgress);
+                            Color progressColorBright = new Color(
+                                    Math.min(255, (int)(progressColor.getRed() * 1.3)),
+                                    Math.min(255, (int)(progressColor.getGreen() * 1.3)),
+                                    Math.min(255, (int)(progressColor.getBlue() * 1.3)),
+                                    180
+                            );
+                            Color progressColorDark = new Color(
+                                    (int)(progressColor.getRed() * 0.6),
+                                    (int)(progressColor.getGreen() * 0.6),
+                                    (int)(progressColor.getBlue() * 0.6),
+                                    180
+                            );
+
+//                            rectangle.render(ShapeProperties.create(matrix, posX + offsetX + 15, cooldownStartY, 15.75f, cooldownHeight)
+//                                    .round(cooldownProgress >= 0.85f ? 3 : 0, 3, 0, 0)
+//                                    .color(
+//                                            progressColorBright.getRGB(),
+//                                            progressColorBright.getRGB(),
+//                                            progressColorDark.getRGB(),
+//                                            progressColorDark.getRGB())
+//                                    .build());
+                        }
+
+                        rectangle.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, 16, rowHeight - 6)
+                                .round(0, 0, 3, 3)
+                                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                                .color(
+                                        new Color(18, 19, 20, 75).getRGB(),
+                                        new Color(18, 19, 20, 75).getRGB(),
+                                        new Color(0, 2, 5, 75).getRGB(),
+                                        new Color(0, 2, 5, 75).getRGB())
+                                .build());
+                    }
+
+                    renderItemStack(context, stack, posX + offsetX + 2, currentY + padding + 0.5f, 0.5f);
+
                     float textX = posX + offsetX + iconSize + padding;
                     float textY = currentY + padding + (iconSize - Fonts.getSize(11, Fonts.Type.DEFAULT).getStringHeight(keyName)) / 2;
-                    Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(matrix, keyName, textX - 0.5f, textY + 4f, new Color(255, 101, 57, (int)(255 * animationValue)).getRGB() );
+                    int textAlpha = (int) Math.min(255, Math.max(0, 255 * animationValue));
+                    Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, keyName, textX + 1f, textY + 3f, new Color(225, 225, 255, textAlpha).getRGB());
+
+                    Fonts.getSize(10, Fonts.Type.DEFAULT).drawString(matrix, String.valueOf(itemCount), posX + offsetX + 7, currentY + rowHeight - 12, new Color(255, 255, 255, textAlpha).getRGB());
+
                     offsetX += backgroundWidth + spacing;
                 }
             }

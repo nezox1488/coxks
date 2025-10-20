@@ -55,27 +55,28 @@ public class Watermark extends AbstractDraggable {
         setWidth((int) totalWidth + 14);
 
         blur.render(ShapeProperties.create(matrix, getX(), getY(), totalWidth + 14, getHeight() + 4)
-                .round(5f)
-                        .quality(16)
-                .softness(1)
-                .outlineColor(new Color(2, 2, 2, 255).getRGB())
-                .color(ColorAssist.getRect(0.7f))
+                .round(5f).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
         rectangle.render(ShapeProperties.create(matrix, getX(), getY(), totalWidth + 14, getHeight() + 4)
                 .round(5f)
-                .softness(1)
-                .outlineColor(new Color(33, 33, 33, 155).getRGB())
-                .color(ColorAssist.getRect(0.25f))
+                .thickness(0.1f)
+                .outlineColor(new Color(18, 19, 20, 35).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
                 .build());
 
         Builder.text()
                 .font(ICONS_FONT.get())
                 .text(icon)
                 .size(13)
-                .color(new Color(255, 101, 57, 255).getRGB())
+                .color(new Color(225, 225, 255, 255).getRGB())
                 .build()
-                .render(matrix4f, getX() + 5.5f, getY() + 1);
+                .render(matrix4f, getX() + 5f, getY() + 1);
 
         float currentX = getX() + iconWidth + 7;
 
@@ -87,7 +88,7 @@ public class Watermark extends AbstractDraggable {
         currentX += 4;
 
 
-        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, title, currentX + 2.5f, getY() + 9f, new Color(255, 101, 57, 255).getRGB());
+        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, title, currentX + 2.5f, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
 
         currentX += titleWidth + 9;
 
@@ -102,7 +103,7 @@ public class Watermark extends AbstractDraggable {
 
         currentX += fpsWidth + 2;
 
-        Fonts.getSize(17, Fonts.Type.ICONSTYPENEW).drawString(matrix, "w", currentX, getY() + 9f, new Color(255, 101, 57, 255).getRGB());
+        Fonts.getSize(17, Fonts.Type.ICONSTYPENEW).drawString(matrix, "w", currentX, getY() + 9f, new Color(225, 225, 255, 255).getRGB());
 
         currentX += 10;
 
@@ -121,7 +122,7 @@ public class Watermark extends AbstractDraggable {
                 .font(ICONS_FONT_1.get())
                 .text("D")
                 .size(11)
-                .color(new Color(255, 101, 57, 255).getRGB())
+                .color(new Color(225, 225, 255, 255).getRGB())
                 .build()
                 .render(matrix4f, currentX + 2.5f, getY() + 2f);
     }

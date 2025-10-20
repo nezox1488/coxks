@@ -103,10 +103,20 @@ public class TargetHud extends AbstractDraggable {
         setWidth((int) baseWidth + 10);
         setHeight((int) 41);
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight() - 10).quality(5)
-                .round(6f)
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight() - 10)
+                .round(6).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
+                .build());
+
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight() - 10)
+                .round(6)
+                .thickness(0.1f)
                 .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
                 .build());
 
         arc.render(ShapeProperties.create(matrix, getX() + getWidth() - 28.5f, getY() + 2.5f, 26, 26).round(0.26F).thickness(0.30f).end(361)
@@ -124,11 +134,11 @@ public class TargetHud extends AbstractDraggable {
             ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
             scissorManager.push(matrix.peek().getPositionMatrix(), getX(), getY(), getWidth() - 29, getHeight());
             font.drawGradientString(matrix, lastTarget.getName().getString(), getX() + 29, getY() + 9f, ColorAssist.getText(), ColorAssist.getText(0.15F));
-            distancefont.drawString(matrix, "Distance: " + distanceText, getX() + 29, getY() + 19f, new Color(255, 101, 57, 255).getRGB());
+            distancefont.drawString(matrix, "Distance: " + distanceText, getX() + 29, getY() + 19f, new Color(225, 225, 255, 255).getRGB());
             scissorManager.pop();
         } else {
             font.drawString(matrix, lastTarget.getName().getString(), getX() + 29, getY() + 9f, ColorAssist.getText());
-            distancefont.drawString(matrix, "Distance: " + distanceText, getX() + 29, getY() + 19f, new Color(255, 101, 57, 255).getRGB());
+            distancefont.drawString(matrix, "Distance: " + distanceText, getX() + 29, getY() + 19f, new Color(225, 225, 255, 255).getRGB());
         }
 
         float arcCenterX = getX() + getWidth() - 30.5f / 2.0F;
@@ -152,11 +162,23 @@ public class TargetHud extends AbstractDraggable {
         matrix.translate(x, y, 0);
         for (int i = 0; i < 6; i++) {
             float currentX = i * 11.5f;
-            rectangle.render(ShapeProperties.create(matrix, currentX - 0.5f, 15F, slotSize + 1, slotSize + 1).quality(5)
-                    .round(3f)
-                    .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                    .color(ColorAssist.getRect(1.0f))
+
+            blur.render(ShapeProperties.create(matrix, currentX - 0.5f, 15F, slotSize + 1, slotSize + 1)
+                    .round(3).quality(12)
+                    .color(new Color(0, 0, 0, 150).getRGB())
                     .build());
+
+            rectangle.render(ShapeProperties.create(matrix, currentX - 0.5f, 15F, slotSize + 1, slotSize + 1)
+                    .round(3)
+                    .thickness(0.1f)
+                    .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                    .color(
+                            new Color(18, 19, 20, 75).getRGB(),
+                            new Color(0, 2, 5, 75).getRGB(),
+                            new Color(0, 2, 5, 75).getRGB(),
+                            new Color(18, 19, 20, 75).getRGB())
+                    .build());
+
             if (!slots[i].isEmpty()) {
                 Render2D.defaultDrawStack(context, slots[i], currentX, 15.5F, false, false, 0.5F);
             } else {
@@ -166,7 +188,7 @@ public class TargetHud extends AbstractDraggable {
                 float textHeight = font.getStringHeight(xText);
                 float textX = currentX + (slotSize - textWidth) / 2.0F;
                 float textY = 15.5F + (slotSize - textHeight) / 2.0F;
-                font.drawString(matrix, xText, textX, textY + 6.25f, new Color(255, 101, 57, 255).getRGB());
+                font.drawString(matrix, xText, textX, textY + 6.25f, new Color(225, 225, 255, 255).getRGB());
             }
         }
         matrix.pop();
@@ -207,7 +229,7 @@ public class TargetHud extends AbstractDraggable {
         Identifier textureLocation = renderer.getTexture(state);
         float alpha = faceAlphaAnimation.getOutput().floatValue();
         Calculate.setAlpha(alpha, () -> {
-            Render2D.drawTexture(context, textureLocation, getX() + 5, getY() + 5.5F, 20, 3, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1 + lastTarget.hurtTime / 4F));
+            Render2D.drawTexture(context, textureLocation, getX() + 5, getY() + 5.5F, 20, 6, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1 + lastTarget.hurtTime / 4F));
         });
     }
 }

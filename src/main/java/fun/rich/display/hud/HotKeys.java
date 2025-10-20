@@ -1,6 +1,7 @@
 package fun.rich.display.hud;
 
 import fun.rich.common.animation.Direction;
+import fun.rich.features.impl.render.Hud;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
@@ -29,7 +30,7 @@ public class HotKeys extends AbstractDraggable {
 
     @Override
     public boolean visible() {
-        return !keysList.isEmpty() || PlayerInteractionHelper.isChat(mc.currentScreen);
+        return Hud.getInstance().interfaceSettings.isSelected("Hot Keys") && (!keysList.isEmpty() || PlayerInteractionHelper.isChat(mc.currentScreen));
     }
 
     @Override
@@ -61,31 +62,45 @@ public class HotKeys extends AbstractDraggable {
         float textWidth = items.getStringWidth(moduleCountText);
         float boxWidth = textWidth + 6;
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
-                .round(4f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
-        rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - boxWidth - 25, getY() + 3, boxWidth + 20, 10F)
-                .round(2)
-                .thickness(2)
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0)
+                .thickness(0.1f)
                 .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(new Color(18, 19, 20, 55).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
                 .build());
 
         items.drawString(matrix, "Active:", getX() + getWidth() - boxWidth - 22, getY() + 7, ColorAssist.getText());
-        items.drawString(matrix, moduleCountText, getX() + getWidth() - boxWidth - 3, getY() + 7, new Color(255, 101, 57, 255).getRGB());
+        items.drawString(matrix, moduleCountText, getX() + getWidth() - boxWidth - 3, getY() + 7, new Color(225, 225, 255, 255).getRGB());
 
         rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6)
                 .color(ColorAssist.getText(0.5F)).round(0F).build());
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(4f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(ColorAssist.getRect(1.0f))
+
+        blur.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
+                .round(0,4,0,4).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
-        icon.drawString(matrix, "B", getX() + 4f, getY() + 5f, new Color(255, 101, 57, 255).getRGB());
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
+                .round(0,4,0,4)
+                .thickness(0.1f)
+                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
+                .build());
+
+        icon.drawString(matrix, "B", getX() + 4f, getY() + 5f, new Color(225, 225, 255, 255).getRGB());
         font.drawString(matrix, getName(), getX() + 22, getY() + 6.5f, ColorAssist.getText());
 
         float centerX = getX() + getWidth() / 2F;
@@ -100,20 +115,14 @@ public class HotKeys extends AbstractDraggable {
             int textColor = ColorAssist.getText();
             int textAlpha = 255;
             int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-            int orangeColor = new Color(255, 101, 57, 255).getRGB();
+            int color = new Color(225, 225, 255, 255).getRGB();
             float bindWidth = fontModule.getStringWidth(bind);
             float bindBoxWidth = bindWidth + 6;
             Calculate.scale(matrix, centerX, centerY, 1, 1, () -> {
-                categoryIcon.drawString(matrix, iconChar, getX() + 4.5f, centerY + 1.5f, ColorAssist.getText(1F));
+                categoryIcon.drawString(matrix, iconChar, getX() + 4.5f, centerY + 1.5f, color);
                 rectangle.render(ShapeProperties.create(matrix, getX() + 15F, centerY - 1, 0.5F, 7).color(ColorAssist.getOutline(1, 0.5F)).build());
                 fontModule.drawString(matrix, name, getX() + 19, centerY + 1, colorWithAlpha);
-                rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - bindBoxWidth - 5, centerY - 2.5f, bindBoxWidth, 10F)
-                        .round(2)
-                        .thickness(2)
-                        .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                        .color(new Color(18, 19, 20, 55).getRGB())
-                        .build());
-                fontModule.drawString(matrix, bind, getX() + getWidth() - bindWidth - 8, centerY + 1, orangeColor);
+                fontModule.drawString(matrix, bind, getX() + getWidth() - bindWidth - 8, centerY + 1, color);
             });
             int width = (int) fontModule.getStringWidth(name + bind) + 25;
             maxWidth = Math.max(width, maxWidth);
@@ -131,26 +140,19 @@ public class HotKeys extends AbstractDraggable {
                     case PLAYER -> iconChar = "D";
                     case MISC -> iconChar = "E";
                     case CONFIGS -> iconChar = "F";
-//                    case THEME -> iconChar = "G";
                     default -> iconChar = module.getCategory().getReadableName().substring(0, 1);
                 }
                 int textColor = ColorAssist.getText();
                 int textAlpha = 255;
                 int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-                int orangeColor = new Color(255, 101, 57, 255).getRGB();
+                int color = new Color(225, 225, 255, 255).getRGB();
                 float bindWidth = fontModule.getStringWidth(bind);
                 float bindBoxWidth = bindWidth + 6;
                 Calculate.scale(matrix, centerX, centerY, 1, animation, () -> {
-                    categoryIcon.drawString(matrix, iconChar, getX() + 4.5f, centerY + 1.5f, ColorAssist.getText(1F));
+                    categoryIcon.drawString(matrix, iconChar, getX() + 4.5f, centerY + 1.5f, color);
                     rectangle.render(ShapeProperties.create(matrix, getX() + 15F, centerY - 1, 0.5F, 7).color(ColorAssist.getOutline(1, 0.5F)).build());
                     fontModule.drawString(matrix, module.getName(), getX() + 19, centerY + 1, colorWithAlpha);
-                    rectangle.render(ShapeProperties.create(matrix, getX() + getWidth() - bindBoxWidth - 5, centerY - 2.5f, bindBoxWidth, 10F)
-                            .round(2)
-                            .thickness(2)
-                            .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                            .color(new Color(18, 19, 20, 55).getRGB())
-                            .build());
-                    fontModule.drawString(matrix, bind, getX() + getWidth() - bindWidth - 8, centerY + 1, orangeColor);
+                    fontModule.drawString(matrix, bind, getX() + getWidth() - bindWidth - 8, centerY + 1, color);
                 });
                 float width = fontModule.getStringWidth(module.getName() + bind) + 25;
                 maxWidth = (int) Math.max(width, maxWidth);
