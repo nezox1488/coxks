@@ -65,13 +65,13 @@ public class Module extends SettingRepository implements QuickImports {
         if (mc.player != null && mc.world != null) {
             if (state) {
                 if (Hud.getInstance().notificationSettings.isSelected("Module Switch")) {
-                    Notifications.getInstance().addList("Модуль " + Formatting.GRAY + visibleName + Formatting.RESET + " - включен!", 2000, null);
+                    Notifications.getInstance().addList("Feature " + Formatting.GRAY + visibleName + Formatting.RESET + " - enabled!", 2000, null);
                     SoundManager.playSound(SoundManager.ENABLE_MODULE, volume, 1.0f);
                 }
                 activate();
             } else {
                 if (Hud.getInstance().notificationSettings.isSelected("Module Switch")) {
-                    Notifications.getInstance().addList("Модуль " + Formatting.GRAY + visibleName + Formatting.RESET + " - выключен!", 2000, null);
+                    Notifications.getInstance().addList("Feature " + Formatting.GRAY + visibleName + Formatting.RESET + " - disabled!", 2000, null);
                     SoundManager.playSound(SoundManager.DISABLE_MODULE, volume, 1.0f);
                 }
                 deactivate();

@@ -31,7 +31,7 @@ public class AlphaComponent extends AbstractComponent {
         float clampedX = clamp(X + W * setting.getAlpha(), X, X + W - 4);
         float min = clamp((mouseX - X) / W, 0, 1);
 
-        image.setTexture("textures/alpha.png").render(ShapeProperties.create(matrix, X, Y, W, H).build());
+        image.setTexture("textures/gui/alphabar.png").render(ShapeProperties.create(matrix, X, Y, W, H).round(4).build());
 
         rectangle.render(ShapeProperties.create(matrix, X, Y - 0.2, W + 0.5, H)
                 .round(1.5F).color(0x80000000, 0x8000000, setting.getColorWithAlpha(), setting.getColorWithAlpha()).build());

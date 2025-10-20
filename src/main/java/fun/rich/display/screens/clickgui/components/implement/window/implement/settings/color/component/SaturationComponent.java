@@ -31,7 +31,7 @@ public class SaturationComponent extends AbstractComponent {
         float clampedX = clamp(X + W * setting.getHue(), X, X + W - 4);
         float min = clamp((mouseX - X) / W, 0, 1);
 
-        image.setTexture("textures/hue.png").render(ShapeProperties.create(matrix, X, Y + 0.5, W, H - 1).build());
+        image.setTexture("textures/gui/sliderhue.png").render(ShapeProperties.create(matrix, X, Y + 0.5, W, H - 1).build());
 
         rectangle.render(ShapeProperties.create(matrix, clampedX, Y, H, H)
                 .round(H / 2).thickness(3).color(0x00FFFFFF).outlineColor(0xFFFFFFFF).build());

@@ -15,10 +15,17 @@ public class ModuleDescriptions {
         if (module instanceof Hud) return "Отображает дополнительную информацию на экране.";
         if (module instanceof AuctionHelper) return "Помогает управлять аукционами на сервере.";
         if (module instanceof ProjectilePrediction) return "Предсказывает траекторию полета снарядов.";
+        if (module instanceof Strafe) return "Помогает игроку при ходьбе.";
+        if (module instanceof TargetStrafe) return "Крутится вокруг таргета в aura.";
+        if (module instanceof Jesus) return "Дает возможность игроку ходить по воде.";
+        if (module instanceof ProjectileHelper) return "Помогает игроку наводится на цель.";
         if (module instanceof XRay) return "Позволяет видеть сквозь блоки для поиска ресурсов.";
         if (module instanceof Aura) return "Автоматически атакует ближайших врагов.";
         if (module instanceof AutoSwap) return "Автоматически меняет предметы в руке.";
+        if (module instanceof AutoPilot) return "Наводит камеру игрока на ценный предмет сервера ReallyWorld";
         if (module instanceof NoFriendDamage) return "Предотвращает урон по союзникам.";
+        if (module instanceof SelfDestruct) return "Скрывает чит с игры, находится в разработке.";
+        if (module instanceof AutoBuy) return "Автоматически скупает ресурсы с аукциона.";
         if (module instanceof HitBoxModule) return "Изменяет размер хитбоксов сущностей.";
         if (module instanceof AntiBot) return "Обнаруживает и игнорирует ботов на сервере.";
         if (module instanceof AutoCrystal) return "Автоматизирует размещение и уничтожение кристаллов.";
@@ -59,7 +66,7 @@ public class ModuleDescriptions {
         if (module instanceof SuperFireWork) return "Усиливает фейерверки для полета.";
         if (module instanceof Spider) return "Позволяет взбираться по стенам как паук.";
         if (module instanceof ServerRPSpoofer) return "Подделывает данные для серверов.";
-        if (module instanceof LongJump) return "Длинные прыжки от лодки.";
+        if (module instanceof LongJump) return "Длинные прыжки, эквивалент HighJump.";
         if (module instanceof ShiftTap) return "Автоматически приседает при ударе.";
         if (module instanceof AspectRatio) return "Изменяет соотношение сторон экрана.";
         if (module instanceof FreeLook) return "Позволяет свободно вращать камеру без движения игрока.";
@@ -72,7 +79,7 @@ public class ModuleDescriptions {
         if (module instanceof Speed) return "Увеличивает скорость передвижения игрока.";
         if (module instanceof SwingAnimation) return "Настраивает анимацию взмаха руки.";
         if (module instanceof ViewModel) return "Изменяет отображение модели предметов в руке.";
-        if (module instanceof AirStuck) return "Застревает игрока в воздухе, предотвращая движение.";
+        if (module instanceof AirStuck) return "Фризит игрока в воздухе, предотвращая движение.";
         if (module instanceof NoFallDamage) return "Предотвращает получение урона от падения.";
         if (module instanceof ElytraMotion) return "Улучшает управление и скорость полета на элитрах.";
         if (module instanceof WorldParticles) return "Добавляет или изменяет частицы в мире для визуального эффекта.";
