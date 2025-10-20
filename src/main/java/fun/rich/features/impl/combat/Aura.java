@@ -125,8 +125,23 @@ public class Aura extends Module {
 
     public Aura() {
         super("Aura", ModuleCategory.COMBAT);
-        setup(aimMode, targetType, attackRange, lookRange, attackSetting, correctionType, sprintReset, elytraFindRange, forward, elytraForward, smartCrits);
-    }
+        setup(
+                aimMode,
+                correctionType,
+                sprintReset,
+
+                targetType,
+
+                attackRange,
+                lookRange,
+
+                attackSetting,
+                smartCrits,
+
+                elytraFindRange,
+                forward,
+                elytraForward
+        );    }
 
     @Override
     public void deactivate() {
@@ -177,7 +192,7 @@ public class Aura extends Module {
     @EventHandler
     public void tick(TickEvent e) {
         if (PlayerInteractionHelper.nullCheck()) return;
-
+        if (target == null) return;
 
         tickStop--;
         if (tickStop >= 0 && !packets.isEmpty() && attackSetting.isSelected("Fake Lag")) {
@@ -324,7 +339,7 @@ public class Aura extends Module {
 
     public TurnsConfig getRotationConfig() {
         boolean visibleCorrection = !correctionType.isSelected("Not visible");
-        boolean freeCorrection = !aimMode.isSelected("Legit") && correctionType.isSelected("Free");
+        boolean freeCorrection = !correctionType.isSelected("Change Look");
         if (TargetStrafe.getInstance().isState() && TargetStrafe.getInstance().mode.isSelected("Grim") && target !=null) { freeCorrection = false; }
         return new TurnsConfig(getSmoothMode(), visibleCorrection, freeCorrection);
     }
