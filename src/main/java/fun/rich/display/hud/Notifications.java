@@ -1,5 +1,6 @@
 package fun.rich.display.hud;
 
+import fun.rich.common.animation.implement.OutBack;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.util.math.MatrixStack;
@@ -42,7 +43,7 @@ public class Notifications extends AbstractDraggable {
     private final List<Stack> stacks = new ArrayList<>();
 
     public Notifications() {
-        super("Notifications", 0, 350, 100, 15, true);
+        super("Notifications", 0, 0, 100, 15, false);
     }
 
     @Override
@@ -105,19 +106,38 @@ public class Notifications extends AbstractDraggable {
         MatrixStack matrix = context.getMatrices();
         FontRenderer font = Fonts.getSize(12, Fonts.Type.DEFAULT);
 
+        int windowHeight = mc.getWindow().getScaledHeight();
+        int windowWidth = mc.getWindow().getScaledWidth();
+        int crosshairY = windowHeight / 2;
+        int crosshairX = windowWidth / 2;
+
+        this.setX(crosshairX - 55);
+        this.setY(crosshairY + 100);
+
         float offsetY = 0;
         float offsetX = 5;
         for (Notification notification : list) {
             float anim = notification.anim.getOutput().floatValue();
             float width = font.getStringWidth(notification.text) + offsetX * 2;
-            float startY = getY() + offsetY;
-            float startX = getX() + (getWidth() - width) / 2;
+            float startY = this.getY() + offsetY;
+            float startX = this.getX() + (100 - width) / 2;
             Calculate.setAlpha(anim, () -> {
-                rectangle.render(ShapeProperties.create(matrix, startX, startY, width, getHeight()).round(3.5f)
-                        .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                        .color(new Color(18, 19, 20, 225).getRGB())
+
+                blur.render(ShapeProperties.create(matrix, startX, startY, width + 10, getHeight() + 1).round(4).quality(12)
+                        .color(new Color(0, 0, 0, 150).getRGB())
                         .build());
-                font.drawText(matrix, notification.text, (int) (startX + offsetX), startY + 6.5F);
+
+                rectangle.render(ShapeProperties.create(matrix, startX, startY, width + 10, getHeight() + 1).round(4)
+                        .thickness(0.1f)
+                        .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                        .color(
+                                new Color(18, 19, 20, 75).getRGB(),
+                                new Color(0, 2, 5, 75).getRGB(),
+                                new Color(0, 2, 5, 75).getRGB(),
+                                new Color(18, 19, 20, 75).getRGB())
+                        .build());
+
+                font.drawText(matrix, notification.text, (int) (startX + offsetX) + 6, startY + 7F);
                 if (!notification.isExpired()) {
                     float progress;
                     long elapsed = System.currentTimeMillis() - notification.startTime;
@@ -125,7 +145,7 @@ public class Notifications extends AbstractDraggable {
                     progress = 1.0f - Math.min(1.0f, (float) elapsed / totalTime);
                     float progressWidth = width * progress;
                     if (progressWidth > 0) {
-                        rectangle.render(ShapeProperties.create(matrix, startX + 2, startY + 0.05f, progressWidth - 4, 1)
+                        rectangle.render(ShapeProperties.create(matrix, startX + 2, startY + 0.05f, progressWidth + 6, 1)
                                 .round(0.75f, 0, 0.75f, 0)
                                 .color(new Color(155, 155, 155, 255).getRGB())
                                 .build());
@@ -163,7 +183,7 @@ public class Notifications extends AbstractDraggable {
     }
 
     public void addList(Text text, long removeTime, SoundEvent sound) {
-        list.add(new Notification(text, new Decelerate().setMs(300).setValue(1), System.currentTimeMillis(), System.currentTimeMillis() + removeTime));
+        list.add(new Notification(text, new OutBack().setMs(400).setValue(1), System.currentTimeMillis(), System.currentTimeMillis() + removeTime));
         if (list.size() > 12) list.removeFirst();
         list.sort(Comparator.comparingDouble(notif -> -notif.removeTime));
         if (sound != null) SoundManager.playSound(sound);

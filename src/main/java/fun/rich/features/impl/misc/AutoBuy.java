@@ -44,9 +44,7 @@ import java.util.regex.Pattern;
 
 public class AutoBuy extends Module {
     SelectSetting leaveType = new SelectSetting("Тип обхода", "Проверяющий").value("Проверяющий", "Покупающий");
-    SliderSettings timer1 = new SliderSettings("Таймер открытия", "").setValue(0).range(0, 5000);
-    SliderSettings timer2 = new SliderSettings("Таймер обновления", "").setValue(50).range(0, 5000);
-    SliderSettings timer3 = new SliderSettings("Таймер покупки", "").setValue(0).range(0, 5000);
+    SliderSettings timer2 = new SliderSettings("Таймер обновления аукциона", "").setValue(500).range(250, 1000);
     BooleanSetting bypassDelay = new BooleanSetting("Обход задержки 1.16.5 анках", "");
     BooleanSetting bypassDelay1214 = new BooleanSetting("Обход задержки 1.21.4 анках", "");
     TimerUtil openTimer = TimerUtil.create();
@@ -86,7 +84,7 @@ public class AutoBuy extends Module {
 
     public AutoBuy() {
         super("Auto Buy", "Auto Buy", ModuleCategory.MISC);
-        setup(leaveType, timer1, timer2, timer3, bypassDelay, bypassDelay1214);
+        setup(leaveType, timer2, bypassDelay, bypassDelay1214);
         anarchyServers165.addAll(List.of("/an102", "/an103", "/an104", "/an105", "/an106", "/an107"));
         for (int i = 203; i <= 221; i++) {
             anarchyServers165.add("/an" + i);
@@ -361,7 +359,6 @@ public class AutoBuy extends Module {
                     return;
                 }
 
-                if (openTimer.hasTimeElapsed((long) timer1.getValue())) {
                     if (leaveType.isSelected("Покупающий")) {
                         long clientCount = clientInAuction.values().stream().filter(Boolean::booleanValue).count();
 
@@ -380,7 +377,6 @@ public class AutoBuy extends Module {
                             request = queue.poll();
                         }
 
-                        if (request != null && buyTimer.hasTimeElapsed((long) timer3.getValue())) {
                             BuyRequest finalRequest = request;
                             executorService.execute(() -> {
                                 Slot targetSlot = findSlotByItemAndPrice(slots, finalRequest.itemName, finalRequest.price);
@@ -399,7 +395,6 @@ public class AutoBuy extends Module {
                                     failedCount++;
                                 }
                             });
-                        }
 
                         if (failedCount > 3) {
                             mc.interactionManager.clickSlot(syncId, 49, 0, SlotActionType.QUICK_MOVE, mc.player);
@@ -442,7 +437,6 @@ public class AutoBuy extends Module {
                             });
                         }
                     }
-                }
             } else if (title.contains("Подозрительная цена")) {
                 openTimer.resetCounter();
                 buyTimer.resetCounter();

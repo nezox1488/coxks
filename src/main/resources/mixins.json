@@ -7,6 +7,7 @@
   "mixins": [
     "client.display.scoreboard.ScoreboardMixin",
     "client.display.title.TitleScreenMixin",
+    "client.display.window.WindowMixin",
     "client.mouse.MouseMixin",
     "client.screen.chat.ChatInputSuggestorMixin",
     "player.inventory.GenericContainerScreenMixin",

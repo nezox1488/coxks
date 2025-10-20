@@ -1,5 +1,6 @@
 package fun.rich.display.screens.mainmenu;
 
+import antidaunleak.api.UserProfile;
 import fun.rich.common.animation.Direction;
 import fun.rich.display.screens.mainmenu.altscreen.AltScreen;
 import fun.rich.utils.client.text.TextAnimation;
@@ -31,6 +32,7 @@ public class MainMenu extends Screen implements QuickImports {
     private AltScreen altScreen;
     private long lastToggleTime = 0;
     private static final long TOGGLE_DELAY = 500;
+    private static final UserProfile userProfile = UserProfile.getInstance();
 
     public MainMenu() {
         super(Text.of("MainMenu"));
@@ -100,9 +102,8 @@ public class MainMenu extends Screen implements QuickImports {
             rectangle.render(ShapeProperties.create(context.getMatrices(), 23, height - 12, 4, 4).round(2)
                     .color(applyAlpha(new Color(1, 235, 1, 155).getRGB(), mainAlphaInt)).build());
 
-            Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Username ▸ Baflllikov", 35, height - 21.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
-            Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Uid ▸ 1", 35, height - 14.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
-
+            Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Username ▸ " + userProfile.profile("username"), 35, height - 21.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
+            Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Uid ▸ " + userProfile.profile("uid"), 35, height - 14.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
             String text = "Build ▸ 0.2 alpha";
             float textWidth = Fonts.getSize(12, Fonts.Type.DEFAULT).getStringWidth(text);
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), text, context.getScaledWindowWidth() - textWidth - 3, context.getScaledWindowHeight() - 5.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
