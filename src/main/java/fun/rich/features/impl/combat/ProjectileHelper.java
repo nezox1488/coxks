@@ -1,5 +1,7 @@
 package fun.rich.features.impl.combat;
 
+import fun.rich.common.repository.friend.Friend;
+import fun.rich.common.repository.friend.FriendUtils;
 import fun.rich.features.module.Module;
 import fun.rich.features.module.ModuleCategory;
 import fun.rich.features.module.setting.implement.MultiSelectSetting;
@@ -70,6 +72,7 @@ public class ProjectileHelper extends Module {
                 nearestDistance = distance;
                 nearestTarget = target;
             }
+
         }
 
         currentTarget = nearestTarget;
@@ -149,6 +152,8 @@ public class ProjectileHelper extends Module {
             currentTarget = getTarget(mc.world, mc.world.getEntities());
             if (currentTarget == mc.player) currentTarget = null;
         }
+
+        if (FriendUtils.isFriend(currentTarget)) currentTarget = null;
 
         if (currentTarget != null) {
             Vec3d shooterPos = mc.player.getPos()

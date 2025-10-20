@@ -62,7 +62,6 @@ public class Spider extends Module {
 
     @EventHandler
     public void onPostTick(PostTickEvent e) {
-
         if (mode.isSelected("FunTime")) {
             if (mc.options.jumpKey.isPressed()) return;
             Box playerBox = mc.player.getBoundingBox().expand(-1e-3);
