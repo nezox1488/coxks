@@ -41,12 +41,6 @@ public class HAngle extends RotateConstructor {
         float speed = 1;
         float jitterYaw = canAttack ? 0 : (float) (8 * Math.sin(System.currentTimeMillis() / 45D));
         float jitterPitch = canAttack ? 0 : (float) (4 * Math.sin(System.currentTimeMillis() / 45D));
-
-        if (!aura.isState()) {
-            jitterYaw = 0;
-            jitterPitch = 0;
-        }
-
         float maxRotation = 360F;
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * maxRotation);
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * maxRotation);

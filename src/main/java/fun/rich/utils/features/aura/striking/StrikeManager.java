@@ -180,7 +180,7 @@ public class StrikeManager implements QuickImports {
     }
 
     private boolean isPlayerInCriticalState(PlayerSimulation simulated, int ticks) {
-        boolean fall = simulated.fallDistance > 0 && (simulated.fallDistance < 0.08 || !PlayerSimulation.simulateLocalPlayer(ticks).onGround);;
+        boolean fall = simulated.fallDistance > 0 && (simulated.fallDistance < 0.08 || !PlayerSimulation.simulateLocalPlayer(ticks + 1).onGround);;
         if (Aura.getInstance().getSmartCrits().isValue() && !mc.options.jumpKey.isPressed()) {
             return simulated.onGround || (!simulated.onGround && fall);
         }//mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue() + 0.3F
