@@ -29,7 +29,7 @@ public class TurnsConstructor implements QuickImports {
     public boolean moveCorrection;
     @Getter(AccessLevel.PUBLIC)
     public boolean freeCorrection;
-    public boolean changeLook = (AutoPilot.getInstance().isState() && AutoPilot.getInstance().target !=null) ? true : false;
+    public boolean changeLook = (AutoPilot.getInstance().isState() && AutoPilot.getInstance().target !=null) ? true : (Aura.getInstance().isState() && Aura.getInstance().getTarget() !=null && Aura.getInstance().getCorrectionType().isSelected("Change Look")) ? true : false;
 
 
     public Turns nextRotation(Turns fromAngle, boolean isResetting) {
