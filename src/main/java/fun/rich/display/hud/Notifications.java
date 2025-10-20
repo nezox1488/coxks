@@ -49,14 +49,14 @@ public class Notifications extends AbstractDraggable {
     @Override
     public void tick() {
         list.forEach(notif -> {
-            if (System.currentTimeMillis() > notif.removeTime || (notif.text.getString().contains("Привет я уведомление") && !PlayerInteractionHelper.isChat(mc.currentScreen)))
+            if (System.currentTimeMillis() > notif.removeTime || (notif.text.getString().contains("Hi I'm a notification") && !PlayerInteractionHelper.isChat(mc.currentScreen)))
                 notif.anim.setDirection(Direction.BACKWARDS);
         });
         list.removeIf(notif -> notif.anim.isFinished(Direction.BACKWARDS));
         while (!stacks.isEmpty()) {
-            addTextIfNotEmpty(TypePickUp.INVENTORY, "Подняты предметы: ");
-            addTextIfNotEmpty(TypePickUp.SHULKER_INVENTORY, "Сложены предметы в шалкер: ");
-            addTextIfNotEmpty(TypePickUp.SHULKER, "Поднят шалкер с: ");
+            addTextIfNotEmpty(TypePickUp.INVENTORY, "Items raised: ");
+            addTextIfNotEmpty(TypePickUp.SHULKER_INVENTORY, "Items placed in shulker: ");
+            addTextIfNotEmpty(TypePickUp.SHULKER, "Raised shulker with: ");
         }
     }
 
@@ -97,7 +97,7 @@ public class Notifications extends AbstractDraggable {
     @Override
     public void setScreen(SetScreenEvent e) {
         if (e.getScreen() instanceof ChatScreen) {
-            addList("Привет я уведомление", 99999999);
+            addList("Hi I'm a notification", 99999999);
         }
     }
 
