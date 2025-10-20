@@ -68,7 +68,7 @@ public class Esp extends Module {
             .value("Player", "Item", "TNT").selected("Player", "Item");
     MultiSelectSetting playerSetting = new MultiSelectSetting("Настройки игрока", "Настройки для игроков")
             .value("Box", "Armor", "NameTags", "Hand Items").selected("Box", "Armor", "NameTags", "Hand Items").visible(() -> entityType.isSelected("Player"));
-    public SelectSetting boxType = new SelectSetting("Тип бокса", "Тип бокса")
+    public SelectSetting boxType = new SelectSetting("Тип", "Тип")
             .value("Corner", "Full", "3D Box", "Skeleton").selected("3D Box").visible(() -> playerSetting.isSelected("Box"));
     public BooleanSetting flatBoxOutline = new BooleanSetting("Контур", "Контур для плоских боксов").visible(() -> playerSetting.isSelected("Box") && (boxType.isSelected("Corner") || boxType.isSelected("Full")));
     public SliderSettings boxAlpha = new SliderSettings("Прозрачность", "Прозрачность бокса")

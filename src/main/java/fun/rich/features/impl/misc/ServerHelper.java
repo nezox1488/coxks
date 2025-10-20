@@ -591,7 +591,7 @@ public class ServerHelper extends Module {
         if (needsSwap) {
             actionState = ActionState.SLOWING_DOWN;
             actionTimer = System.currentTimeMillis();
-            stopMovementUntil = System.currentTimeMillis() + 75;
+            stopMovementUntil = System.currentTimeMillis() + 95;
             keysOverridden = true;
             mc.options.forwardKey.setPressed(false);
             mc.options.backKey.setPressed(false);
@@ -600,7 +600,7 @@ public class ServerHelper extends Module {
         } else {
             actionState = ActionState.SWAP_TO_ITEM;
             actionTimer = System.currentTimeMillis();
-            stopMovementUntil = System.currentTimeMillis() + 75;
+            stopMovementUntil = System.currentTimeMillis() + 95;
             keysOverridden = true;
             mc.options.forwardKey.setPressed(false);
             mc.options.backKey.setPressed(false);
@@ -662,7 +662,7 @@ public class ServerHelper extends Module {
                 }
             }
             case USE_ITEM -> {
-                if (elapsed > 25) {
+                if (elapsed > 40) {
                     mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0, mc.player.getYaw(), mc.player.getPitch()));
                     mc.player.swingHand(Hand.MAIN_HAND);
                     actionState = ActionState.SWAP_BACK;
