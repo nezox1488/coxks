@@ -96,14 +96,14 @@ public class Inventory extends AbstractDraggable {
 
             if (itemIndex % itemsPerRow != itemsPerRow - 1) {
                 rectangle.render(ShapeProperties.create(matrix, itemX + 10, itemY, 0.5f, 9)
-                        .color(new Color(45, 45, 45, 150).getRGB())
+                        .color(new Color(45, 45, 45, 75).getRGB())
                         .round(0F)
                         .build());
             }
 
             if (itemIndex < stacks.size() - itemsPerRow) {
-                rectangle.render(ShapeProperties.create(matrix, itemX, itemY + 10, 9, 0.5f)
-                        .color(new Color(45, 45, 45, 150).getRGB())
+                rectangle.render(ShapeProperties.create(matrix, itemX - 0.5f, itemY + 10, 9, 0.5f)
+                        .color(new Color(45, 45, 45, 75).getRGB())
                         .round(0F)
                         .build());
             }

@@ -39,7 +39,7 @@ import java.util.UUID;
 
 public class AltScreen implements QuickImports {
     private final AccountRepository accountRepository = Rich.getInstance().getAccountRepository();
-    private String currentAccount = accountRepository.currentAccount;
+    private String currentAccount = "";
     private boolean typing = false;
     private String typedText = "";
     private int cursorPos = 0;
@@ -64,15 +64,37 @@ public class AltScreen implements QuickImports {
     private boolean wasEmpty = true;
     private long lastActionTime = 0;
     private static final long ACTION_DELAY = 250;
+    private static boolean sessionInitialized = false;
 
     public AltScreen(float x, float y) {
         this.panelX = x;
         this.panelY = y;
-        this.currentAccount = accountRepository.currentAccount;
+        this.currentAccount = accountRepository.currentAccount != null ? accountRepository.currentAccount : "";
         initializeAccountAnimations();
         emptyMessageAnimation.setDirection(Direction.FORWARDS);
         emptyMessageAnimation.reset();
         wasEmpty = accountRepository.accountList.isEmpty();
+
+        if (!sessionInitialized) {
+            loadCurrentAccount();
+            sessionInitialized = true;
+        }
+    }
+
+    private void loadCurrentAccount() {
+        if (accountRepository.currentAccount != null &&
+                !accountRepository.currentAccount.isEmpty()) {
+
+            Account currentAcc = accountRepository.accountList.stream()
+                    .filter(acc -> acc.name.equals(accountRepository.currentAccount))
+                    .findFirst()
+                    .orElse(null);
+
+            if (currentAcc != null) {
+                setSession(currentAcc);
+                currentAccount = currentAcc.name;
+            }
+        }
     }
 
     private void initializeAccountAnimations() {
@@ -87,7 +109,6 @@ public class AltScreen implements QuickImports {
     }
 
     public void updatePosition(float x, float y) {
-        float deltaX = x - this.panelX;
         float deltaY = y - this.panelY;
         this.panelX = x;
         this.panelY = y;
@@ -145,7 +166,8 @@ public class AltScreen implements QuickImports {
         renderTextField(context, buttonColor, outlineColor, gradientColor, textColor);
         renderAccountList(context, buttonColor, outlineColor, gradientColor, textColor);
 
-        String currentText = "Current account » " + currentAccount;
+        String displayAccount = currentAccount.isEmpty() ? "Not selected" : currentAccount;
+        String currentText = "Current account » " + displayAccount;
         float currentWidth = Fonts.getSize(15, Fonts.Type.SEMI).getStringWidth(currentText) + 20;
         float currentX = panelX + panelWidth / 2 - currentWidth / 2;
         rectangle.render(ShapeProperties.create(context.getMatrices(), currentX, panelY + panelHeight + 2, currentWidth, 12)
@@ -195,7 +217,7 @@ public class AltScreen implements QuickImports {
         if (!typedText.isEmpty() || typing) {
             font.drawString(context.getMatrices(), typedText, textFieldX + 5 - textXOffset, textFieldY + 16, textColor.getRGB());
         } else {
-            font.drawString(context.getMatrices(), "Typing nickname", textFieldX + 5, textFieldY + 16, textColor.getRGB());
+            font.drawString(context.getMatrices(), "Enter nickname", textFieldX + 5, textFieldY + 16, textColor.getRGB());
         }
 
         if (typing && blink && !hasSelection()) {
@@ -218,7 +240,7 @@ public class AltScreen implements QuickImports {
         smoothedScroll = MathHelper.lerp(0.1f, smoothedScroll, scroll);
 
         if (accountRepository.accountList.isEmpty()) {
-            Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Пусто    ", panelX + panelWidth / 2 - 5, panelY + panelHeight / 2 - 10, textColor.getRGB());
+            Fonts.getSize(16, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Empty    ", panelX + panelWidth / 2 - 5, panelY + panelHeight / 2 - 10, textColor.getRGB());
             Fonts.getSize(36, Fonts.Type.ICONS).drawCenteredString(context.getMatrices(), "   W", panelX + panelWidth / 2 + 7, panelY + panelHeight / 2 - 16, textColor.getRGB());
         } else {
             for (int i = 0; i < accountRepository.accountList.size(); i++) {
@@ -392,6 +414,7 @@ public class AltScreen implements QuickImports {
         typedText = "";
         cursorPos = 0;
         clearSelection();
+        saveAccounts();
     }
 
     private String generateRandomUsername() {
@@ -435,12 +458,15 @@ public class AltScreen implements QuickImports {
             if (button == 0 && isInBounds(mouseX, mouseY, panelX + panelWidth - 25, accY + 6.5f, 15, 15)) {
                 account.starred = !account.starred;
                 accountRepository.accountList.sort((a1, a2) -> Boolean.compare(a2.starred, a1.starred));
+                saveAccounts();
                 return true;
             }
 
             if (button == 0 && isInBounds(mouseX, mouseY, panelX + 5, accY, panelWidth - 11, 20)) {
                 currentAccount = account.name;
+                accountRepository.currentAccount = account.name;
                 setSession(account);
+                saveAccounts();
                 return true;
             }
 
@@ -449,6 +475,12 @@ public class AltScreen implements QuickImports {
                 if (currentTime - lastActionTime >= ACTION_DELAY) {
                     lastActionTime = currentTime;
                     Account accountToRemove = accountRepository.accountList.get(i);
+
+                    if (accountToRemove.name.equals(currentAccount)) {
+                        accountRepository.currentAccount = "";
+                        currentAccount = "";
+                    }
+
                     Animation removeAnim = new InOutBack().setValue(1.0).setMs(250);
                     removeAnim.setDirection(Direction.BACKWARDS);
                     removeAnim.reset();
@@ -461,6 +493,7 @@ public class AltScreen implements QuickImports {
                             accountYPositions.remove(accountToRemove.uuid);
                             accountAnimations.remove(accountToRemove.uuid);
                             accountRemoveAnimations.remove(accountToRemove.uuid);
+                            saveAccounts();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -485,6 +518,14 @@ public class AltScreen implements QuickImports {
 
         accountRepository.currentAccount = account.name;
         currentAccount = account.name;
+    }
+
+    private void saveAccounts() {
+        try {
+            Rich.getInstance().getFileController().saveFiles();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double vertical) {
@@ -596,6 +637,7 @@ public class AltScreen implements QuickImports {
                             cursorPos = 0;
                             typing = false;
                             clearSelection();
+                            saveAccounts();
                         }
                     }
                     return true;
@@ -668,9 +710,5 @@ public class AltScreen implements QuickImports {
         } else if (cursorX > textXOffset + textFieldWidth - 10) {
             textXOffset = cursorX - (textFieldWidth - 10);
         }
-    }
-
-    public String getCurrentAccount() {
-        return currentAccount;
     }
 }

@@ -132,9 +132,12 @@ public class ServerHelper extends Module {
     @NonFinal long actionTimer = 0;
     @NonFinal java.lang.String pendingItemKey = null;
     @NonFinal long stopMovementUntil = 0;
+    @NonFinal boolean keysOverridden = false;
+    @NonFinal boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
+    @NonFinal int originalSourceSlot = -1;
 
     private enum ActionState {
-        IDLE, SWAP_TO_ITEM, USE_ITEM, SWAP_BACK
+        IDLE, SLOWING_DOWN, WAITING_STOP, SWAP_TO_ITEM, USE_ITEM, SWAP_BACK, SPEEDING_UP
     }
 
     private static class ItemInfo {
@@ -168,7 +171,7 @@ public class ServerHelper extends Module {
                 .visible(() -> mode.isSelected("HolyWorld")), 30));
         keyBindings.add(new KeyBind(Items.FIRE_CHARGE, new BindSetting("Взрывная штучка", "Клавиша взрывной штучки")
                 .visible(() -> mode.isSelected("HolyWorld")), 0));
-        keyBindings.add(new KeyBind(Items.SNOWBALL, new BindSetting("Ком Снега", "Клавиша снежка")
+        keyBindings.add(new KeyBind(Items.SNOWBALL, new BindSetting("Снежок заморозка", "Клавиша снежка")
                 .visible(() -> mode.isSelected("HolyWorld") || mode.isSelected("FunTime")), 0));
         keyBindings.add(new KeyBind(Items.PHANTOM_MEMBRANE, new BindSetting("Божья аура", "Клавиша божьей ауры")
                 .visible(() -> mode.isSelected("FunTime")), 0));
@@ -214,7 +217,7 @@ public class ServerHelper extends Module {
         itemConfig.put("disorientation", new ItemInfo("дезориентация", Items.ENDER_EYE, "Дезориентация"));
         itemConfig.put("sugar", new ItemInfo("явная", Items.SUGAR, "Явная пыль"));
         itemConfig.put("bojaura", new ItemInfo("божья аура", Items.PHANTOM_MEMBRANE, "Божья аура"));
-        itemConfig.put("snow", new ItemInfo("Ком Снега", Items.SNOWBALL, "Ком Снега"));
+        itemConfig.put("snow", new ItemInfo("Снежок заморозка", Items.SNOWBALL, "Снежок заморозка"));
         itemConfig.put("plast", new ItemInfo("пласт", Items.DRIED_KELP, "Пласт"));
         itemConfig.put("trap", new ItemInfo("трапка", Items.NETHERITE_SCRAP, "Трапка"));
         itemConfig.put("fireSwirl", new ItemInfo("огненный смерч", Items.FIRE_CHARGE, "Огненный смерч"));
@@ -257,8 +260,10 @@ public class ServerHelper extends Module {
         actionState = ActionState.IDLE;
         originalSlot = -1;
         targetSlot = -1;
+        originalSourceSlot = -1;
         pendingItemKey = null;
         stopMovementUntil = 0;
+        keysOverridden = false;
     }
 
     @Override
@@ -271,8 +276,16 @@ public class ServerHelper extends Module {
         actionState = ActionState.IDLE;
         originalSlot = -1;
         targetSlot = -1;
+        originalSourceSlot = -1;
         pendingItemKey = null;
         stopMovementUntil = 0;
+        if (keysOverridden) {
+            mc.options.forwardKey.setPressed(false);
+            mc.options.backKey.setPressed(false);
+            mc.options.leftKey.setPressed(false);
+            mc.options.rightKey.setPressed(false);
+        }
+        keysOverridden = false;
     }
 
     @EventHandler
@@ -368,12 +381,19 @@ public class ServerHelper extends Module {
             return;
         }
 
-        boolean noMoveOrAction = System.currentTimeMillis() < stopMovementUntil || actionState != ActionState.IDLE;
+        boolean noMoveOrAction = System.currentTimeMillis() < stopMovementUntil || (actionState != ActionState.IDLE && actionState != ActionState.SPEEDING_UP);
         if (noMoveOrAction) {
             mc.options.forwardKey.setPressed(false);
             mc.options.backKey.setPressed(false);
             mc.options.leftKey.setPressed(false);
             mc.options.rightKey.setPressed(false);
+            if (mc.player.input != null) {
+                mc.player.input.movementForward = 0;
+                mc.player.input.movementSideways = 0;
+            }
+            if (mc.player.isSprinting()) {
+                mc.player.setSprinting(false);
+            }
         }
 
         for (KeyBind bind : keyBindings) {
@@ -384,7 +404,7 @@ public class ServerHelper extends Module {
                 case "Обычная трапка" -> "trap_holy";
                 case "Стан" -> "stan";
                 case "Взрывная штучка" -> "ditem";
-                case "Ком Снега" -> "snow";
+                case "Снежок заморозка" -> "snow";
                 case "Божья аура" -> "bojaura";
                 case "Трапка" -> "trap";
                 case "Пласт" -> "plast";
@@ -411,8 +431,7 @@ public class ServerHelper extends Module {
                 boolean currentKey = false;
                 if (bind.setting.getKey() != -1) {
                     if (bind.setting.getKey() >= GLFW.GLFW_MOUSE_BUTTON_1 && bind.setting.getKey() <= GLFW.GLFW_MOUSE_BUTTON_8) {
-                        currentKey = GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), bind.setting.getKey()) == GLFW.GLFW_PRESS;
-                    } else {
+                        currentKey = GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), bind.setting.getKey()) == GLFW.GLFW_PRESS;} else {
                         currentKey = InputUtil.isKeyPressed(mc.getWindow().getHandle(), bind.setting.getKey());
                     }
                 }
@@ -421,7 +440,7 @@ public class ServerHelper extends Module {
                     ItemInfo info = itemConfig.get(key);
                     if (info != null) {
                         Slot slot = InventoryTask.getSlot(s -> s.getStack().getItem().equals(info.item) && InventoryTask.getCleanName(s.getStack().getName()).contains(info.searchName.toLowerCase()));
-                        boolean addStarPrefix = info.displayName.equals("Дезориентация")|| info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Ком Снега") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
+                        boolean addStarPrefix = info.displayName.equals("Дезориентация")|| info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Снежок заморозка") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
                         if (slot != null) {
                             ItemStack stack = slot.getStack();
                             if (mc.player.getItemCooldownManager().isCoolingDown(stack)) {
@@ -462,7 +481,7 @@ public class ServerHelper extends Module {
             ItemInfo info = itemConfig.get(potionKey);
             if (info != null) {
                 Slot slot = InventoryTask.getSlot(s -> s.getStack().getItem().equals(info.item) && InventoryTask.getCleanName(s.getStack().getName()).contains(info.searchName.toLowerCase()));
-                boolean addStarPrefix = info.displayName.equals("Дезориентация") || info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Ком Снега") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
+                boolean addStarPrefix = info.displayName.equals("Дезориентация") || info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Снежок заморозка") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
                 if (slot != null) {
                     ItemStack stack = slot.getStack();
                     if (!mc.player.getItemCooldownManager().isCoolingDown(stack)) {
@@ -558,23 +577,35 @@ public class ServerHelper extends Module {
 
     private void startItemUse(Slot slot, ItemInfo info, boolean addStarPrefix) {
         originalSlot = mc.player.getInventory().selectedSlot;
+        originalSourceSlot = slot.id;
         targetSlot = slot.id;
         pendingItemKey = info.searchName;
-        actionState = ActionState.SWAP_TO_ITEM;
-        actionTimer = System.currentTimeMillis();
-        stopMovementUntil = System.currentTimeMillis() + 400;
 
-        if (slot.id >= 0 && slot.id < 9) {
-            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot.id));
-            mc.player.getInventory().selectedSlot = slot.id;
-        } else if (slot.id >= 36 && slot.id < 45) {
-            int hotbarSlot = slot.id - 36;
-            mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(hotbarSlot));
-            mc.player.getInventory().selectedSlot = hotbarSlot;
+        boolean needsSwap = !(slot.id >= 0 && slot.id < 9) && !(slot.id >= 36 && slot.id < 45);
+
+        wasForwardPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.forwardKey.getDefaultKey().getCode());
+        wasBackPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
+        wasLeftPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
+        wasRightPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
+
+        if (needsSwap) {
+            actionState = ActionState.SLOWING_DOWN;
+            actionTimer = System.currentTimeMillis();
+            stopMovementUntil = System.currentTimeMillis() + 75;
+            keysOverridden = true;
+            mc.options.forwardKey.setPressed(false);
+            mc.options.backKey.setPressed(false);
+            mc.options.leftKey.setPressed(false);
+            mc.options.rightKey.setPressed(false);
         } else {
-            int targetHotbarSlot = 8;
-            InventoryTask.clickSlot(slot.id, targetHotbarSlot, SlotActionType.SWAP, false);
-            targetSlot = targetHotbarSlot;
+            actionState = ActionState.SWAP_TO_ITEM;
+            actionTimer = System.currentTimeMillis();
+            stopMovementUntil = System.currentTimeMillis() + 75;
+            keysOverridden = true;
+            mc.options.forwardKey.setPressed(false);
+            mc.options.backKey.setPressed(false);
+            mc.options.leftKey.setPressed(false);
+            mc.options.rightKey.setPressed(false);
         }
 
         MutableText text = Text.empty()
@@ -585,37 +616,133 @@ public class ServerHelper extends Module {
 
     private void processItemAction() {
         long currentTime = System.currentTimeMillis();
+        long elapsed = currentTime - actionTimer;
+
         switch (actionState) {
-            case SWAP_TO_ITEM:
-                if (currentTime - actionTimer > 150) {
+            case SLOWING_DOWN -> {
+                mc.player.input.movementForward = 0;
+                mc.player.input.movementSideways = 0;
+                if (mc.player.isSprinting()) {
+                    mc.player.setSprinting(false);
+                }
+                if (elapsed > 1) {
+                    actionState = ActionState.WAITING_STOP;
+                }
+            }
+            case WAITING_STOP -> {
+                mc.player.input.movementForward = 0;
+                mc.player.input.movementSideways = 0;
+                double velocityX = Math.abs(mc.player.getVelocity().x);
+                double velocityZ = Math.abs(mc.player.getVelocity().z);
+                if ((velocityX < 0.001 && velocityZ < 0.001) || elapsed > 75) {
+                    actionState = ActionState.SWAP_TO_ITEM;
+                    actionTimer = currentTime;
+                }
+            }
+            case SWAP_TO_ITEM -> {
+                if (elapsed > 25) {
+                    if (targetSlot >= 0 && targetSlot < 9) {
+                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(targetSlot));
+                        mc.player.getInventory().selectedSlot = targetSlot;
+                    } else if (targetSlot >= 36 && targetSlot < 45) {
+                        int hotbarSlot = targetSlot - 36;
+                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(hotbarSlot));
+                        mc.player.getInventory().selectedSlot = hotbarSlot;
+                        targetSlot = hotbarSlot;
+                    } else {
+                        int swapSlot = 8;
+                        InventoryTask.clickSlot(targetSlot, swapSlot, SlotActionType.SWAP, false);
+                        targetSlot = swapSlot;
+                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(swapSlot));
+                        mc.player.getInventory().selectedSlot = swapSlot;
+                    }
+
                     actionState = ActionState.USE_ITEM;
                     actionTimer = currentTime;
-                    mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(targetSlot));
-                    mc.player.getInventory().selectedSlot = targetSlot;
                 }
-                break;
-            case USE_ITEM:
-                if (currentTime - actionTimer > 100) {
+            }
+            case USE_ITEM -> {
+                if (elapsed > 25) {
                     mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0, mc.player.getYaw(), mc.player.getPitch()));
                     mc.player.swingHand(Hand.MAIN_HAND);
                     actionState = ActionState.SWAP_BACK;
                     actionTimer = currentTime;
                 }
-                break;
-            case SWAP_BACK:
-                if (currentTime - actionTimer > 100) {
-                    if (targetSlot != originalSlot) {
-                        InventoryTask.clickSlot(targetSlot, 8, SlotActionType.SWAP, false);
+            }
+            case SWAP_BACK -> {
+                if (elapsed > 25) {
+                    boolean wasFromInventory = !(originalSourceSlot >= 0 && originalSourceSlot < 9) && !(originalSourceSlot >= 36 && originalSourceSlot < 45);
+
+                    if (wasFromInventory) {
+                        if (targetSlot >= 0 && targetSlot < 9) {
+                            InventoryTask.clickSlot(originalSourceSlot, targetSlot, SlotActionType.SWAP, false);
+                        }
+                    } else {
+                        if (originalSourceSlot >= 36 && originalSourceSlot < 45) {
+                            int hotbarSlot = originalSourceSlot - 36;
+                            if (targetSlot != hotbarSlot) {
+                                mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(hotbarSlot));
+                                mc.player.getInventory().selectedSlot = hotbarSlot;
+                            }
+                        } else if (originalSourceSlot >= 0 && originalSourceSlot < 9) {
+                            if (targetSlot != originalSourceSlot) {
+                                mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(originalSourceSlot));
+                                mc.player.getInventory().selectedSlot = originalSourceSlot;
+                            }
+                        }
+                    }
+
+                    if (mc.player.getInventory().selectedSlot != originalSlot) {
                         mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(originalSlot));
                         mc.player.getInventory().selectedSlot = originalSlot;
                     }
+
+                    restoreKeyStates();
+                    actionState = ActionState.SPEEDING_UP;
+                    actionTimer = currentTime;
+                }
+            }
+            case SPEEDING_UP -> {
+                long speedupElapsed = currentTime - actionTimer;
+
+                if (speedupElapsed > 75) {
                     actionState = ActionState.IDLE;
                     originalSlot = -1;
                     targetSlot = -1;
+                    originalSourceSlot = -1;
                     pendingItemKey = null;
                 }
-                break;
+            }
         }
+    }
+
+    private void restoreKeyStates() {
+        if (!keysOverridden) return;
+
+        mc.options.forwardKey.setPressed(wasForwardPressed);
+        mc.options.backKey.setPressed(wasBackPressed);
+        mc.options.leftKey.setPressed(wasLeftPressed);
+        mc.options.rightKey.setPressed(wasRightPressed);
+
+        if (mc.player.input != null) {
+            if (wasForwardPressed) {
+                mc.player.input.movementForward = 1.0f;
+                if (!mc.player.isSprinting()) {
+                    mc.player.setSprinting(true);
+                }
+            }
+            if (wasBackPressed) {
+                mc.player.input.movementForward = -1.0f;
+            }
+            if (wasLeftPressed) {
+                mc.player.input.movementSideways = 1.0f;
+            }
+            if (wasRightPressed) {
+                mc.player.input.movementSideways = -1.0f;
+            }
+        }
+
+        keysOverridden = false;
     }
 
     @EventHandler
@@ -672,7 +799,7 @@ public class ServerHelper extends Module {
                         }
                         case "Взрывная трапка" -> drawItemCube(playerPos, smooth, 3.99F, color);
                         case "Стан" -> drawItemCube(playerPos, smooth, 15.01F, color);
-                        case "Ком Снега" -> ProjectilePrediction.getInstance().drawPredictionInHand(matrix, List.of(Items.SNOWBALL.getDefaultStack()), MathAngle.cameraAngle());
+                        case "Снежок заморозка" -> ProjectilePrediction.getInstance().drawPredictionInHand(matrix, List.of(Items.SNOWBALL.getDefaultStack()), MathAngle.cameraAngle());
                     }
                 });
     }

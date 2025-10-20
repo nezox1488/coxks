@@ -35,7 +35,7 @@ public class Rectangle implements Shape, QuickImports {
         Vector3f size = matrix4f.getScale(new Vector3f()).mul(scale);
         Vector4f round = shape.getRound().mul(size.y);
 
-        float softness = shape.getSoftness();
+        float softness = shape.getSoftness() * alpha;
         float thickness = shape.getThickness();
         float width = shape.getWidth() * size.x;
         float height = shape.getHeight() * size.y;
@@ -58,7 +58,4 @@ public class Rectangle implements Shape, QuickImports {
         BufferRenderer.drawWithGlobalProgram(buffer.end());
         RenderSystem.disableBlend();
     }
-
-
-
 }

@@ -276,7 +276,8 @@ public class ElytraHelper extends Module {
             return;
         }
 
-        long elapsed = System.currentTimeMillis() - swapStartTime;
+        long elapsed = System.currentTimeMillis() - swapStartTime -125;
+        final long totalStopTime = 150;
 
         switch (elytraPhase) {
             case SLOWING_DOWN -> {
@@ -284,7 +285,7 @@ public class ElytraHelper extends Module {
                 mc.player.input.movementSideways = 0;
                 if (mc.player.isSprinting()) {
                     mc.player.setSprinting(false);
-                    AutoSprint.tickStop = 10;
+                    AutoSprint.tickStop = 110;
                 }
                 if (!keysOverridden) {
                     mc.options.forwardKey.setPressed(false);
@@ -293,7 +294,7 @@ public class ElytraHelper extends Module {
                     mc.options.rightKey.setPressed(false);
                     keysOverridden = true;
                 }
-                if (elapsed > 1) {
+                if (elapsed > 250) {
                     elytraPhase = ElytraPhase.WAITING_STOP;
                 }
             }
@@ -304,7 +305,9 @@ public class ElytraHelper extends Module {
                 double velocityZ = Math.abs(mc.player.getVelocity().z);
                 double velocityY = Math.abs(mc.player.getVelocity().y);
                 boolean isCompletelyStill = velocityX < 0.001 && velocityZ < 0.001 && (mc.player.isOnGround() || velocityY < 0.001);
-                if (isCompletelyStill || elapsed > 5) {
+
+                long swapTime = (long) (totalStopTime * 0.5);
+                if ((isCompletelyStill && elapsed >= swapTime) || elapsed > totalStopTime) {
                     playerFullyStopped = true;
                     elytraPhase = ElytraPhase.SWAP;
                 }
@@ -351,11 +354,11 @@ public class ElytraHelper extends Module {
                     if (right) targetStrafe = -1.0f;
                     mc.player.input.movementForward = lerp(mc.player.input.movementForward, targetForward * slowdownFactor, 0.4f);
                     mc.player.input.movementSideways = lerp(mc.player.input.movementSideways, targetStrafe * slowdownFactor, 0.4f);
-                    if (speedupProgress > 0.4f && forward && !mc.player.isSprinting()) {
+                    if (speedupProgress > 1f && forward && !mc.player.isSprinting()) {
                         mc.player.setSprinting(true);
                     }
                 }
-                if (speedupElapsed > 25) {
+                if (speedupElapsed > 125) {
                     elytraPhase = ElytraPhase.FINISHED;
                 }
             }

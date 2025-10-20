@@ -27,7 +27,7 @@ public abstract class GenericContainerScreenMixin extends HandledScreen<GenericC
     private ButtonWidget autoBuyButton;
     private boolean buttonsAdded = false;
     private final AutoBuyManager autoBuyManager = AutoBuyManager.getInstance();
-    private final PurchaseHistoryWindow purchaseHistoryWindow = new PurchaseHistoryWindow();
+//    private final PurchaseHistoryWindow purchaseHistoryWindow = new PurchaseHistoryWindow();
 
     public GenericContainerScreenMixin(GenericContainerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -48,15 +48,15 @@ public abstract class GenericContainerScreenMixin extends HandledScreen<GenericC
             autoBuyButton.setMessage(Text.literal("AutoBuy: " + (autoBuyManager.isEnabled() ? "§aON" : "§cOFF")));
         }
 
-        if (title.contains("Аукцион") || title.contains("Аукционы") || title.contains("Auction") || title.contains("Поиск")) {
-            purchaseHistoryWindow.render(context, mouseX, mouseY, delta,
-                    this.width, this.height, this.backgroundWidth, this.backgroundHeight);
-        }
+//        if (title.contains("Аукцион") || title.contains("Аукционы") || title.contains("Auction") || title.contains("Поиск")) {
+//            purchaseHistoryWindow.render(context, mouseX, mouseY, delta,
+//                    this.width, this.height, this.backgroundWidth, this.backgroundHeight);
+//        }
     }
 
     private void addButtons(MinecraftClient mc, String titleText) {
-        int baseX = (this.width + this.backgroundWidth) / 2 + 5;
-        int baseY = (this.height - this.backgroundHeight) / 2 + 5;
+        int baseX = (this.width + this.backgroundWidth) / 2;
+        int baseY = (this.height - this.backgroundHeight) / 2;
 
         this.dropAllButton = ButtonWidget.builder(
                 Text.literal("Выбросить"),
@@ -66,12 +66,12 @@ public abstract class GenericContainerScreenMixin extends HandledScreen<GenericC
         this.takeAllButton = ButtonWidget.builder(
                 Text.literal("Взять всё"),
                 button -> takeAll(mc)
-        ).dimensions(baseX, baseY + 25, 80, 20).build();
+        ).dimensions(baseX, baseY + 22, 80, 20).build();
 
         this.storeAllButton = ButtonWidget.builder(
                 Text.literal("Сложить всё"),
                 button -> storeAll(mc)
-        ).dimensions(baseX, baseY + 50, 80, 20).build();
+        ).dimensions(baseX, baseY + 44, 80, 20).build();
 
         this.addDrawableChild(dropAllButton);
         this.addDrawableChild(takeAllButton);
