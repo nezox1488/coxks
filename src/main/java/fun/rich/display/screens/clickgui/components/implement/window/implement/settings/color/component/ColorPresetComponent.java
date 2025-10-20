@@ -30,7 +30,7 @@ public class ColorPresetComponent extends AbstractComponent {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (!colorPresetButtonList.isEmpty()) {
-            Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Готовые тсвета", x + 6, y + 95, -1);
+            Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Готовые цвета", x + 6, y + 95, -1);
         }
 
         int xOffset = 0,

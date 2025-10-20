@@ -23,7 +23,7 @@ public class Hud extends Module {
     public MultiSelectSetting notificationSettings = new MultiSelectSetting("Уведомления", "Выберите, когда будут появляться уведомления")
             .value("Module Switch", "Staff Join", "Staff Leave", "Item Pick Up", "Auto Armor", "Break Shield").selected("Module Switch", "Item Pick Up", "Auto Armor", "Break Shield").visible(()-> interfaceSettings.isSelected("Notifications"));
 
-    public ColorSetting colorSetting = new ColorSetting("Цвет клиента", "Выберите цвет клиента")
+    public ColorSetting colorSetting = new ColorSetting("Изменяет цвет некоторых модулей", "Выберите цвет клиента")
             .setColor(new Color(255, 101, 57, 255).getRGB()).presets(0xFF6C9AFD, 0xFF8C7FFF, 0xFFFFA576, 0xFFFF7B7B);
 
     public SliderSettings soundVolumeSetting = new SliderSettings("Sound Volume", "Volume for module switch sounds")
