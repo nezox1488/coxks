@@ -229,7 +229,7 @@ public class TargetHud extends AbstractDraggable {
         Identifier textureLocation = renderer.getTexture(state);
         float alpha = faceAlphaAnimation.getOutput().floatValue();
         Calculate.setAlpha(alpha, () -> {
-            Render2D.drawTexture(context, textureLocation, getX() + 5, getY() + 5.5F, 20, 6, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1 + lastTarget.hurtTime / 4F));
+            Render2D.drawTexture(context, textureLocation, getX() + 5, getY() + 5.5F, 20, 4, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1 + lastTarget.hurtTime / 4F));
         });
     }
 }

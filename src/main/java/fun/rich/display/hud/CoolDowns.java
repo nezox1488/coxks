@@ -162,8 +162,10 @@ public class CoolDowns extends AbstractDraggable {
                 float centerY = getY() + offset;
                 long elapsedTime = coolDown.time.elapsedTime();
                 int time = 0;
-                if (elapsedTime >= Integer.MIN_VALUE && elapsedTime <= Integer.MAX_VALUE) {
+                if (elapsedTime >= -2147483648L && elapsedTime <= 2147483647L) {
                     time = (int) (-elapsedTime / 1000);
+                } else {
+                    time = elapsedTime < 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
                 }
                 java.lang.String name = coolDown.item.getDefaultStack().getName().getString();
                 java.lang.String duration = StringHelper.getDuration(time);
