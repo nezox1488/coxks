@@ -57,13 +57,13 @@ public class FTAngle extends RotateConstructor {
 
             return moveAngle;
         } else {
-            float speed = attackHandler.getAttackTimer().finished(500) ? 0.35F : 0.02F;
+            float speed = attackHandler.getAttackTimer().finished(450) ? 0.35F : 0.02F;
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
-            float jitterYaw = (float) (randomLerp(14, 18) * Math.sin(System.currentTimeMillis() / 35D));
+            float jitterYaw = (float) (randomLerp(12, 18) * Math.sin(System.currentTimeMillis() / 35D));
             float jitterPitch = (float) (randomLerp(3, 13) * Math.sin(System.currentTimeMillis() / 45D));
 
             if ((!aura.isState() || entity == null) && attackHandler.getAttackTimer().finished(2500)) {
@@ -77,9 +77,9 @@ public class FTAngle extends RotateConstructor {
                     currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
             moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed),
                     currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
-    //            if (count > 0 && count % 15 == 0 && !attackHandler.getAttackTimer().finished(150) && !hasSwung) {
-    //                mc.player.swingHand(Hand.MAIN_HAND);
-    //            }
+                if (count > 0 && count % 19 == 0 && !attackHandler.getAttackTimer().finished(150) && !hasSwung) {
+                    mc.player.swingHand(Hand.MAIN_HAND);
+                }
 
             if (count > 0 && count % 44 == 0 && !attackHandler.getAttackTimer().finished(400) && !hasSwung) {
                 moveAngle.setPitch(
