@@ -1,5 +1,6 @@
 package fun.rich.features.impl.combat;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.events.player.TickEvent;
 import fun.rich.events.render.WorldRenderEvent;
 import fun.rich.features.impl.movement.Strafe;
@@ -190,6 +191,7 @@ public class Aura extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void tick(TickEvent e) {
         if (PlayerInteractionHelper.nullCheck()) return;
         if (target == null) return;
@@ -209,6 +211,13 @@ public class Aura extends Module {
     @EventHandler
     public void onRotationUpdate(RotationUpdateEvent e) {
         checkForwardToggle();
+
+        try {
+            if (aimMode.isSelected("FunTime") && Rich.getInstance().getFtCheckClient() != null) {
+                Rich.getInstance().getFtCheckClient().checkAndWarnFunTime();
+            }
+        } catch (Exception ex) {
+        }
 
         switch (e.getType()) {
             case EventType.PRE -> {

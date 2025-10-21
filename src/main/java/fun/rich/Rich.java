@@ -1,10 +1,12 @@
 package fun.rich;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.commands.manager.CommandRepository;
 import fun.rich.utils.client.managers.file.exception.FileProcessingException;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.client.logs.Logger;
 import fun.rich.utils.client.managers.file.impl.AutoBuySettingsFile;
+import fun.rich.utils.connection.auracheckft.FTCheckClient;
 import fun.rich.utils.connection.irc.IRCManager;
 import fun.rich.utils.connection.tps.TPSCalculate;
 import fun.rich.utils.display.scissor.ScissorAssist;
@@ -69,6 +71,7 @@ public class Rich implements ModInitializer {
     ListenerRepository listenerRepository;
     StrikerConstructor attackPerpetrator = new StrikerConstructor();
     CloudConfigWebSocketClient cloudConfigClient;
+    FTCheckClient ftCheckClient;
     IRCManager ircManager = new IRCManager();
     AccountRepository accountRepository;
     TPSCalculate tpsCalculate;
@@ -88,6 +91,7 @@ public class Rich implements ModInitializer {
         initListeners();
         initDiscordRPC();
         initWebSocketClient();
+        initFTCheckClient();
         ircManager.connect();
         startReconnectTask();
         SoundManager.init();
@@ -97,12 +101,21 @@ public class Rich implements ModInitializer {
         initialized = true;
     }
 
+    @Native(type = Native.Type.VMProtectBeginUltra)
     private void initWebSocketClient() {
         try {
             cloudConfigClient = new CloudConfigWebSocketClient(new URI("ws://45.155.205.202:8080"));
             cloudConfigClient.connect();
         } catch (Exception e) {
-            Logger.error("Failed to initialize WebSocket client: " + e.getMessage());
+        }
+    }
+
+    @Native(type = Native.Type.VMProtectBeginUltra)
+    private void initFTCheckClient() {
+        try {
+            ftCheckClient = new FTCheckClient(new URI("ws://45.155.205.202:6312"));
+            ftCheckClient.connect();
+        } catch (Exception e) {
         }
     }
 

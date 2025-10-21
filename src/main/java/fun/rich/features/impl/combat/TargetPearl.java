@@ -1,5 +1,6 @@
 package fun.rich.features.impl.combat;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.utils.features.aura.warp.Turns;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import fun.rich.utils.interactions.inv.InventoryFlowManager;
@@ -64,6 +65,7 @@ public class TargetPearl extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onRotationUpdate(RotationUpdateEvent e) {
         if (e.getType() == EventType.PRE) {
             LivingEntity target = Aura.getInstance().getLastTarget();

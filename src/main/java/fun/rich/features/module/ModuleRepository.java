@@ -31,6 +31,7 @@ public class ModuleRepository {
                 new AspectRatio(),
                 new FreeLook(),
                 new ClickPearl(),
+//                new HitEffect(),
                 new ClickFriend(),
                 new WindJump(),
                 new TargetESP(),

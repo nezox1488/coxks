@@ -1,5 +1,6 @@
 package fun.rich.features.impl.combat;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.common.repository.friend.Friend;
 import fun.rich.common.repository.friend.FriendUtils;
 import fun.rich.features.module.Module;
@@ -125,6 +126,7 @@ public class ProjectileHelper extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onRotationUpdate(RotationUpdateEvent e) {
         if (e.getType() != EventType.PRE) return;
 
@@ -182,8 +184,4 @@ public class ProjectileHelper extends Module {
             );
         }
     }
-
-
-
-
 }
