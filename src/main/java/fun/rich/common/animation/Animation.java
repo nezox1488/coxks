@@ -6,7 +6,7 @@ import fun.rich.utils.math.time.TimerUtil;
 
 @Setter
 @Accessors(chain = true)
-public abstract class Animation implements AnimationCalculation {
+public class Animation implements AnimationCalculation {
     protected final TimerUtil counter = new TimerUtil();
     protected int ms;
     protected double value;

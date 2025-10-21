@@ -3,6 +3,9 @@ package fun.rich.mixin.player.inventory;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.manager.AutoBuyManager;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.autobuyui.PurchaseHistoryWindow;
 import fun.rich.features.impl.misc.SelfDestruct;
+import fun.rich.features.impl.render.BetterMinecraft;
+import fun.rich.utils.display.shape.ShapeProperties;
+import fun.rich.utils.display.widget.ContainerBackgroundRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
@@ -15,9 +18,14 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.awt.*;
+
+import static fun.rich.utils.display.interfaces.QuickImports.rectangle;
 
 @Mixin(GenericContainerScreen.class)
 public abstract class GenericContainerScreenMixin extends HandledScreen<GenericContainerScreenHandler> {
@@ -27,11 +35,16 @@ public abstract class GenericContainerScreenMixin extends HandledScreen<GenericC
     private ButtonWidget autoBuyButton;
     private boolean buttonsAdded = false;
     private final AutoBuyManager autoBuyManager = AutoBuyManager.getInstance();
+
+    @Unique
+    private static final ContainerBackgroundRender BACKGROUND_RENDER = new ContainerBackgroundRender();
+
 //    private final PurchaseHistoryWindow purchaseHistoryWindow = new PurchaseHistoryWindow();
 
     public GenericContainerScreenMixin(GenericContainerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
+
 
     @Inject(method = "render", at = @At("TAIL"))
     private void onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {

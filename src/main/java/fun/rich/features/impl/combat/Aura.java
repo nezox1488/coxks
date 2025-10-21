@@ -265,7 +265,7 @@ public class Aura extends Module {
 
         boolean shouldRotate = switch (aimMode.getSelected()) {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
-            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
+            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(10);
             case "SpookyTime" -> true;
             case "LonyGrief" -> true;
             case "HvH" -> true;
@@ -348,10 +348,11 @@ public class Aura extends Module {
 
     public TurnsConfig getRotationConfig() {
         boolean visibleCorrection = !correctionType.isSelected("Not visible");
-        boolean freeCorrection = !correctionType.isSelected("Change Look");
+        boolean freeCorrection = !aimMode.isSelected("Legit") && correctionType.isSelected("Free");
         if (TargetStrafe.getInstance().isState() && TargetStrafe.getInstance().mode.isSelected("Grim") && target !=null) { freeCorrection = false; }
         return new TurnsConfig(getSmoothMode(), visibleCorrection, freeCorrection);
     }
+
 
     public RotateConstructor getSmoothMode() {
         if (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities") && !aimMode.isSelected("Trigger Bot")) {
