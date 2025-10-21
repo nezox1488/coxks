@@ -1,5 +1,6 @@
 package fun.rich.features.impl.combat;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.events.player.TickEvent;
 import fun.rich.features.impl.movement.AutoSprint;
 import lombok.AccessLevel;
@@ -70,6 +71,7 @@ public class AutoSwap extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent e) {
         if (modeSetting.getSelected().equals("Legit") && swapPhase != SwapPhase.READY) {
             processLegitSwap();

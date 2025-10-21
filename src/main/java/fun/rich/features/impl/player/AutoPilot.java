@@ -40,8 +40,8 @@ public class AutoPilot extends Module {
         return Instance.get(AutoPilot.class);
     }
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent event) {
         if (mc.player == null || mc.world == null || mc.getNetworkHandler() == null) {
             target = null;

@@ -1,28 +1,29 @@
-//package fun.rich.common.managers.draggables;
+//package fun.rich.display.hud;
 //
 //import dev.redstones.mediaplayerinfo.IMediaSession;
 //import dev.redstones.mediaplayerinfo.MediaInfo;
 //import dev.redstones.mediaplayerinfo.MediaPlayerInfo;
+//import fun.rich.Rich;
+//import fun.rich.features.impl.render.Hud;
+//import fun.rich.utils.client.Instance;
+//import fun.rich.utils.client.chat.StringHelper;
+//import fun.rich.utils.client.discord.Buffer;
+//import fun.rich.utils.client.managers.api.draggable.AbstractDraggable;
+//import fun.rich.utils.display.color.ColorAssist;
+//import fun.rich.utils.display.font.FontRenderer;
+//import fun.rich.utils.display.font.Fonts;
+//import fun.rich.utils.display.geometry.Render2D;
+//import fun.rich.utils.display.scissor.ScissorAssist;
+//import fun.rich.utils.display.shape.ShapeProperties;
+//import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
+//import fun.rich.utils.math.calc.Calculate;
+//import fun.rich.utils.math.time.StopWatch;
 //import net.minecraft.client.gui.DrawContext;
 //import net.minecraft.client.util.math.MatrixStack;
 //import net.minecraft.util.Identifier;
 //import net.minecraft.util.math.MathHelper;
-//import fun.rich.common.managers.api.draggable.AbstractDraggable;
-//import fun.rich.display.api.font.FontRenderer;
-//import fun.rich.display.api.font.Fonts;
-//import fun.rich.display.api.shape.ShapeProperties;
-//import fun.rich.util.display.color.ColorUtil;
-//import fun.rich.util.math.calc.MathUtil;
-//import fun.rich.util.client.discord.BufferUtil;
-//import fun.rich.util.client.Instance;
-//import fun.rich.util.math.stopwatch.StopWatch;
-//import fun.rich.util.client.chat.StringUtil;
-//import fun.rich.utils.entity.PlayerIntersectionUtil;
-//import fun.rich.util.display.geometry.Render2DUtil;
-//import fun.rich.util.display.scissor.ScissorManager;
-//import fun.rich.main.Avalora;
-//import fun.rich.common.modules.render.Hud;
 //
+//import java.awt.*;
 //import java.util.Arrays;
 //import java.util.Comparator;
 //import java.util.concurrent.ExecutorService;
@@ -48,7 +49,7 @@
 //
 //    @Override
 //    public boolean visible() {
-//        return !lastMedia.finished(2000) || PlayerIntersectionUtil.isChat(mc.currentScreen) || (session != null && mediaInfo.getPlaying());
+//        return !lastMedia.finished(2000) || PlayerInteractionHelper.isChat(mc.currentScreen) || (session != null && mediaInfo.getPlaying());
 //    }
 //
 //    @Override
@@ -64,7 +65,7 @@
 //                                !Arrays.equals(mediaInfo.getArtworkPng(), info.getArtworkPng()) ||
 //                                mediaInfo.getPlaying() != info.getPlaying()) {
 //                            if (!Arrays.equals(lastArtworkHash, info.getArtworkPng())) {
-//                                BufferUtil.registerTexture(artwork, info.getArtworkPng());
+//                                Buffer.registerTexture(artwork, info.getArtworkPng());
 //                                lastArtworkHash = info.getArtworkPng().clone();
 //                            }
 //                            mediaInfo = info;
@@ -109,7 +110,7 @@
 //    @Override
 //    public void drawDraggable(DrawContext context) {
 //        MatrixStack matrix = context.getMatrices();
-//        ScissorManager scissor = Avalora.getInstance().getScissorManager();
+//        ScissorAssist scissor = Rich.getInstance().getScissorManager();
 //        FontRenderer big = Fonts.getSize(14, Fonts.Type.DEFAULT);
 //        FontRenderer mini = Fonts.getSize(11, Fonts.Type.DEFAULT);
 //        FontRenderer icon = Fonts.getSize(17, Fonts.Type.ICONS);
@@ -124,27 +125,42 @@
 //            position = Math.min((int) (mediaInfo.getPosition() + lastMedia.elapsedTime() / 1000.0), duration);
 //        }
 //
-//        String timeDuration = StringUtil.getDuration(duration);
-//        String timePosition = StringUtil.getDuration(position);
-//        widthDuration = MathHelper.clamp(MathUtil.interpolateSmooth(1, widthDuration, duration > 0 ? (float) position / duration * maxDurationWidth : 0), 1, maxDurationWidth);
+//        String timeDuration = StringHelper.getDuration(duration);
+//        String timePosition = StringHelper.getDuration(position);
+//        widthDuration = MathHelper.clamp(Calculate.interpolateSmooth(1, widthDuration, duration > 0 ? (float) position / duration * maxDurationWidth : 0), 1, maxDurationWidth);
 //
-//        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth() + 15, getHeight()).quality(5).round(5).softness(1).thickness(2).outlineColor(ColorUtil.getOutline(0)).color(ColorUtil.getRect(0.6F)).build());
+//
+//        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth() + 15, getHeight())
+//                .round(5f).quality(12)
+//                .color(new Color(0, 0, 0, 150).getRGB())
+//                .build());
+//
+//        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth() + 15, getHeight())
+//                .round(5f)
+//                .thickness(0.1f)
+//                .outlineColor(new Color(18, 19, 20, 35).getRGB())
+//                .color(
+//                        new Color(18, 19, 20, 75).getRGB(),
+//                        new Color(0, 2, 5, 75).getRGB(),
+//                        new Color(0, 2, 5, 75).getRGB(),
+//                        new Color(18, 19, 20, 75).getRGB())
+//                .build());
 //
 //        scissor.push(matrix.peek().getPositionMatrix(), getX() + sizeArtwork + 8, getY(), getWidth() - sizeArtwork - 10 + 15, getHeight());
-//        big.drawStringWithScroll(matrix, mediaInfo.getTitle(), getX() + sizeArtwork + 8, getY() + 7, 56, ColorUtil.getText());
-//        mini.drawStringWithScroll(matrix, mediaInfo.getArtist(), getX() + sizeArtwork + 8, getY() + 15.5F, 56, ColorUtil.getText(0.75F));
+//        big.drawStringWithScroll(matrix, mediaInfo.getTitle(), getX() + sizeArtwork + 8, getY() + 7, 56, ColorAssist.getText());
+//        mini.drawStringWithScroll(matrix, mediaInfo.getArtist(), getX() + sizeArtwork + 8, getY() + 15.5F, 56, ColorAssist.getText(0.75F));
 //        scissor.pop();
 //
-//        Render2DUtil.drawTexture(context, artwork, getX() + 4, getY() + 4, sizeArtwork, 3, sizeArtwork, sizeArtwork, sizeArtwork, ColorUtil.getRect(1));
-//        mini.drawString(matrix, timePosition, getX() + 8 + sizeArtwork, getY() + 27, ColorUtil.getText());
-//        mini.drawString(matrix, timeDuration, getX() + getWidth() - 4 - mini.getStringWidth(timeDuration) + 15, getY() + 27, ColorUtil.getText());
+//        Render2D.drawTexture(context, artwork, getX() + 4, getY() + 4, sizeArtwork, 3, sizeArtwork, sizeArtwork, sizeArtwork, ColorAssist.getRect(1));
+//        mini.drawString(matrix, timePosition, getX() + 8 + sizeArtwork, getY() + 27, ColorAssist.getText());
+//        mini.drawString(matrix, timeDuration, getX() + getWidth() - 4 - mini.getStringWidth(timeDuration) + 15, getY() + 27, ColorAssist.getText());
 //
-//        rectangle.render(ShapeProperties.create(matrix, getX() + 8 + sizeArtwork, getY() + getHeight() - 8f, maxDurationWidth, 3.5f).round(0.85F).color(ColorUtil.getRectDarker(0.75F)).build());
-//        rectangle.render(ShapeProperties.create(matrix, getX() + 8 + sizeArtwork, getY() + getHeight() - 8f, widthDuration, 3.5f).softness(4).round(1).color(ColorUtil.roundClientColor(0.2F)).build());
-//        rectangle.render(ShapeProperties.create(matrix, getX() + 8 + sizeArtwork, getY() + getHeight() - 8f, widthDuration, 3.5f).round(0.85F).color(ColorUtil.roundClientColor(1)).build());
+//        rectangle.render(ShapeProperties.create(matrix, getX() + 8 + sizeArtwork, getY() + getHeight() - 8f, maxDurationWidth, 3.5f).round(0.85F).color(ColorAssist.getRectDarker(0.75F)).build());
+//        rectangle.render(ShapeProperties.create(matrix, getX() + 8 + sizeArtwork, getY() + getHeight() - 8f, widthDuration, 3.5f).softness(4).round(1).color(ColorAssist.roundClientColor(0.2F)).build());
+//        rectangle.render(ShapeProperties.create(matrix, getX() + 8 + sizeArtwork, getY() + getHeight() - 8f, widthDuration, 3.5f).round(0.85F).color(ColorAssist.roundClientColor(1)).build());
 //
-//        icon.drawString(matrix, (mediaInfo.getPlaying() ? "I" : "H"), (float) (getX() + (getWidth() + sizeArtwork + 4 - sizePausePlay) / 2) + 4.5f, getY() + 25.5f, ColorUtil.rgba(255, 255, 255, 255));
-//        icon.drawString(matrix, "O", (float) (getX() + (getWidth() + sizeArtwork + 4 - sizePausePlay) / 2) - 4, getY() + 25.5f, ColorUtil.rgba(255, 255, 255, 255));
-//        icon.drawString(matrix, "P", (float) (getX() + (getWidth() + sizeArtwork + 4 - sizePausePlay) / 2) + 14f, getY() + 25.5f, ColorUtil.rgba(255, 255, 255, 255));
+//        icon.drawString(matrix, (mediaInfo.getPlaying() ? "I" : "H"), (float) (getX() + (getWidth() + sizeArtwork + 4 - sizePausePlay) / 2) + 4.5f, getY() + 25.5f, ColorAssist.rgba(255, 255, 255, 255));
+//        icon.drawString(matrix, "O", (float) (getX() + (getWidth() + sizeArtwork + 4 - sizePausePlay) / 2) - 4, getY() + 25.5f, ColorAssist.rgba(255, 255, 255, 255));
+//        icon.drawString(matrix, "P", (float) (getX() + (getWidth() + sizeArtwork + 4 - sizePausePlay) / 2) + 14f, getY() + 25.5f, ColorAssist.rgba(255, 255, 255, 255));
 //    }
 //}

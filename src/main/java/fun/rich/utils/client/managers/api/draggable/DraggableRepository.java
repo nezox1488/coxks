@@ -22,6 +22,7 @@ public class DraggableRepository {
                 new Watermark(),
                 new Inventory(),
                 new CoolDowns(),
+//                new MediaPlayer(),
                 new StaffList(),
                 new Binds(),
                 new Notifications(),
