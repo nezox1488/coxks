@@ -52,6 +52,8 @@
     "client.screen.mainmenu.ServerListMixin",
     "game.block.BlockCollisionSpliteratorMixin",
     "game.render.GameRendererMixin",
+    "game.render.PressableWidgetMixin",
+    "game.render.SliderWidgetMixin",
     "game.world.ClientWorldMixin",
     "game.world.ClientWorldPropertiesMixin",
     "game.world.LightmapTextureManagerMixin",

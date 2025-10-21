@@ -18,7 +18,7 @@ public class ModuleRepository {
 
     public void setup() {
         register(
-//                new Jesus(),
+                new BetterMinecraft(),
                 new ProjectileHelper(),
                 new TargetStrafe(),
                 new Strafe(),
