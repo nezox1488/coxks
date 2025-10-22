@@ -80,9 +80,9 @@ public class Watermark extends AbstractDraggable {
 
         float currentX = getX() + iconWidth + 7;
 
-        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 4.5f, 0.75f, getHeight() - 5)
-                .round(1f)
-                .color(new Color(60, 60, 60, 255).getRGB())
+        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 6.5f, 0.5F, getHeight() - 8)
+                .round(0)
+                .color(ColorAssist.getText(0.5F))
                 .build());
 
         currentX += 4;
@@ -92,9 +92,9 @@ public class Watermark extends AbstractDraggable {
 
         currentX += titleWidth + 9;
 
-        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 4.5f, 0.75f, getHeight() - 5)
-                .round(1f)
-                .color(new Color(60, 60, 60, 255).getRGB())
+        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 6.5f, 0.5F, getHeight() - 8)
+                .round(0f)
+                .color(ColorAssist.getText(0.5F))
                 .build());
 
         currentX += 5;
@@ -107,9 +107,9 @@ public class Watermark extends AbstractDraggable {
 
         currentX += 10;
 
-        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 4.5f, 0.75f, getHeight() - 5)
-                .round(1f)
-                .color(new Color(60, 60, 60, 255).getRGB())
+        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 6.5f, 0.5F, getHeight() - 8)
+                .round(0)
+                .color(ColorAssist.getText(0.5F))
                 .build());
 
         currentX += 5;

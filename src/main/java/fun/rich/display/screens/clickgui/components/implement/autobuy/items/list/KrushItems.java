@@ -17,6 +17,7 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import java.util.List;
+import java.util.Optional;
 
 public class KrushItems {
 
@@ -204,17 +205,33 @@ public class KrushItems {
         if (client.world == null) {
             return;
         }
-        RegistryWrapper.WrapperLookup registryLookup = client.world.getRegistryManager();
-        RegistryWrapper<Enchantment> enchantmentRegistry = registryLookup.getOrThrow(RegistryKeys.ENCHANTMENT);
-        ItemEnchantmentsComponent.Builder builder = new ItemEnchantmentsComponent.Builder(
-                stack.getOrDefault(DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT));
-        for (int i = 0; i < enchantments.length; i += 2) {
-            RegistryKey<Enchantment> enchantKey = (RegistryKey<Enchantment>) enchantments[i];
-            int level = (int) enchantments[i + 1];
-            RegistryEntry<Enchantment> enchantmentEntry = enchantmentRegistry.getOrThrow(enchantKey);
-            builder.add(enchantmentEntry, level);
+
+        try {
+            RegistryWrapper.WrapperLookup registryLookup = client.world.getRegistryManager();
+            RegistryWrapper<Enchantment> enchantmentRegistry = registryLookup.getOrThrow(RegistryKeys.ENCHANTMENT);
+            ItemEnchantmentsComponent.Builder builder = new ItemEnchantmentsComponent.Builder(
+                    stack.getOrDefault(DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT));
+
+            for (int i = 0; i < enchantments.length; i += 2) {
+                try {
+                    RegistryKey<Enchantment> enchantKey = (RegistryKey<Enchantment>) enchantments[i];
+                    int level = (int) enchantments[i + 1];
+
+                    Optional<RegistryEntry.Reference<Enchantment>> enchantmentOpt =
+                            enchantmentRegistry.getOptional(enchantKey);
+
+                    if (enchantmentOpt.isPresent()) {
+                        builder.add(enchantmentOpt.get(), level);
+                    } else {
+                    }
+                } catch (Exception e) {
+                }
+            }
+
+            stack.set(DataComponentTypes.ENCHANTMENTS, builder.build());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        stack.set(DataComponentTypes.ENCHANTMENTS, builder.build());
     }
 
     private static void setupItem(ItemStack stack, Text name, List<Text> lore) {

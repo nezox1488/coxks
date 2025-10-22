@@ -19,6 +19,7 @@ import static fun.rich.common.animation.Direction.FORWARDS;
 public class StatusRender extends AbstractComponent {
     private boolean state;
     private Runnable runnable;
+    private float alphaMultiplier = 1.0f;
     private final Animation alphaAnimation = new Decelerate().setMs(400).setValue(100);
     private final Animation stencilAnimation = new Decelerate().setMs(200).setValue(8);
     private final Animation sliderAnimation = new Decelerate().setMs(225).setValue(8);
@@ -39,6 +40,11 @@ public class StatusRender extends AbstractComponent {
         return this;
     }
 
+    public StatusRender setAlphaMultiplier(float alphaMultiplier) {
+        this.alphaMultiplier = alphaMultiplier;
+        return this;
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         MatrixStack matrix = context.getMatrices();
@@ -46,26 +52,30 @@ public class StatusRender extends AbstractComponent {
         stencilAnimation.setDirection(state ? FORWARDS : BACKWARDS);
         sliderAnimation.setDirection(state ? FORWARDS : BACKWARDS);
         int stateColor = new Color(128, 128, 128, 255).getRGB();
-        int opacity = alphaAnimation.getOutput().intValue();
+        int opacity = (int) (alphaAnimation.getOutput().intValue() * alphaMultiplier);
         float sliderX = x + sliderAnimation.getOutput().floatValue();
+
+        int baseAlpha = (int) (255 * alphaMultiplier);
+        int bgAlpha = (int) (40 * alphaMultiplier);
+
         rectangle.render(ShapeProperties.create(matrix, x, y, 16, 8)
-                .round(4).thickness(0).softness(0)
-                .outlineColor(new Color(128, 128, 128, 255).getRGB())
-                .color(new Color(128, 128, 128, 40).getRGB())
+                .round(4).thickness(0).softness(1)
+                .outlineColor(new Color(128, 128, 128, baseAlpha).getRGB())
+                .color(new Color(128, 128, 128, bgAlpha).getRGB())
                 .build());
         rectangle.render(ShapeProperties.create(matrix, x, y, 16, 8)
-                .round(4).thickness(0).softness(0)
-                .outlineColor(new Color(128, 128, 128, 255).getRGB())
+                .round(4).thickness(0).softness(1)
+                .outlineColor(new Color(128, 128, 128, baseAlpha).getRGB())
                 .color(Calculate.applyOpacity(stateColor, opacity))
                 .build());
         rectangle.render(ShapeProperties.create(matrix, sliderX - 0.5f, y - 0.5f, 9, 9)
                 .round(4.5f).thickness(2).softness(1)
-                .outlineColor(new Color(155, 155, 165, 255).getRGB())
+                .outlineColor(new Color(155, 155, 165, baseAlpha).getRGB())
                 .color(
-                        new Color(61, 67, 71, 255).getRGB(),
-                        new Color(71, 77, 81, 255).getRGB(),
-                        new Color(81, 87, 91, 255).getRGB(),
-                        new Color(91, 97, 101, 255).getRGB())
+                        new Color(61, 67, 71, baseAlpha).getRGB(),
+                        new Color(71, 77, 81, baseAlpha).getRGB(),
+                        new Color(81, 87, 91, baseAlpha).getRGB(),
+                        new Color(91, 97, 101, baseAlpha).getRGB())
                 .build());
     }
 

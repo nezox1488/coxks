@@ -24,6 +24,10 @@ public class Animation implements AnimationCalculation {
         return this.direction == direction && isDone();
     }
 
+    public Direction getDirection() {
+        return this.direction;
+    }
+
     public void setDirection(Direction direction) {
         if (this.direction != direction) {
             this.direction = direction;
