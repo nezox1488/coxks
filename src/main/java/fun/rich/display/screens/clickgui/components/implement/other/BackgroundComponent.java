@@ -70,6 +70,7 @@ public class BackgroundComponent extends AbstractComponent {
         String currentTime = LocalTime.now().format(formatter);
         String point = " • ";
         DiscordManager discord = Rich.getInstance().getDiscordManager();
+        Rich.getInstance().getScissorManager().push(matrix.peek().getPositionMatrix(), 0, 0, window.getScaledWidth(), window.getScaledHeight());
 
         blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(64)
                 .color(new Color(0, 0, 0, 200).getRGB())
@@ -453,7 +454,7 @@ public class BackgroundComponent extends AbstractComponent {
             Fonts.getSize(15, Fonts.Type.DEFAULT).drawString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName(), x + 63, y + 13.5f, new Color(245, 245, 255, 255).getRGB());
 
         }
-
+        Rich.getInstance().getScissorManager().pop();
     }
 
     @Override

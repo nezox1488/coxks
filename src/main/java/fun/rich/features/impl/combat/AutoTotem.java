@@ -7,7 +7,6 @@ import fun.rich.features.module.ModuleCategory;
 import fun.rich.features.module.setting.implement.BooleanSetting;
 import fun.rich.features.module.setting.implement.SelectSetting;
 import fun.rich.features.module.setting.implement.SliderSettings;
-import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.utils.interactions.inv.InventoryResult;
 import fun.rich.utils.interactions.inv.InventoryToolkit;
@@ -48,7 +47,6 @@ public class AutoTotem extends Module {
     private final BooleanSetting returnItem = new BooleanSetting("Возвращать предмет", "Вернуть предыдущий предмет в руку/хотбар после использования тотема")
             .setValue(true);
 
-    private long lastActionTime = 0L;
     private int savedSlot = -1;
     private int totemSlot = -1;
     private long actionStartTime = 0L;
@@ -57,8 +55,9 @@ public class AutoTotem extends Module {
     private Phase phase = Phase.READY;
     private ItemStack previousMainHandStack = ItemStack.EMPTY;
     private int previousMainHandSlot = -1;
+    private boolean needsReturn = false;
 
-    private enum Phase { READY, SLOWING_DOWN, WAITING_STOP, PREPARE, AWAIT_SWITCH, EQUIP, SPEEDING_UP, FINISH }
+    private enum Phase { READY, SLOWING_DOWN, WAITING_STOP, SWAP_TOTEM, AWAIT_SWITCH, RESTORE_SLOT, SPEEDING_UP, FINISH }
 
     public AutoTotem() {
         super("AutoTotem", "Auto Totem", ModuleCategory.COMBAT);
@@ -86,11 +85,12 @@ public class AutoTotem extends Module {
 
         if (phase != Phase.READY) execute();
 
-        if (phase == Phase.READY && returnItem.isValue() && previousMainHandSlot >= 0 && !previousMainHandStack.isEmpty()) {
+        if (phase == Phase.READY && needsReturn && returnItem.isValue() && previousMainHandSlot >= 0 && !previousMainHandStack.isEmpty()) {
             if (MC.player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
                 attemptReturnPreviousItem();
                 previousMainHandStack = ItemStack.EMPTY;
                 previousMainHandSlot = -1;
+                needsReturn = false;
             }
         }
     }
@@ -104,7 +104,11 @@ public class AutoTotem extends Module {
         InventoryResult hotbar = InventoryToolkit.findItemInHotBar(Items.TOTEM_OF_UNDYING);
         if (hotbar.found()) {
             totemSlot = hotbar.slot();
-            startEquip();
+            if (modeSetting.getSelected().equals("Default")) {
+                phase = Phase.SWAP_TOTEM;
+            } else {
+                startLegitEquip();
+            }
             return;
         }
 
@@ -116,23 +120,29 @@ public class AutoTotem extends Module {
             totemSlot = inv.slot();
             previousMainHandSlot = MC.player.getInventory().selectedSlot;
             previousMainHandStack = MC.player.getMainHandStack().copy();
+            needsReturn = true;
             if (modeSetting.getSelected().equals("Legit")) {
-                wasForwardPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
-                wasBackPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
-                wasLeftPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
-                wasRightPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
-                phase = Phase.SLOWING_DOWN;
-                actionStartTime = System.currentTimeMillis();
+                startLegitEquip();
             } else {
-                phase = Phase.PREPARE;
+                phase = Phase.SWAP_TOTEM;
             }
         } else {
             resetState();
         }
     }
 
-    private void startEquip() {
-        phase = Phase.PREPARE;
+    private void startLegitEquip() {
+        wasForwardPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
+        wasBackPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
+        wasLeftPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
+        wasRightPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
+        phase = Phase.SLOWING_DOWN;
+        actionStartTime = System.currentTimeMillis();
+        keysOverridden = true;
+        MC.options.forwardKey.setPressed(false);
+        MC.options.backKey.setPressed(false);
+        MC.options.leftKey.setPressed(false);
+        MC.options.rightKey.setPressed(false);
     }
 
     private void execute() {
@@ -147,64 +157,82 @@ public class AutoTotem extends Module {
             case SLOWING_DOWN -> {
                 MC.player.input.movementForward = 0;
                 MC.player.input.movementSideways = 0;
-                if (!keysOverridden) {
-                    MC.options.forwardKey.setPressed(false);
-                    MC.options.backKey.setPressed(false);
-                    MC.options.leftKey.setPressed(false);
-                    MC.options.rightKey.setPressed(false);
-                    keysOverridden = true;
+                if (MC.player.isSprinting()) {
+                    MC.player.setSprinting(false);
                 }
-                if (elapsed > 1) phase = Phase.WAITING_STOP;
+                if (elapsed > 1) {
+                    phase = Phase.WAITING_STOP;
+                }
             }
             case WAITING_STOP -> {
                 MC.player.input.movementForward = 0;
                 MC.player.input.movementSideways = 0;
                 double vx = Math.abs(MC.player.getVelocity().x);
                 double vz = Math.abs(MC.player.getVelocity().z);
-                if ((vx < 0.001 && vz < 0.001) || elapsed > 15) phase = Phase.PREPARE;
-            }
-            case PREPARE -> {
-                if (totemSlot < 0) {
-                    resetState();
-                    return;
-                }
-
-                int slotIndex = totemSlot;
-                if (slotIndex >= 0 && slotIndex <= 8) slotIndex += 36;
-
-                if (MC.interactionManager != null && MC.player != null && MC.player.playerScreenHandler != null) {
-                    MC.interactionManager.clickSlot(
-                            MC.player.playerScreenHandler.syncId,
-                            slotIndex,
-                            40,
-                            SlotActionType.SWAP,
-                            MC.player
-                    );
-                }
-
-                phase = Phase.AWAIT_SWITCH;
-            }
-
-            case AWAIT_SWITCH -> {
-                if (isTotemInOffhand()) phase = Phase.EQUIP;
-            }
-            case EQUIP -> {
-                InventoryToolkit.switchTo(savedSlot);
-                if (modeSetting.getSelected().equals("Legit")) {
-                    restoreKeyStates();
+                if ((vx < 0.001 && vz < 0.001) || elapsed > 75) {
+                    phase = Phase.SWAP_TOTEM;
                     actionStartTime = System.currentTimeMillis();
-                    phase = Phase.SPEEDING_UP;
-                } else phase = Phase.FINISH;
+                }
+            }
+            case SWAP_TOTEM -> {
+                if (elapsed > 25) {
+                    if (totemSlot < 0) {
+                        resetState();
+                        return;
+                    }
+
+                    int slotIndex = totemSlot;
+                    if (slotIndex >= 0 && slotIndex <= 8) slotIndex += 36;
+
+                    if (MC.interactionManager != null && MC.player.playerScreenHandler != null) {
+                        MC.interactionManager.clickSlot(
+                                MC.player.playerScreenHandler.syncId,
+                                slotIndex,
+                                40,
+                                SlotActionType.SWAP,
+                                MC.player
+                        );
+                    }
+
+                    phase = Phase.AWAIT_SWITCH;
+                    actionStartTime = System.currentTimeMillis();
+                }
+            }
+            case AWAIT_SWITCH -> {
+                if (isTotemInOffhand() || elapsed > 50) {
+                    phase = Phase.RESTORE_SLOT;
+                    actionStartTime = System.currentTimeMillis();
+                }
+            }
+            case RESTORE_SLOT -> {
+                if (elapsed > 25) {
+                    InventoryToolkit.switchTo(savedSlot);
+                    if (modeSetting.getSelected().equals("Legit")) {
+                        restoreKeyStates();
+                        actionStartTime = System.currentTimeMillis();
+                        phase = Phase.SPEEDING_UP;
+                    } else {
+                        phase = Phase.FINISH;
+                    }
+                }
             }
             case SPEEDING_UP -> {
                 long speedupElapsed = System.currentTimeMillis() - actionStartTime;
-                float progress = Math.min(1.0f, speedupElapsed / 20.0f);
                 if (MC.player.input != null) {
                     boolean forward = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
-                    float targetForward = forward ? 1.0f : 0;
-                    MC.player.input.movementForward = lerp(MC.player.input.movementForward, targetForward * progress, 0.4f);
+                    boolean back = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
+                    if (forward) {
+                        MC.player.input.movementForward = 1.0f;
+                        if (!MC.player.isSprinting()) {
+                            MC.player.setSprinting(true);
+                        }
+                    } else if (back) {
+                        MC.player.input.movementForward = -1.0f;
+                    }
                 }
-                if (speedupElapsed > 25) phase = Phase.FINISH;
+                if (speedupElapsed > 75) {
+                    phase = Phase.FINISH;
+                }
             }
             case FINISH -> resetState();
         }
@@ -236,10 +264,6 @@ public class AutoTotem extends Module {
     private boolean isTotemInOffhand() {
         ItemStack stack = MC.player.getOffHandStack();
         return stack.getItem() == Items.TOTEM_OF_UNDYING;
-    }
-
-    private float lerp(float start, float end, float delta) {
-        return start + (end - start) * delta;
     }
 
     private void restoreKeyStates() {
@@ -287,21 +311,14 @@ public class AutoTotem extends Module {
         savedSlot = -1;
         actionStartTime = 0L;
         phase = Phase.READY;
-        if (returnItem.isValue()) {
-            if (previousMainHandSlot >= 0 && !previousMainHandStack.isEmpty()) {
-                attemptReturnPreviousItem();
-            }
-            previousMainHandStack = ItemStack.EMPTY;
-            previousMainHandSlot = -1;
-        } else {
-            previousMainHandStack = ItemStack.EMPTY;
-            previousMainHandSlot = -1;
-        }
     }
 
     @Override
     public void deactivate() {
         resetState();
+        previousMainHandStack = ItemStack.EMPTY;
+        previousMainHandSlot = -1;
+        needsReturn = false;
         super.deactivate();
     }
 }
