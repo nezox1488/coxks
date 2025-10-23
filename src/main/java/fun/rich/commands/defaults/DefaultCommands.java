@@ -22,7 +22,8 @@ public final class DefaultCommands {
                 new PrefixCommand(),
                 new TargetCommand(),
                 new StaffCommand(),
-                new BlockESPCommand()
+                new BlockESPCommand(),
+                new TabParserCommand()
         ));
         return Collections.unmodifiableList(commands);
     }
