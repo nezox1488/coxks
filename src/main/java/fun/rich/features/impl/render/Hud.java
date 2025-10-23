@@ -17,7 +17,7 @@ public class Hud extends Module {
         return Instance.get(Hud.class);
     }
 
-    public MultiSelectSetting interfaceSettings = new MultiSelectSetting("Элементы", "Настройка элементов интерфейса").value("Watermark", "Keybinds", "Potions", "Staff List", "Target Hud", "Binds", "Cool Downs", "Inventory", "Player Info", "Notifications", "Hot Keys")
+    public MultiSelectSetting interfaceSettings = new MultiSelectSetting("Элементы", "Настройка элементов интерфейса").value("Watermark", "Hot Keys", "Potions", "Staff List", "Target Hud", "Binds", "Cool Downs", "Inventory", "Player Info", "Notifications", "Hot Keys")
             .selected("Watermark", "Hot Keys", "Potions", "Staff List", "Target Hud", "Binds", "Cool Downs", "Inventory", "Player Info", "Notifications" );
 
     public MultiSelectSetting notificationSettings = new MultiSelectSetting("Уведомления", "Выберите, когда будут появляться уведомления")

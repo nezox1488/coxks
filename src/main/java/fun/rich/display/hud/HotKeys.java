@@ -62,35 +62,35 @@ public class HotKeys extends AbstractDraggable {
         float textWidth = items.getStringWidth(moduleCountText);
         float boxWidth = textWidth + 6;
 
-//        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth() - 39, 15.5F)
-//                .round(4,4,4,4).quality(12)
-//                .color(new Color(0, 0, 0, 150).getRGB())
-//                .build());
-//
-//        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth() - 39, 15.5F)
-//                .round(4,4,4,4)
-//                .thickness(0.1f)
-//                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-//                .color(
-//                        new Color(18, 19, 20, 75).getRGB(),
-//                        new Color(0, 2, 5, 75).getRGB(),
-//                        new Color(0, 2, 5, 75).getRGB(),
-//                        new Color(18, 19, 20, 75).getRGB())
-//                .build());
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0).quality(12)
+                .color(new Color(0, 0, 0, 150).getRGB())
+                .build());
 
-//        items.drawString(matrix, "Active:", getX() + getWidth() - boxWidth - 21, getY() + 7, ColorAssist.getText());
-//        items.drawString(matrix, moduleCountText, getX() + getWidth() - boxWidth - 2, getY() + 7, new Color(225, 225, 255, 255).getRGB());
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
+                .round(4,0,4,0)
+                .thickness(0.1f)
+                .outlineColor(new Color(33, 33, 33, 255).getRGB())
+                .color(
+                        new Color(18, 19, 20, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(0, 2, 5, 75).getRGB(),
+                        new Color(18, 19, 20, 75).getRGB())
+                .build());
 
-//        rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6)
-//                .color(ColorAssist.getText(0.5F)).round(0F).build());
+        items.drawString(matrix, "Active:", getX() + getWidth() - boxWidth - 21, getY() + 7, ColorAssist.getText());
+        items.drawString(matrix, moduleCountText, getX() + getWidth() - boxWidth - 2, getY() + 7, new Color(225, 225, 255, 255).getRGB());
+
+        rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6)
+                .color(ColorAssist.getText(0.5F)).round(0F).build());
 
         blur.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(4,4,4,4).quality(12)
+                .round(0,4,0,4).quality(12)
                 .color(new Color(0, 0, 0, 150).getRGB())
                 .build());
 
         rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(4,4,4,4)
+                .round(0,4,0,4)
                 .thickness(0.1f)
                 .outlineColor(new Color(33, 33, 33, 255).getRGB())
                 .color(
@@ -159,7 +159,7 @@ public class HotKeys extends AbstractDraggable {
                 offset += (int) (animation * 11);
             }
         }
-        setWidth(maxWidth + 15);
+        setWidth(maxWidth + 10);
         setHeight(offset);
     }
 }

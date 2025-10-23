@@ -2,7 +2,7 @@ package fun.rich.display.screens.mainmenu.altscreen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fun.rich.Rich;
-import fun.rich.mixin.client.IMinecraftClient;
+import fun.rich.mixins.client.IMinecraftClient;
 import fun.rich.display.screens.mainmenu.altscreen.impl.Account;
 import fun.rich.display.screens.mainmenu.altscreen.impl.AccountRepository;
 import fun.rich.utils.display.color.ColorAssist;

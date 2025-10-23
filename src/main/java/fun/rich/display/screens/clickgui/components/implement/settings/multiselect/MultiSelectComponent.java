@@ -95,7 +95,7 @@ public class MultiSelectComponent extends AbstractSettingComponent {
         String selectedName = String.join(", ", setting.getSelected());
         float offset = 64;
         ScissorAssist scissor = Rich.getInstance().getScissorManager();
-        scissor.push(matrix.peek().getPositionMatrix(), x1 - 2, (float) window.getScaledHeight() / 2 - 1012, 64, 800);
+        scissor.push(matrix.peek().getPositionMatrix(), x1 - 2, y + 4, 64, 14);
         font.drawStringWithScroll(matrix, selectedName, x1, y + 13, offset, new Color(225, 225, 225, 225).getRGB());
         scissor.pop();
 //        if (font.getStringWidth(selectedName) - offset > 0) {
