@@ -90,7 +90,7 @@ public class Aura extends Module {
     public static float legitSprintNeed;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("HvH", "Matrix", "Snap", "FunTime", "HolyWorld", "SpookyTime", "LonyGrief", "Trigger Bot")
+            .value("HvH", "Matrix", "Snap", "FunTime", "HolyWorld", "SpookyTime", "Trigger Bot")
             .selected("Matrix");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")

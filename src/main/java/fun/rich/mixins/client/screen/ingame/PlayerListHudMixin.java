@@ -1,6 +1,7 @@
 package fun.rich.mixins.client.screen.ingame;
 
 import com.mojang.authlib.GameProfile;
+import fun.rich.features.impl.render.BetterMinecraft;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.PlayerListHud;
 import net.minecraft.client.network.PlayerListEntry;
@@ -23,6 +24,11 @@ public class PlayerListHudMixin {
 
     @Inject(method = "collectPlayerEntries", at = @At("RETURN"), cancellable = true)
     private void addVanishedEntries(CallbackInfoReturnable<List<PlayerListEntry>> cir) {
+
+        if (!BetterMinecraft.getInstance().isState() || !BetterMinecraft.getInstance().getTabVanishButton().isValue()) {
+            return;
+        }
+
         MinecraftClient client = MinecraftClient.getInstance();
         List<PlayerListEntry> originalList = cir.getReturnValue();
         List<PlayerListEntry> vanishedList = new ArrayList<>();

@@ -23,10 +23,12 @@ public class BetterMinecraft extends Module {
 
     BooleanSetting betterButton = new BooleanSetting("Кастомные кнопки", "язаипалсяэтопаститьспасите")
             .setValue(true);
+    BooleanSetting tabVanishButton = new BooleanSetting("Спектаторы в табе", "язаипалсяэтопаститьспасите")
+            .setValue(true);
 
     public BetterMinecraft() {
         super("BetterMinecraft", "Better Minecraft", ModuleCategory.RENDER);
-        setup(betterButton);
+        setup(betterButton, tabVanishButton);
     }
 
 }
