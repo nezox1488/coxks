@@ -41,15 +41,14 @@ public class FakeAngle extends RotateConstructor {
 
         float rotationDifference = (float) Math.hypot(yawDelta, pitchDelta);
 
-        float straightLineYaw = Math.abs(yawDelta / rotationDifference) * 1024.0F;
-        float straightLinePitch = Math.abs(pitchDelta / rotationDifference) * 1024.0F;
+        float straightLineYaw = Math.abs(yawDelta / rotationDifference) * 65.0F;
+        float straightLinePitch = Math.abs(pitchDelta / rotationDifference) * 65.0F;
 
         float jitterYaw = (float) (8 * Math.sin(System.currentTimeMillis() / 85D));
         float jitterPitch = (float) (8 * Math.sin(System.currentTimeMillis() / 95D));
 
         float newYaw = currentAngle.getYaw() + Math.min(Math.max(yawDelta, -straightLineYaw), straightLineYaw) ;
         float newPitch = currentAngle.getPitch() + Math.min(Math.max(pitchDelta, -straightLinePitch), straightLinePitch) ;
-
 
         return new Turns(newYaw, newPitch);
     }

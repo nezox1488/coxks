@@ -251,7 +251,11 @@ public class Aura extends Module {
 
         boolean elytraMode = mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities");
 
-        fakeRotate = false;
+        if (aimMode.isSelected("LonyGrief")) {
+            fakeRotate = true;
+        } else {
+            fakeRotate = false;
+        }
 
         if (fakeRotate && target != null) {
             FakeAngle fake = new FakeAngle();
