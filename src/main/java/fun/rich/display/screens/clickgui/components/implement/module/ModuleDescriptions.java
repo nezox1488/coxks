@@ -40,7 +40,6 @@ public class ModuleDescriptions {
         if (module instanceof InventoryMove) return "Позволяет двигаться при открытом интерфейсе.";
         if (module instanceof Blink) return "Создает иллюзию телепортации для других игроков.";
         if (module instanceof AutoTool) return "Автоматически выбирает подходящий инструмент.";
-        if (module instanceof Nuker) return "Быстро разрушает блоки вокруг игрока.";
         if (module instanceof Fly) return "Позволяет летать в режиме выживания.";
         if (module instanceof FastBreak) return "Ускоряет разрушение блоков.";
         if (module instanceof CameraSettings) return "Настраивает поведение камеры игрока.";

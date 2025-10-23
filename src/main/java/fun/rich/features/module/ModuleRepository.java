@@ -64,7 +64,6 @@ public class ModuleRepository {
                 new InventoryMove(),
                 new Blink(),
                 new AutoTool(),
-                new Nuker(),
                 new Fly(),
                 new FastBreak(),
                 new CameraSettings(),

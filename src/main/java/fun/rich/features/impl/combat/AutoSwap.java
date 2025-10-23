@@ -189,18 +189,27 @@ public class AutoSwap extends Module {
     private Slot findValidSlot(Predicate<Slot> slotPredicate) {
         Predicate<Slot> combinedPredicate = s -> s.id != 45 && slotPredicate.test(s);
 
-        Slot first = InventoryTask.getSlot(getItemByType(firstItem.getSelected()), Comparator.comparing(s -> s.getStack().hasEnchantments()), combinedPredicate);
-        if (first != null && mc.player.getOffHandStack().getItem() != first.getStack().getItem()) {
-            return first;
+        Item firstType = getItemByType(firstItem.getSelected());
+        Item secondType = getItemByType(secondItem.getSelected());
+        Item offHandItem = mc.player.getOffHandStack().getItem();
+
+        if (firstType == secondType) {
+            return null;
         }
 
-        Slot second = InventoryTask.getSlot(getItemByType(secondItem.getSelected()), Comparator.comparing(s -> s.getStack().hasEnchantments()), combinedPredicate);
-        if (second != null && mc.player.getOffHandStack().getItem() != second.getStack().getItem()) {
-            return second;
+        if (offHandItem != firstType) {
+            Slot first = InventoryTask.getSlot(firstType, Comparator.comparing(s -> s.getStack().hasEnchantments()), combinedPredicate);
+            if (first != null) return first;
+        }
+
+        if (offHandItem != secondType) {
+            Slot second = InventoryTask.getSlot(secondType, Comparator.comparing(s -> s.getStack().hasEnchantments()), combinedPredicate);
+            if (second != null) return second;
         }
 
         return null;
     }
+
 
     private void resetState() {
         if (keysOverridden) {

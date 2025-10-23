@@ -49,7 +49,7 @@ public class Spider extends Module {
     StopWatch stopWatch = new StopWatch();
 
     SelectSetting mode = new SelectSetting("Режим", "Выбирает режим")
-            .value("Block", "SpookyTime", "FunTime").selected("Block");
+            .value("SpookyTime", "FunTime").selected("Block");
 
     public Spider() {
         super("Spider", ModuleCategory.MOVEMENT);
@@ -62,13 +62,6 @@ public class Spider extends Module {
 
     @EventHandler
     public void onPostTick(PostTickEvent e) {
-
-        if (stopWatch.finished(120)) {
-            mc.player.setVelocity(0, 0.4F, 0);
-            mc.player.setOnGround(true);
-            stopWatch.reset();
-        }
-
         if (mode.isSelected("FunTime")) {
             if (mc.options.jumpKey.isPressed()) return;
             Box playerBox = mc.player.getBoundingBox().expand(-1e-3);
