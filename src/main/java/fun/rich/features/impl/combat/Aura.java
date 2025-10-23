@@ -100,8 +100,8 @@ public class Aura extends Module {
     SliderSettings attackRange = new SliderSettings("Дистанция удара", "Дальность атаки до цели")
             .setValue(3).range(1F, 6F);
 
-    SliderSettings lookRange = new SliderSettings("Дистанция поиска", "Диапазон поиска до цели")
-            .setValue(1.5f).range(0F, 10F);
+    SliderSettings lookRange = new SliderSettings("Дополнительная дистанция поиска", "Диапазон поиска до цели")
+            .setValue(1.5f).range(0F, 2F);
 
     MultiSelectSetting attackSetting = new MultiSelectSetting("Настройки", "Позволяет настроить работу функции")
             .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Fake Lag")
@@ -251,11 +251,7 @@ public class Aura extends Module {
 
         boolean elytraMode = mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities");
 
-        if (aimMode.isSelected("LonyGrief")) {
-            fakeRotate = true;
-        } else {
-            fakeRotate = false;
-        }
+        fakeRotate = false;
 
         if (fakeRotate && target != null) {
             FakeAngle fake = new FakeAngle();
@@ -265,9 +261,15 @@ public class Aura extends Module {
 
         boolean shouldRotate = switch (aimMode.getSelected()) {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
-            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(10);
+            case "d" -> {
+                PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
+                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.5 && attackHandler.getAttackTimer().finished(400);
+                yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(50);
+            }
+            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(50);
             case "SpookyTime" -> true;
             case "LonyGrief" -> true;
+            case "ds" -> true;
             case "HvH" -> true;
             case "Matrix" -> true;
             case "HolyWorld" -> {

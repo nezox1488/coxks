@@ -88,7 +88,6 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     private float hookSilentRotationYaw(float original) {
         if (mc.player != null) {
             float currentYaw = TurnsConnection.INSTANCE.getRotation().getYaw();
-
             float newBodyYaw = Simulations.calculateBodyYaw(
                     currentYaw,
                     prevBodyYaw,
