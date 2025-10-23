@@ -47,7 +47,7 @@ public class ElytraMotion extends Module {
 //        }
 
         if (aura.isState()) {
-            if (aura.isState() && aura.getTarget() !=null && mc.player.distanceTo(aura.getTarget()) < aura.getAttackRange().getValue() - 0.425F) {
+            if (aura.isState() && aura.getTarget() !=null && mc.player.distanceTo(aura.getTarget()) < aura.getAttackRange().getValue() - 1F) {
                 mc.player.setVelocity(0, 0.02, 0);
             }
         }
@@ -57,7 +57,7 @@ public class ElytraMotion extends Module {
     @EventHandler
     public void onPacket(PacketEvent e) {
         Aura aura = Instance.get(Aura.class);
-        if (aura.isState() && aura.getTarget() != null && mc.player.distanceTo(aura.getTarget()) < aura.getAttackRange().getValue() - 0.15F) {
+        if (aura.isState() && aura.getTarget() != null && mc.player.distanceTo(aura.getTarget()) < aura.getAttackRange().getValue() - 1F) {
             switch (e.getPacket()) {
                 default -> {
                 }

@@ -33,6 +33,7 @@ public class ModuleRepository {
                 new ClickPearl(),
 //                new HitEffect(),
                 new ClickFriend(),
+                new TabParser(),
                 new WindJump(),
                 new TargetESP(),
                 new NoWeb(),
