@@ -11,6 +11,7 @@ import fun.rich.utils.math.time.StopWatch;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import org.lwjgl.system.MathUtil;
 
 import java.security.SecureRandom;
 
@@ -30,23 +31,25 @@ public class LGAngle extends RotateConstructor {
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        float speed = 1F;
-        float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
-        float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (32 * Math.sin(System.currentTimeMillis() / 22D));
-        float jitterPitch = canAttack ? 0 : (float) (2 * Math.sin(System.currentTimeMillis() / 18D));
-
-        if (aura.getTarget() == null || !aura.isState()) {
-            jitterYaw = 0;
-            jitterPitch = 0;
+        float distanceToTarget = 0;
+        if (entity != null) {
+            distanceToTarget = (float) mc.player.distanceTo(entity);
         }
 
-        if (!aura.isState()) { jitterYaw = 0; jitterPitch = 0; }
+        float baseSpeed = 1;
+
+        float speed = baseSpeed;
+        float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
+        float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
+        float jitterYaw = canAttack ? 0 : (float) (22 * Math.sin(System.currentTimeMillis() / 37D));
+        float jitterPitch = canAttack ? 0 : (float) (11 * Math.sin(System.currentTimeMillis() / 32D));
+
+        if (!aura.isState() && attackHandler.getAttackTimer().finished(1500)) { jitterYaw = 0; jitterPitch = 0; }
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
         float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
-        moveAngle.setYaw(lerp(speed, currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
-        moveAngle.setPitch(lerp(speed, currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
+        moveAngle.setYaw(MathHelper.lerp(speed, currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
+        moveAngle.setPitch(MathHelper.lerp(speed, currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
 
         return moveAngle;
     }

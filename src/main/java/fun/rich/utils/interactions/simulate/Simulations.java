@@ -1,5 +1,6 @@
 package fun.rich.utils.interactions.simulate;
 
+import fun.rich.features.impl.combat.Aura;
 import fun.rich.features.impl.misc.SelfDestruct;
 import lombok.experimental.UtilityClass;
 import net.minecraft.entity.Entity;
@@ -101,7 +102,7 @@ public class Simulations implements QuickImports {
             }
         }
 
-        if (mc.player != null && mc.player.handSwingProgress - 0.2F > 0F) {
+        if (mc.player != null && mc.player.handSwingProgress - 0.2F > 0F && !Aura.getInstance().getAimMode().isSelected("LonyGrief")) {
            bodyYaw = yaw;
         }
 

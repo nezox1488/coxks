@@ -252,7 +252,7 @@ public class Aura extends Module {
         boolean elytraMode = mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities");
 
         if (aimMode.isSelected("LonyGrief")) {
-            fakeRotate = true;
+            fakeRotate = false;
         } else {
             fakeRotate = false;
         }
@@ -279,7 +279,7 @@ public class Aura extends Module {
             case "HolyWorld" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
                 boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.06;
-                yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
+                yield isJumpPeakOrFalling && mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue() || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100) ;
             }
             default -> false;
         };

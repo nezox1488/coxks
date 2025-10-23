@@ -29,7 +29,7 @@ public class HAngle extends RotateConstructor {
         Aura aura = Aura.getInstance();
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         if (entity !=null) {
-            Vec3d aimPoint = Vector.hitbox(entity, 1,1, 1, 3.5F);
+            Vec3d aimPoint = Vector.hitbox(entity, 1,1.3F, 1, 6F);
             targetAngle = MathAngle.calculateAngle(aimPoint);
         }
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);

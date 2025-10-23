@@ -41,12 +41,8 @@ public class FTAngle extends RotateConstructor {
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
 
         if (entity != null) {
-<<<<<<< Updated upstream
             float speed = 0.8F;
             StopWatch attackTimer = attackHandler.getAttackTimer();
-=======
-            float speed = 0.50F;
->>>>>>> Stashed changes
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
 
@@ -61,7 +57,6 @@ public class FTAngle extends RotateConstructor {
 
             return moveAngle;
         } else {
-<<<<<<< Updated upstream
             StopWatch attackTimer = attackHandler.getAttackTimer();
             int suck = count % 3;
             float speed =  attackTimer.finished(470)
@@ -85,27 +80,12 @@ public class FTAngle extends RotateConstructor {
                 pitch = 0;
             }
 
-=======
-            float speed = attackHandler.getAttackTimer().finished(1050) ? 0.31F : 0.02F;
->>>>>>> Stashed changes
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
 
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
-<<<<<<< Updated upstream
-=======
-            float jitterYaw = (float) (randomLerp(21, 21) * Math.sin(System.currentTimeMillis() / 35D));
-            float jitterPitch = (float) (randomLerp(6, 16) * Math.sin(System.currentTimeMillis() / 45D));
-
-            if ((!aura.isState() || entity == null) && attackHandler.getAttackTimer().finished(2500)) {
-                jitterYaw = 0;
-                jitterPitch = 0;
-                speed = 0.5F;
-            }
-
->>>>>>> Stashed changes
             Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
             moveAngle.setYaw(
                     MathHelper.lerp(Math.clamp(randomLerp(speed, speed + 0.2F), 0, 1),
