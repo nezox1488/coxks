@@ -59,6 +59,7 @@
     "game.world.LightmapTextureManagerMixin",
     "game.world.WorldRendererMixin",
     "player.camera.CameraMixin",
+    "player.cape.MixinPlayerListEntry",
     "player.entity.EntityRenderDispatcherMixin",
     "player.entity.EntityRendererMixin",
     "player.entity.LivingEntityRendererMixin",

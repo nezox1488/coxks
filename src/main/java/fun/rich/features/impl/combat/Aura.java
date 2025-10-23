@@ -162,7 +162,7 @@ public class Aura extends Module {
         if (e.getPacket() instanceof EntityStatusS2CPacket status && status.getStatus() == 30) {
             Entity entity = status.getEntity(mc.world);
             if (entity != null && entity.equals(target) && Hud.getInstance().notificationSettings.isSelected("Break Shield")) {
-                Notifications.getInstance().addList(Text.literal("Сломали щит игроку - ").append(entity.getDisplayName()), 2000);
+                Notifications.getInstance().addList(Text.literal("Сломали щит игроку - ").append(entity.getDisplayName()), 5000);
             }
         }
 

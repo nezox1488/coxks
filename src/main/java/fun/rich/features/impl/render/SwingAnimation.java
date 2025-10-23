@@ -78,11 +78,11 @@ public class SwingAnimation extends Module {
                         }
                         case "Swipe" -> {
                             matrix.translate(0.56F * i, -0.32F, -0.72F);
-                            matrix.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(60 * i));
-                            matrix.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-60 * i));
+                            matrix.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(70 * i));
+                            matrix.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-20 * i));
                             matrix.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((sin2 * sin1) * -5 * strength));
                             matrix.multiply(RotationAxis.POSITIVE_X.rotationDegrees((sin2 * sin1) * -120 * strength));
-                            matrix.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-60));
+                            matrix.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-70));
                         }
 
                         //def
