@@ -10,6 +10,7 @@ import fun.rich.utils.client.managers.file.impl.AutoBuySettingsFile;
 import fun.rich.utils.connection.auracheckft.FTCheckClient;
 import fun.rich.utils.connection.irc.IRCManager;
 import fun.rich.utils.connection.tps.TPSCalculate;
+import fun.rich.utils.display.geometry.Render2D;
 import fun.rich.utils.display.scissor.ScissorAssist;
 import net.fabricmc.api.ModInitializer;
 import fun.rich.common.repository.box.BoxESPRepository;

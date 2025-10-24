@@ -265,12 +265,12 @@ public class Aura extends Module {
 
         boolean shouldRotate = switch (aimMode.getSelected()) {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
-            case "d" -> {
+            case "FunTime" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
-                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.5 && attackHandler.getAttackTimer().finished(400);
-                yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(50);
+                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(360);
+                yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(1);
             }
-            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(50);
+            case "d" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(50);
             case "SpookyTime" -> true;
             case "LonyGrief" -> true;
             case "ds" -> true;
