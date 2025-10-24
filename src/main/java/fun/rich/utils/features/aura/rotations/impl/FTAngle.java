@@ -3,7 +3,7 @@ package fun.rich.utils.features.aura.rotations.impl;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.features.aura.point.Vector;
 import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
-import fun.rich.utils.math.calc.Calculate;
+import fun.rich.utils.interactions.simulate.PlayerSimulation;
 import fun.rich.utils.math.time.StopWatch;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Hand;
@@ -35,89 +35,52 @@ public class FTAngle extends RotateConstructor {
             return new Turns(currentAngle.getYaw(), currentAngle.getPitch());
         }
         Aura aura = Aura.getInstance();
+
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         int count = attackHandler.getCount();
         Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
         float yawDelta = angleDelta.getYaw(), pitchDelta = angleDelta.getPitch();
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
+        boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        if (entity != null) {
-            float speed = 0.4F + (randomLerp(-0.1F, 0.1F));
-            StopWatch attackTimer = attackHandler.getAttackTimer();
+        if (entity != null && attackHandler.getAttackTimer().finished(400)) {
+            float speed = randomLerp(0.65F, 0.85F);
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
-            float random = attackTimer.elapsedTime() / 115 + (count % 6);
-            int suck = count % 3;
-            Turns randomAngle = switch (suck) {
-                case 0 -> new Turns((float) Math.cos(random), (float) Math.sin(random));
-                case 1 -> new Turns((float) Math.sin(random), (float) Math.cos(random));
-                case 2 -> new Turns((float) Math.sin(random), (float) -Math.cos(random));
-                default -> new Turns((float) -Math.cos(random), (float) Math.sin(random));
-            };
-            boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-            float yaw = randomLerp(14, 18) * randomAngle.getYaw();
-            float pitch = randomLerp(6, 10) * randomAngle.getPitch();
+            float jitterYaw = canAttack ? 0 : (float) (randomLerp(3, 6) * Math.sin(System.currentTimeMillis() / 60D));
+            float jitterPitch = canAttack ? 0 :  (float) (randomLerp(3, 6) * Math.sin(System.currentTimeMillis() / 60D));
+
             Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
-            moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed + 0.2F),
-                    currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + (canAttack ? 0 : yaw));
-            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed + 0.2F),
-                    currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + (canAttack ? 0 : pitch));
+            moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed),
+                    currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
+            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed),
+                    currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
 
             return moveAngle;
         } else {
-            StopWatch attackTimer = attackHandler.getAttackTimer();
-            int suck = count % 3;
-            float speed =  attackTimer.finished(370)
-                    ? 0.15f
-                    : -0.1F;
-            float random = attackTimer.elapsedTime() / 115 + (count % 6);
-
-            Turns randomAngle = switch (suck) {
-                case 0 -> new Turns((float) Math.cos(random), (float) Math.sin(random));
-                case 1 -> new Turns((float) Math.sin(random), (float) Math.cos(random));
-                case 2 -> new Turns((float) Math.sin(random), (float) -Math.cos(random));
-                default -> new Turns((float) -Math.cos(random), (float) Math.sin(random));
-            };
-
-            float yaw = randomLerp(14, 18) * randomAngle.getYaw();
-            float pitch = randomLerp(6, 10) * randomAngle.getPitch();
-
-            if ((!aura.isState() || Aura.getInstance().getTarget() == null) && attackHandler.getAttackTimer().finished(350)) {
-                speed = 0.4F;
-                yaw = 0;
-                pitch = 0;
-            }
-
+            float speed = attackHandler.getAttackTimer().finished(450) ? 0.15F : 0.02F;
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
-            Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
-            moveAngle.setYaw(
-                    MathHelper.lerp(Math.clamp(randomLerp(speed, speed + 0.2F), 0, 1),
-                            currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + yaw
-            );
-            moveAngle.setPitch(
-                    MathHelper.lerp(Math.clamp(randomLerp(speed, speed + 0.2F), 0, 1),
-                            currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + pitch
-            );
+            float jitterYaw = (float) (randomLerp(3, 6) * Math.sin(System.currentTimeMillis() / 70D));
+            float jitterPitch = (float) (randomLerp(1, 6) * Math.sin(System.currentTimeMillis() / 60D));
 
-            if (count > 0 && count % 50 == 0 && !attackHandler.getAttackTimer().finished(350)) {
-                moveAngle.setPitch(
-                        MathHelper.lerp(Math.clamp(0.874F, 0, 1),
-                                currentAngle.getPitch(), -90)
-                );
-                if (!attackHandler.getAttackTimer().finished(200)) {
-                    mc.player.swingHand(Hand.MAIN_HAND);
-
-                }
+            if ((!aura.isState() || aura.getTarget() == null) && attackHandler.getAttackTimer().finished(1200)) {
+                jitterYaw = 0;
+                speed = 0.35F;
+                jitterPitch = 0;
             }
+
+            Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
+            moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed),
+                    currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
+            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed),
+                    currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
 
             return moveAngle;
         }

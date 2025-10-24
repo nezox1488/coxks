@@ -1,6 +1,7 @@
 package fun.rich.features.impl.combat;
 
 import antidaunleak.api.annotation.Native;
+import fun.rich.events.player.MotionEvent;
 import fun.rich.events.player.TickEvent;
 import fun.rich.events.render.WorldRenderEvent;
 import fun.rich.features.impl.movement.Strafe;
@@ -267,10 +268,10 @@ public class Aura extends Module {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
             case "FunTime" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
-                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(360);
-                yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(1);
+                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(300);
+                yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(25);
             }
-            case "d" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(50);
+            case "d" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
             case "SpookyTime" -> true;
             case "LonyGrief" -> true;
             case "ds" -> true;
@@ -359,6 +360,10 @@ public class Aura extends Module {
         return new TurnsConfig(getSmoothMode(), visibleCorrection, freeCorrection);
     }
 
+    @EventHandler
+    public void onmotion(MotionEvent event) {
+
+    }
 
     public RotateConstructor getSmoothMode() {
         if (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities") && !aimMode.isSelected("Trigger Bot")) {

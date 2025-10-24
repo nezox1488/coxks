@@ -185,6 +185,6 @@ public class StrikeManager implements QuickImports {
             return simulated.onGround || (!simulated.onGround && fall);
         }
 
-        return !simulated.onGround && (fall && mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue());
+        return !simulated.onGround && (fall);
     }
 }
