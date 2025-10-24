@@ -18,6 +18,7 @@ public class ModuleRepository {
 
     public void setup() {
         register(
+                new JumpCircle(),
                 new BetterMinecraft(),
                 new ProjectileHelper(),
                 new TargetStrafe(),
