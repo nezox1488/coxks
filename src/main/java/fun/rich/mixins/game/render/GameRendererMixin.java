@@ -48,10 +48,10 @@ public abstract class GameRendererMixin {
     @Inject(method = "updateCrosshairTarget", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/GameRenderer;findCrosshairTarget(Lnet/minecraft/entity/Entity;DDF)Lnet/minecraft/util/hit/HitResult;"), cancellable = true)
     private void onUpdateTargetedEntity(float tickDelta, CallbackInfo ci) {
         if (PlayerInteractionHelper.nullCheck()) return;
-        FreeCam debugCamera = FreeCam.getInstance();
-        if (debugCamera.isState()) {
+        FreeCam freeCam = FreeCam.getInstance();
+        if (freeCam.isState()) {
             Profilers.get().pop();
-            client.crosshairTarget = RaycastAngle.raycast(debugCamera.pos,4.5, MathAngle.cameraAngle(),false);
+            client.crosshairTarget = RaycastAngle.raycast(freeCam.pos,4.5, MathAngle.cameraAngle(),false);
             ci.cancel();
         }
     }
