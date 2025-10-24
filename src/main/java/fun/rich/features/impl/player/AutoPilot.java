@@ -41,7 +41,7 @@ public class AutoPilot extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent event) {
         if (mc.player == null || mc.world == null || mc.getNetworkHandler() == null) {
             target = null;

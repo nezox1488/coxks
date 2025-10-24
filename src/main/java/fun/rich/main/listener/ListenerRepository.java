@@ -20,7 +20,7 @@ public class ListenerRepository {
         registerListeners(new EventListener());
     }
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void registerListeners(Listener... listeners) {
         this.listeners.addAll(List.of(listeners));
         Arrays.stream(listeners).forEach(listener -> Rich.getInstance().getEventManager().register(listener));

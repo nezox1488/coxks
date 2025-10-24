@@ -15,7 +15,7 @@ public class ProxyServer implements ModInitializer {
     }
 
     @Override
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onInitialize() {
         Config.loadConfig();
     }

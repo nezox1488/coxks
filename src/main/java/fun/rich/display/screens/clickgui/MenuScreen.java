@@ -41,6 +41,12 @@ public class MenuScreen extends Screen implements QuickImports {
     public final EaseBackIn animation = new EaseBackIn(325, 1f, 1.5f);
     public ModuleCategory category = ModuleCategory.COMBAT;
     public int x, y, width, height;
+    private boolean guiDragging = false;
+    private double dragOffsetX, dragOffsetY;
+    private float offsetXPercent = 0.5f;
+    private float offsetYPercent = 0.5f;
+    private int lastScreenWidth = 0;
+    private int lastScreenHeight = 0;
 
     public void initialize() {
         animation.setDirection(FORWARDS);
@@ -62,13 +68,28 @@ public class MenuScreen extends Screen implements QuickImports {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        x = window.getScaledWidth() / 2 - 200;
-        y = window.getScaledHeight() / 2 - 125;
         width = 400;
         height = 250;
+
+        int currentWidth = window.getScaledWidth();
+        int currentHeight = window.getScaledHeight();
+
+        if (lastScreenWidth != currentWidth || lastScreenHeight != currentHeight) {
+            if (lastScreenWidth != 0 && lastScreenHeight != 0) {
+                x = (int) (currentWidth * offsetXPercent - width / 2);
+                y = (int) (currentHeight * offsetYPercent - height / 2);
+            } else {
+                x = currentWidth / 2 - 200;
+                y = currentHeight / 2 - 125;
+                offsetXPercent = (x + width / 2f) / currentWidth;
+                offsetYPercent = (y + height / 2f) / currentHeight;
+            }
+            lastScreenWidth = currentWidth;
+            lastScreenHeight = currentHeight;
+        }
+
         rectangle.render(ShapeProperties.create(context.getMatrices(), 0, 0, window.getScaledWidth(), window.getScaledHeight()).color(Calculate.applyOpacity(0xFF000000, 100 * getScaleAnimation())).build());
         backgroundComponent.position(x - 20, y).size(width + 40, height);
-//        userComponent.position(x + 165, y + height + 45);
         autoBuyGuiComponent.position(x - 20, y).size(width + 40, height + 30);
 
         if (category == ModuleCategory.COMBAT || category == ModuleCategory.MOVEMENT || category == ModuleCategory.RENDER || category == ModuleCategory.PLAYER || category == ModuleCategory.MISC) {
@@ -101,7 +122,14 @@ public class MenuScreen extends Screen implements QuickImports {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!windowManager.mouseClicked(mouseX, mouseY, button)) {
+        if (button == 0 && isHoveringHeader(mouseX, mouseY)) {
+            guiDragging = true;
+            dragOffsetX = mouseX - x;
+            dragOffsetY = mouseY - y;
+            return true;
+        }
+
+        if (!guiDragging && !windowManager.mouseClicked(mouseX, mouseY, button)) {
             components.forEach(component -> component.mouseClicked(mouseX, mouseY, button));
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -109,6 +137,11 @@ public class MenuScreen extends Screen implements QuickImports {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            guiDragging = false;
+            offsetXPercent = (x + width / 2f) / window.getScaledWidth();
+            offsetYPercent = (y + height / 2f) / window.getScaledHeight();
+        }
         components.forEach(component -> component.mouseReleased(mouseX, mouseY, button));
         windowManager.mouseReleased(mouseX, mouseY, button);
         return super.mouseReleased(mouseX, mouseY, button);
@@ -116,6 +149,12 @@ public class MenuScreen extends Screen implements QuickImports {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (guiDragging && button == 0) {
+            x = (int) (mouseX - dragOffsetX);
+            y = (int) (mouseY - dragOffsetY);
+            return true;
+        }
+
         if (!windowManager.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
             components.forEach(component -> component.mouseDragged(mouseX, mouseY, button, deltaX, deltaY));
         }
@@ -162,5 +201,10 @@ public class MenuScreen extends Screen implements QuickImports {
             TextComponent.typing = false;
             super.close();
         }
+    }
+
+    private boolean isHoveringHeader(double mouseX, double mouseY) {
+        return mouseX >= x - 20 && mouseX <= x + width + 20 &&
+                mouseY >= y && mouseY <= y + 28;
     }
 }

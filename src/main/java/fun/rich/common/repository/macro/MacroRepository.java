@@ -34,7 +34,7 @@ public class MacroRepository implements QuickImports, QuickLogger {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onKey(KeyEvent e) {
         if (mc.player != null && e.action() == 0 && mc.currentScreen == null) macroList.stream().filter(macro -> macro.key() == e.key())
                 .findFirst().ifPresent(macro -> mc.player.networkHandler.sendChatMessage(macro.message()));

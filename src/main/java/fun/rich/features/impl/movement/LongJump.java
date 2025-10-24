@@ -33,7 +33,7 @@ public class LongJump extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private void tickEvent(TickEvent event) {
         if (modeSetting.isSelected("Shulker Screen")) {
             if (mc.currentScreen instanceof ShulkerBoxScreen) {

@@ -35,7 +35,7 @@ public class AutoLeave extends Module {
 
     
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (Network.isPvp()) return;
 

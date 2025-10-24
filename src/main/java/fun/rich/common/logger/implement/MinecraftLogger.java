@@ -15,7 +15,7 @@ public class MinecraftLogger implements Logger, QuickImports {
     }
 
     @Override
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void minecraftLog(Text... components) {
         if (mc.player != null) {
             MutableText component = Text.literal("");

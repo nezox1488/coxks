@@ -33,7 +33,7 @@ public class AutoSprint extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         boolean hasSlowness = mc.player.hasStatusEffect(StatusEffects.SLOWNESS);
         boolean hasBlindness = mc.player.hasStatusEffect(StatusEffects.BLINDNESS);

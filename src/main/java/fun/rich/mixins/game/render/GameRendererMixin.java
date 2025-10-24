@@ -31,6 +31,7 @@ import fun.rich.utils.features.aura.utils.MathAngle;
 import fun.rich.utils.features.aura.utils.RaycastAngle;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
 import fun.rich.features.impl.misc.FreeCam;
+import fun.rich.features.impl.render.NoRender;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -101,5 +102,13 @@ public abstract class GameRendererMixin {
         WorldRenderEvent event = new WorldRenderEvent(matrixStack, tickCounter.getTickDelta(false));
         EventManager.callEvent(event);
         Render3D.onWorldRender(event);
+    }
+
+    @Inject(method = "tiltViewWhenHurt", at = @At("HEAD"), cancellable = true)
+    private void onTiltViewWhenHurt(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
+        NoRender noRender = NoRender.getInstance();
+        if (noRender != null && noRender.isState() && noRender.modeSetting.isSelected("Damage")) {
+            ci.cancel();
+        }
     }
 }

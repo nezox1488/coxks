@@ -37,7 +37,7 @@ public class AutoArmor extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (InventoryTask.isServerScreen()) return;
         if (!InventoryFlowManager.script.isFinished()) return;

@@ -47,7 +47,7 @@ public class NoSlow extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onUsingItem(UsingItemEvent e) {
         Hand first = mc.player.getActiveHand();
         Hand second = first.equals(Hand.MAIN_HAND) ? Hand.OFF_HAND : Hand.MAIN_HAND;

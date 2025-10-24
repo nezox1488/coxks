@@ -39,7 +39,7 @@ public class ChestStealer extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         switch (modeSetting.getSelected()) {
             case "FunTime" -> {

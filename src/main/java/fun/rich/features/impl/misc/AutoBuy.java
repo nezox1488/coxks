@@ -310,7 +310,7 @@ public class AutoBuy extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (mc.player == null || mc.world == null) return;
         if (!autoBuyManager.isEnabled()) return;

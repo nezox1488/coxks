@@ -48,7 +48,7 @@ public class WayRepository implements QuickImports, QuickLogger {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onDraw(DrawEvent e) {
         if (isEmpty() || mc.getNetworkHandler() == null || mc.getNetworkHandler().getServerInfo() == null) return;
 

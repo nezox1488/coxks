@@ -1,71 +1,57 @@
 package fun.rich.features.impl.render;
 
-
 import fun.rich.events.render.WorldRenderEvent;
+import fun.rich.events.player.JumpEvent;
 import fun.rich.utils.display.geometry.Render3D;
 import fun.rich.utils.math.Counter;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
-
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
 import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.features.module.Module;
 import fun.rich.features.module.ModuleCategory;
 import fun.rich.features.module.setting.implement.SliderSettings;
-import fun.rich.common.repository.friend.FriendUtils;
-import fun.rich.common.animation.Animation;
-import fun.rich.common.animation.Direction;
-import fun.rich.common.animation.implement.Decelerate;
+import fun.rich.features.module.setting.implement.ColorSetting;
 import fun.rich.utils.display.color.ColorAssist;
-import fun.rich.utils.math.calc.Calculate;
-import fun.rich.events.player.TickEvent;
 import org.joml.Vector4i;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static net.minecraft.client.render.VertexFormat.DrawMode.QUADS;
-import static net.minecraft.client.render.VertexFormats.POSITION_TEXTURE_COLOR;
+import java.awt.Color;
 
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JumpCircle extends Module {
 
     private final List<Circle> circles = new ArrayList<>();
     final Identifier circleTexture = Identifier.of("textures/circle2.png");
-    boolean wasOnGround = true;
+
+    final SliderSettings maxSize = new SliderSettings("Max Size", "Максимальный размер круга").setValue(2.5f).range(1.0f, 3.0f);
+    final SliderSettings speed = new SliderSettings("Speed", "Скорость анимации").setValue(1000f).range(500f, 5000f);
+    final ColorSetting color = new ColorSetting("Цвет", "Цвет круга").value(ColorAssist.getColor(225, 225, 255, 255));
 
     public JumpCircle() {
         super("JumpCircle", "Jump Circle", ModuleCategory.RENDER);
+        setup(maxSize, speed, color);
     }
 
     @EventHandler
-    public void onUpdate(TickEvent event) {
-        if (mc.player == null) return;
+    public void onJump(JumpEvent event) {
+        if (mc.player == null || event.getPlayer() != mc.player) return;
 
-        boolean isOnGround = mc.player.isOnGround();
-
-        if (wasOnGround && !isOnGround) {
-            Vec3d pos = new Vec3d(
-                    mc.player.getX(),
-                    Math.floor(mc.player.getY()) + 0.001,
-                    mc.player.getZ()
-            );
-            circles.add(new Circle(pos, new Counter()));
-        }
-
-        wasOnGround = isOnGround;
-
-        circles.removeIf(c -> c.timer.passedMs(3000));
+        Vec3d pos = new Vec3d(
+                mc.player.getX(),
+                Math.floor(mc.player.getY()) + 0.001,
+                mc.player.getZ()
+        );
+        circles.add(new Circle(pos, new Counter()));
     }
 
     @EventHandler
     public void onWorldRender(WorldRenderEvent e) {
+        circles.removeIf(c -> c.timer.passedMs((long) speed.getValue()));
         renderCircles();
     }
 
@@ -79,16 +65,41 @@ public class JumpCircle extends Module {
 
     private void renderSingleCircle(Circle circle) {
         float lifeTime = (float) circle.timer.getPassedTimeMs();
-        float maxTime = 3000f;
-        float progress = lifeTime / maxTime;
+        float maxTime = speed.getValue();
+        float progress = Math.min(lifeTime / maxTime, 1f);
 
         if (progress >= 1f) return;
 
-        float scale = progress * 2f;
-        float alpha = 1f - (progress * progress);
+        float easedProgress = bounceOut(progress);
+        float scale = easedProgress * maxSize.getValue();
 
-        int baseColor = ColorAssist.fade((int)(progress * 360f));
-        int color = ColorAssist.multAlpha(baseColor, alpha);
+        float fadeInDuration = 0.15f;
+        float glowStart = 0.65f;
+        float fadeOutStart = 0.85f;
+        float alpha;
+
+        if (progress < fadeInDuration) {
+            alpha = progress / fadeInDuration;
+        } else if (progress >= fadeOutStart) {
+            float fadeOutProgress = (progress - fadeOutStart) / (1f - fadeOutStart);
+            alpha = 1f - fadeOutProgress;
+
+            if (progress > glowStart) {
+                float glowProgress = (progress - glowStart) / (fadeOutStart - glowStart);
+                float glowPulse = (float) (Math.sin(glowProgress * Math.PI * 3) * 0.3 + 0.3);
+                alpha += glowPulse * (1f - fadeOutProgress);
+            }
+        } else if (progress > glowStart) {
+            float glowProgress = (progress - glowStart) / (fadeOutStart - glowStart);
+            float glowPulse = (float) (Math.sin(glowProgress * Math.PI * 3) * 0.3 + 0.3);
+            alpha = 1f + glowPulse;
+        } else {
+            alpha = 1f;
+        }
+
+        alpha = Math.max(0f, Math.min(1f, alpha));
+
+        int finalColor = ColorAssist.multAlpha(color.getColor(), alpha);
 
         Camera camera = mc.getEntityRenderDispatcher().camera;
         Vec3d cameraPos = camera.getPos();
@@ -105,9 +116,23 @@ public class JumpCircle extends Module {
         matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(90f));
 
         MatrixStack.Entry entry = matrixStack.peek();
-        Vector4i colors = new Vector4i(color, color, color, color);
+        Vector4i colors = new Vector4i(finalColor, finalColor, finalColor, finalColor);
 
         Render3D.drawTexture(entry, circleTexture, -scale/2, -scale/2, scale, scale, colors, true);
+    }
+
+    private float bounceOut(float value) {
+        float n1 = 7.5625f;
+        float d1 = 2.75f;
+        if (value < 1.0f / d1) {
+            return n1 * value * value;
+        } else if (value < 2.0f / d1) {
+            return n1 * (value -= 1.5f / d1) * value + 0.75f;
+        } else if (value < 2.5f / d1) {
+            return n1 * (value -= 2.25f / d1) * value + 0.9375f;
+        } else {
+            return n1 * (value -= 2.625f / d1) * value + 0.984375f;
+        }
     }
 
     public record Circle(Vec3d pos, Counter timer) {}

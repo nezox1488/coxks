@@ -37,11 +37,13 @@ public class PressableWidgetRender implements QuickImports {
                         width ,
                         height
                 )
-                .round(5f)
-                .color( new Color(18, 19, 20, 225).getRGB(),
-                        new Color(0, 2, 5, 225).getRGB(),
-                        new Color(0, 2, 5, 225).getRGB(),
-                        new Color(18, 19, 20, 225).getRGB())
+                .round(4f)
+                .thickness(3)
+                .outlineColor(new Color(150,150,150,150).getRGB())
+                .color( new Color(18, 19, 20, 125).getRGB(),
+                        new Color(0, 2, 5, 125).getRGB(),
+                        new Color(0, 2, 5, 125).getRGB(),
+                        new Color(18, 19, 20, 125).getRGB())
                 .build();
         rectangle.render(animRect);
 

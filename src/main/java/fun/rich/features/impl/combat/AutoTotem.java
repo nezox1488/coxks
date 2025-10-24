@@ -65,7 +65,7 @@ public class AutoTotem extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (MC.player == null || MC.world == null) {
             resetState();

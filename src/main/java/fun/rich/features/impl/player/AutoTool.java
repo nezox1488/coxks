@@ -53,7 +53,7 @@ public class AutoTool extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onBlockBreaking(BlockBreakingEvent e) {
         breaking.reset();
         lastBreakPos = e.blockPos();

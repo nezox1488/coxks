@@ -43,7 +43,7 @@ public class Velocity extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onPacket(PacketEvent e) {
         if (!state) return;
         if (e.getType() != PacketEvent.Type.RECEIVE) return;
