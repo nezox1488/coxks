@@ -35,7 +35,7 @@ public class BoxESPRepository implements QuickImports, QuickLogger {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onWorldRender(WorldRenderEvent e) {
         boxes.forEach((pos, pair) -> {
             if (drawFill) Render3D.drawShape(pos, pair.getLeft(), pair.getRight(), 1);

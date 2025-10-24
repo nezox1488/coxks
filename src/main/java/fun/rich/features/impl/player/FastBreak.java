@@ -17,7 +17,7 @@ public class FastBreak extends Module {
     public FastBreak() {super("FastBreak", "Fast Break", ModuleCategory.PLAYER);}
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onBlockBreaking(BlockBreakingEvent e) {
         BlockPos blockPos = e.blockPos();
         Direction direction = e.direction();

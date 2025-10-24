@@ -28,7 +28,7 @@ public class SoundManager implements QuickImports {
     public SoundEvent CATEGORY_CLICK = SoundEvent.of(Identifier.of("minecraft:guicategory_select"));
     public SoundEvent ORTHODOX = SoundEvent.of(Identifier.of("minecraft:kolokolnia_kill"));
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void init() {
         Registry.register(Registries.SOUND_EVENT, OPEN_GUI.id(), OPEN_GUI);
         Registry.register(Registries.SOUND_EVENT, CLOSE_GUI.id(), CLOSE_GUI);

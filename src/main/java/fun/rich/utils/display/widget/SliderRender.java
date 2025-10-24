@@ -12,9 +12,6 @@ import java.awt.Color;
 public class SliderRender implements QuickImports {
 
     public static void renderSlider(DrawContext context, int x, int y, int width, int height, double value, boolean active, String text) {
-
-
-
         ShapeProperties animRect = ShapeProperties.create(
                         context.getMatrices(),
                         x + (width - width ) / 2f,
@@ -22,17 +19,20 @@ public class SliderRender implements QuickImports {
                         width ,
                         height
                 )
-                .round(5f)
-                .color( new Color(18, 19, 20, 225).getRGB(),
-                        new Color(0, 2, 5, 225).getRGB(),
-                        new Color(0, 2, 5, 225).getRGB(),
-                        new Color(18, 19, 20, 225).getRGB())
+                .round(4f)
+                .thickness(3)
+                .outlineColor(new Color(150,150,150,150).getRGB())
+                .color( new Color(18, 19, 20, 125).getRGB(),
+                        new Color(0, 2, 5, 125).getRGB(),
+                        new Color(0, 2, 5, 125).getRGB(),
+                        new Color(18, 19, 20, 125).getRGB())
                 .build();
+
         rectangle.render(animRect);
 
-        ShapeProperties slider = ShapeProperties.create(context.getMatrices(), (float) (x + (value * (width - 8))), y, 8f, height)
-                .round(3f)
-                .color(new Color(24, 24, 24, active ? 255 : 0).getRGB())
+        ShapeProperties slider = ShapeProperties.create(context.getMatrices(), (float) (x + (value * (width - 7))), y + 1, 7f, height - 2)
+                .round(2.5f)
+                .color(new Color(124, 124, 124, active ? 155 : 0).getRGB())
                 .build();
         rectangle.render(slider);
 

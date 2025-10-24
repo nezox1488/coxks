@@ -31,7 +31,7 @@ public class NoPush extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onPlayerCollision(PlayerCollisionEvent e) {
         Block block = e.getBlock();
         if (block.equals(Blocks.POWDER_SNOW)) e.setCancelled(ignoreSetting.isSelected("Powder Snow"));

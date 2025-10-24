@@ -47,6 +47,7 @@
     "client.screen.ingame.InGameOverlayRendererMixin",
     "client.screen.mainmenu.MultiplayerScreenOpenMixin",
     "client.screen.mainmenu.ScreenMixin",
+    "client.screen.mainmenu.RotatingCubeMapRendererMixin",
     "client.screen.mainmenu.ServerListMixin",
     "game.block.BlockCollisionSpliteratorMixin",
     "game.render.GameRendererMixin",

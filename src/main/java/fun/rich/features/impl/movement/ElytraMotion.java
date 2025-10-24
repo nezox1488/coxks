@@ -36,7 +36,7 @@ public class ElytraMotion extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (!state || mc.player == null || mc.world == null || !mc.player.isGliding()) return;
 

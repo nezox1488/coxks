@@ -52,7 +52,7 @@ public class Speed extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onMotion(PlayerTravelEvent e) {
         if (mode.isSelected("FunTime One Block")) {
             if (!mc.player.isSwimming() && !mc.player.isGliding() && !mc.player.isSneaking()) {

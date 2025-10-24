@@ -70,7 +70,7 @@ public class WindJump extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (!script.isFinished() && stopWatch.every(250)) {
             script.update();

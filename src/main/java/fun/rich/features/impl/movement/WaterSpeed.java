@@ -33,7 +33,7 @@ public class WaterSpeed extends Module {
 
     
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onSwimming(SwimmingEvent e) {
         if (modeSetting.isSelected("FunTime")) {
             if (mc.options.jumpKey.isPressed()) {

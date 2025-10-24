@@ -50,7 +50,7 @@ public class AntiBot extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (!suspectSet.isEmpty()) {
             mc.world.getPlayers().stream()
@@ -135,7 +135,7 @@ public class AntiBot extends Module {
             }
         }
     }
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private void newMatrixMode() {
         for (PlayerEntity entity : mc.world.getPlayers()) {
             if (entity != mc.player) {

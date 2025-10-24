@@ -51,7 +51,7 @@ public class EnderChestPlus extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onKey(KeyEvent e) {
         if (e.isKeyDown(bindSetting.getKey()) && screen != null) {
             List<Slot> slots = mc.player.currentScreenHandler.slots;

@@ -24,7 +24,7 @@ public class RCTRepository implements QuickImports, QuickLogger {
     public RCTRepository(EventManager eventManager) {eventManager.register(this);}
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onPacket(PacketEvent e) {
         if (anarchy != 0 && e.getPacket() instanceof GameMessageS2CPacket message) {
             String text = message.content().getString().toLowerCase();

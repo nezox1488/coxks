@@ -34,13 +34,22 @@ public abstract class InGameHudMixin implements QuickImports {
 
     @Shadow protected abstract void renderMountHealth(DrawContext context);
 
-    @Inject(method = "render", at = @At("RETURN"))
+    @Inject(method = "render", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/LayeredDrawer;render(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
+            shift = At.Shift.AFTER))
     public void onRender(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         blur.setup();
         DrawEvent event = new DrawEvent(context, drawEngine, tickCounter.getTickDelta(false));
         EventManager.callEvent(event);
         Render2D.onRender(context);
-        if (!client.options.hudHidden) {
+
+        boolean debugHudVisible = client.getDebugHud().shouldShowDebugHud();
+        boolean tabVisible = client.options.playerListKey.isPressed();
+
+        if (!client.options.hudHidden && !debugHudVisible && !tabVisible) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0.0F, 0.0F, 400.0F);
+
             Rich.getInstance().getDraggableRepository().draggable().forEach(draggable -> {
                 if (draggable.canDraw(hud, draggable)) draggable.startAnimation();
                 else draggable.stopAnimation();
@@ -53,6 +62,8 @@ public abstract class InGameHudMixin implements QuickImports {
                     } catch (ConcurrentModificationException ignored) {}
                 }
             });
+
+            context.getMatrices().pop();
         }
     }
 

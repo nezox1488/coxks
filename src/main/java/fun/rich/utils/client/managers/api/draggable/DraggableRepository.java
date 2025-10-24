@@ -17,24 +17,16 @@ public class DraggableRepository {
                 new TargetHud(),
                 new Potions(),
                 new HotKeys(),
-//                new BossBars(),
-//                new Armor(),
                 new Watermark(),
                 new Inventory(),
                 new CoolDowns(),
-//                new MediaPlayer(),
                 new StaffList(),
                 new Binds(),
                 new Notifications(),
-//                new ScoreBoard(),
-//                new MediaPlayer(),
-//                new HotBar(),
                 new PlayerInfo()
         );
     }
 
-    
-    
     public void register(AbstractDraggable... module) {
         draggable.addAll(List.of(module));
     }

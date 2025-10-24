@@ -34,19 +34,19 @@ public class UserProfile {
         }
     }
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private native String getUsername();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private native String getHwid();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private native String getRole();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private native String getUid();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private native String getSubsTime();
 
     public String profile(String profile) {

@@ -192,7 +192,7 @@ public class Aura extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void tick(TickEvent e) {
         if (PlayerInteractionHelper.nullCheck()) return;
         if (target == null) return;

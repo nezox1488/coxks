@@ -48,7 +48,7 @@ public class ItemFixSwap extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (lastWorldRef != mc.world) {
             lastWorldRef = mc.world;

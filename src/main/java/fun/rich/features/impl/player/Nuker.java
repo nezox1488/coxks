@@ -47,7 +47,7 @@ public class Nuker extends Module {
 
     
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onWorldRender(WorldRenderEvent e) {
         if (pos != null && shape != null && !shape.isEmpty())
             Render3D.drawShape(pos, shape, ColorAssist.getClientColor(), 2);

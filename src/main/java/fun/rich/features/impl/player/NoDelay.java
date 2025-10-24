@@ -27,7 +27,7 @@ public class NoDelay extends Module {
 
     
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (ignoreSetting.isSelected("Break CoolDown")) mc.interactionManager.blockBreakingCooldown = 0;
         if (ignoreSetting.isSelected("Jump")) mc.player.jumpingCooldown = 0;

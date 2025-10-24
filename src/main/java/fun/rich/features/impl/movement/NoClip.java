@@ -88,7 +88,7 @@ public class NoClip extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onPacket(PacketEvent event) {
         if (!state) return;
         double x = mc.player.getX();

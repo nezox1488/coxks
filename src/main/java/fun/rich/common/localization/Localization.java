@@ -22,7 +22,7 @@ public class Localization implements QuickImports {
     }
 
     @SneakyThrows
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private static Map<String, String> loadTranslations(Language language) {
         Identifier identifier = Identifier.of("translations/" + language.getFile() + ".json");
 

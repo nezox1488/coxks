@@ -1,5 +1,6 @@
 package fun.rich;
 
+import antidaunleak.api.UserProfile;
 import antidaunleak.api.annotation.Native;
 import fun.rich.commands.manager.CommandRepository;
 import fun.rich.utils.client.managers.file.exception.FileProcessingException;
@@ -102,7 +103,7 @@ public class Rich implements ModInitializer {
         initialized = true;
     }
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private void initWebSocketClient() {
         try {
             cloudConfigClient = new CloudConfigWebSocketClient(new URI("ws://45.155.205.202:8080"));
@@ -111,7 +112,7 @@ public class Rich implements ModInitializer {
         }
     }
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     private void initFTCheckClient() {
         try {
             ftCheckClient = new FTCheckClient(new URI("ws://45.155.205.202:6312"));

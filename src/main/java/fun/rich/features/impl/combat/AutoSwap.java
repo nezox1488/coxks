@@ -71,7 +71,7 @@ public class AutoSwap extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         if (modeSetting.getSelected().equals("Legit") && swapPhase != SwapPhase.READY) {
             processLegitSwap();
