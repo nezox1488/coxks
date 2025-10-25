@@ -86,6 +86,13 @@ public class Simulations implements QuickImports {
             double currentZ,
             float handSwingProgress
     ) {
+
+        if (Aura.fakeRotate) {
+            yaw = TurnsConnection.INSTANCE.getFakeAngle().getYaw();
+        } else {
+            yaw = TurnsConnection.INSTANCE.getRotation().getYaw();
+        }
+
         double motionX = currentX - prevX;
         double motionZ = currentZ - prevZ;
         float motionSquared = (float)(motionX * motionX + motionZ * motionZ);

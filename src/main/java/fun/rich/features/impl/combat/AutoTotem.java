@@ -51,7 +51,8 @@ public class AutoTotem extends Module {
     private int totemSlot = -1;
     private long actionStartTime = 0L;
     private boolean keysOverridden = false;
-    private boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
+    private boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed, wasJumpPressed;
+    private boolean playerFullyStopped = false;
     private Phase phase = Phase.READY;
     private ItemStack previousMainHandStack = ItemStack.EMPTY;
     private int previousMainHandSlot = -1;
@@ -65,25 +66,33 @@ public class AutoTotem extends Module {
     }
 
     @EventHandler
-
     public void onTick(TickEvent e) {
         if (MC.player == null || MC.world == null) {
             resetState();
             return;
         }
 
-        float health = MC.player.getHealth();
-        if (MC.player.isGliding() && health <= elytraHealth.getValue()) {
-            tryEquipTotem();
-        } else if (health <= healthThreshold.getValue()) {
-            tryEquipTotem();
-        } else if (fallCheck.isValue() && MC.player.fallDistance > 10) {
-            tryEquipTotem();
-        } else if (getClosestCrystalDistance() <= crystalDistance.getValue()) {
-            tryEquipTotem();
+        if (phase != Phase.READY) {
+            execute();
+            return;
         }
 
-        if (phase != Phase.READY) execute();
+        float health = MC.player.getHealth();
+        boolean shouldEquip = false;
+
+        if (MC.player.isGliding() && health <= elytraHealth.getValue()) {
+            shouldEquip = true;
+        } else if (health <= healthThreshold.getValue()) {
+            shouldEquip = true;
+        } else if (fallCheck.isValue() && MC.player.fallDistance > 10) {
+            shouldEquip = true;
+        } else if (getClosestCrystalDistance() <= crystalDistance.getValue()) {
+            shouldEquip = true;
+        }
+
+        if (shouldEquip) {
+            tryEquipTotem();
+        }
 
         if (phase == Phase.READY && needsReturn && returnItem.isValue() && previousMainHandSlot >= 0 && !previousMainHandStack.isEmpty()) {
             if (MC.player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
@@ -105,7 +114,7 @@ public class AutoTotem extends Module {
         if (hotbar.found()) {
             totemSlot = hotbar.slot();
             if (modeSetting.getSelected().equals("Default")) {
-                phase = Phase.SWAP_TOTEM;
+                executeDefaultSwap();
             } else {
                 startLegitEquip();
             }
@@ -124,11 +133,37 @@ public class AutoTotem extends Module {
             if (modeSetting.getSelected().equals("Legit")) {
                 startLegitEquip();
             } else {
-                phase = Phase.SWAP_TOTEM;
+                executeDefaultSwap();
             }
-        } else {
-            resetState();
         }
+    }
+
+    private void executeDefaultSwap() {
+        if (totemSlot < 0) {
+            resetState();
+            return;
+        }
+
+        int slotIndex = totemSlot;
+        if (slotIndex >= 0 && slotIndex <= 8) slotIndex += 36;
+
+        if (MC.interactionManager != null && MC.player.playerScreenHandler != null) {
+            MC.interactionManager.clickSlot(
+                    MC.player.playerScreenHandler.syncId,
+                    slotIndex,
+                    40,
+                    SlotActionType.SWAP,
+                    MC.player
+            );
+        }
+
+        if (returnItem.isValue() && needsReturn && previousMainHandSlot >= 0) {
+            MC.player.getInventory().selectedSlot = previousMainHandSlot;
+        } else if (savedSlot >= 0) {
+            MC.player.getInventory().selectedSlot = savedSlot;
+        }
+
+        resetState();
     }
 
     private void startLegitEquip() {
@@ -136,13 +171,12 @@ public class AutoTotem extends Module {
         wasBackPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
         wasLeftPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
         wasRightPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
+        wasJumpPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.jumpKey.getDefaultKey().getCode());
+
         phase = Phase.SLOWING_DOWN;
         actionStartTime = System.currentTimeMillis();
-        keysOverridden = true;
-        MC.options.forwardKey.setPressed(false);
-        MC.options.backKey.setPressed(false);
-        MC.options.leftKey.setPressed(false);
-        MC.options.rightKey.setPressed(false);
+        playerFullyStopped = false;
+        keysOverridden = false;
     }
 
     private void execute() {
@@ -160,6 +194,14 @@ public class AutoTotem extends Module {
                 if (MC.player.isSprinting()) {
                     MC.player.setSprinting(false);
                 }
+                if (!keysOverridden) {
+                    MC.options.forwardKey.setPressed(false);
+                    MC.options.backKey.setPressed(false);
+                    MC.options.leftKey.setPressed(false);
+                    MC.options.rightKey.setPressed(false);
+                    MC.options.jumpKey.setPressed(false);
+                    keysOverridden = true;
+                }
                 if (elapsed > 1) {
                     phase = Phase.WAITING_STOP;
                 }
@@ -169,13 +211,14 @@ public class AutoTotem extends Module {
                 MC.player.input.movementSideways = 0;
                 double vx = Math.abs(MC.player.getVelocity().x);
                 double vz = Math.abs(MC.player.getVelocity().z);
-                if ((vx < 0.001 && vz < 0.001) || elapsed > 75) {
+                if ((vx < 0.001 && vz < 0.001) || elapsed > 15) {
+                    playerFullyStopped = true;
                     phase = Phase.SWAP_TOTEM;
                     actionStartTime = System.currentTimeMillis();
                 }
             }
             case SWAP_TOTEM -> {
-                if (elapsed > 25) {
+                if (playerFullyStopped && elapsed > 25) {
                     if (totemSlot < 0) {
                         resetState();
                         return;
@@ -208,7 +251,9 @@ public class AutoTotem extends Module {
                 if (elapsed > 25) {
                     InventoryToolkit.switchTo(savedSlot);
                     if (modeSetting.getSelected().equals("Legit")) {
-                        restoreKeyStates();
+                        if (keysOverridden) {
+                            restoreKeyStates();
+                        }
                         actionStartTime = System.currentTimeMillis();
                         phase = Phase.SPEEDING_UP;
                     } else {
@@ -218,19 +263,16 @@ public class AutoTotem extends Module {
             }
             case SPEEDING_UP -> {
                 long speedupElapsed = System.currentTimeMillis() - actionStartTime;
+                float speedupProgress = Math.min(1.0f, speedupElapsed / 20.0f);
                 if (MC.player.input != null) {
                     boolean forward = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
-                    boolean back = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
-                    if (forward) {
-                        MC.player.input.movementForward = 1.0f;
-                        if (!MC.player.isSprinting()) {
-                            MC.player.setSprinting(true);
-                        }
-                    } else if (back) {
-                        MC.player.input.movementForward = -1.0f;
+                    float targetForward = forward ? 1.0f : 0;
+                    MC.player.input.movementForward = lerp(MC.player.input.movementForward, targetForward * speedupProgress, 0.4f);
+                    if (speedupProgress > 0.4f && forward && !MC.player.isSprinting()) {
+                        MC.player.setSprinting(true);
                     }
                 }
-                if (speedupElapsed > 75) {
+                if (speedupElapsed > 25) {
                     phase = Phase.FINISH;
                 }
             }
@@ -238,12 +280,11 @@ public class AutoTotem extends Module {
         }
     }
 
+    private float lerp(float start, float end, float delta) {
+        return start + (end - start) * delta;
+    }
+
     private InventoryResult findTotemWithSaveTalics() {
-        boolean offhandHasEnchantedTotem = false;
-        if (MC.player != null) {
-            ItemStack off = MC.player.getOffHandStack();
-            if (off.getItem() == Items.TOTEM_OF_UNDYING && off.hasEnchantments()) offhandHasEnchantedTotem = true;
-        }
         InventoryResult nonEnchanted = InventoryToolkit.findInInventory(i -> i.getItem() == Items.TOTEM_OF_UNDYING && !i.hasEnchantments());
         if (nonEnchanted.found()) return nonEnchanted;
         return InventoryToolkit.findItemInInventory(Items.TOTEM_OF_UNDYING);
@@ -267,15 +308,17 @@ public class AutoTotem extends Module {
     }
 
     private void restoreKeyStates() {
-        if (!keysOverridden) return;
         boolean currentForward = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
         boolean currentBack = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
         boolean currentLeft = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
         boolean currentRight = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
+        boolean currentJump = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.jumpKey.getDefaultKey().getCode());
+
         MC.options.forwardKey.setPressed(wasForwardPressed && currentForward);
         MC.options.backKey.setPressed(wasBackPressed && currentBack);
         MC.options.leftKey.setPressed(wasLeftPressed && currentLeft);
         MC.options.rightKey.setPressed(wasRightPressed && currentRight);
+        MC.options.jumpKey.setPressed(wasJumpPressed && currentJump);
         keysOverridden = false;
     }
 
@@ -311,6 +354,7 @@ public class AutoTotem extends Module {
         savedSlot = -1;
         actionStartTime = 0L;
         phase = Phase.READY;
+        playerFullyStopped = false;
     }
 
     @Override

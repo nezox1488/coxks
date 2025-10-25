@@ -48,7 +48,7 @@ public class SPAngle extends RotateConstructor {
         float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
         if (entity instanceof LivingEntity livingEntity) {
             double targetHeight = livingEntity.getHeight();
-            double torsoHeight = targetHeight * 0.36;
+            double torsoHeight = targetHeight * 0.26;
             Vec3d playerPos = MinecraftClient.getInstance().player.getPos().add(0, 1.5, 0);
             Vec3d entityPos = livingEntity.getPos();
             double deltaY = (entityPos.y + torsoHeight) - playerPos.y;
@@ -66,7 +66,7 @@ public class SPAngle extends RotateConstructor {
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
         moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed), currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
 
-        float pitchSpeed = pitchDelta < 0 ? 0.45F : 0.8F;
+        float pitchSpeed = pitchDelta < 0 ? 0.55F : 0.8F;
         moveAngle.setPitch(MathHelper.lerp(pitchSpeed, currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
         return new Turns(moveAngle.getYaw(), moveAngle.getPitch());
     }

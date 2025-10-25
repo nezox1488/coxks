@@ -91,7 +91,7 @@ public class Aura extends Module {
     public static float legitSprintNeed;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("HvH", "Matrix", "Snap", "FunTime", "HolyWorld", "SpookyTime", "Trigger Bot")
+            .value("Matrix", "Snap", "FunTime", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
             .selected("Matrix");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")
@@ -105,8 +105,11 @@ public class Aura extends Module {
             .setValue(1.5f).range(0F, 2F);
 
     MultiSelectSetting attackSetting = new MultiSelectSetting("Настройки", "Позволяет настроить работу функции")
-            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Fake Lag")
+            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Fake Lag", "Hit Chance")
             .selected("Only Critical", "Break Shield", "Elytra possibilities");
+
+    SliderSettings hitChance = new SliderSettings("Шанс удара в %", "Шанс удара по цели")
+            .setValue(100).range(1F, 100F).visible(() -> attackSetting.isSelected("Hit Chance"));
 
     SelectSetting correctionType = new SelectSetting("Коррекции движения", "Выбор коррекции движения игрока")
             .value("Free", "Focused", "Not visible").selected("Free");
@@ -136,6 +139,7 @@ public class Aura extends Module {
 
                 attackRange,
                 lookRange,
+                hitChance,
 
                 attackSetting,
                 smartCrits,
@@ -252,8 +256,8 @@ public class Aura extends Module {
 
         boolean elytraMode = mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities");
 
-        if (aimMode.isSelected("LonyGrief")) {
-            fakeRotate = false;
+        if (aimMode.isSelected("CakeWorld")) {
+            fakeRotate = true;
         } else {
             fakeRotate = false;
         }
@@ -266,15 +270,16 @@ public class Aura extends Module {
 
         boolean shouldRotate = switch (aimMode.getSelected()) {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
-            case "FunTime" -> {
+            case "d" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
                 boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(300);
                 yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(25);
             }
-            case "d" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
+            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(35);
             case "SpookyTime" -> true;
-            case "LonyGrief" -> true;
+            case "CakeWorld" -> true;
             case "ds" -> true;
+            case "ReallyWorld" -> true;
             case "HvH" -> true;
             case "Matrix" -> true;
             case "HolyWorld" -> {
@@ -285,11 +290,11 @@ public class Aura extends Module {
             default -> false;
         };
 
-        if (shouldRotate && !aimMode.isSelected("Trigger Bot")) {
+        if (shouldRotate) {
             controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
         }
 
-        if (elytraMode && !aimMode.isSelected("Trigger Bot")) {
+        if (elytraMode) {
             controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
         }
     }
@@ -373,8 +378,9 @@ public class Aura extends Module {
             case "FunTime" -> new FTAngle();
             case "HolyWorld" -> new HWAngle();
             case "HvH" -> new HAngle();
-            case "LonyGrief" -> new LGAngle();
+            case "CakeWorld" -> new LGAngle();
             case "SpookyTime" -> new SPAngle();
+            case "ReallyWorld" -> new RWAngle();
             case "Snap" -> new SnapAngle();
             case "Matrix" -> new MatrixAngle();
             default -> new LinearConstructor();

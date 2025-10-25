@@ -15,6 +15,7 @@ public class ModuleDescriptions {
         if (module instanceof Hud) return "Отображает дополнительную информацию на экране.";
         if (module instanceof AuctionHelper) return "Помогает управлять аукционами на сервере.";
         if (module instanceof ProjectilePrediction) return "Предсказывает траекторию полета снарядов.";
+        if (module instanceof AntiAFK) return "Выполняет какое-то действие чтобы игрока не кикнуло за афк.";
         if (module instanceof Strafe) return "Помогает игроку при ходьбе.";
         if (module instanceof TargetStrafe) return "Крутится вокруг таргета в aura.";
         if (module instanceof Jesus) return "Дает возможность игроку ходить по воде.";

@@ -43,7 +43,7 @@ public class AutoSwap extends Module {
     Slot targetSlot = null;
     long actionStartTime = 0L;
     boolean playerFullyStopped = false;
-    boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
+    boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed, wasJumpPressed;
     boolean keysOverridden = false;
 
     public AutoSwap() {
@@ -58,10 +58,10 @@ public class AutoSwap extends Module {
                 executeDefaultSwap();
             } else {
                 Slot hotbarSlot = findValidSlot(s -> s.id >= 36 && s.id <= 44);
-                if (hotbarSlot != null) {
-                    InventoryTask.swapHand(hotbarSlot, Hand.OFF_HAND, true, true);
+                    if (hotbarSlot != null) {
+                        startLegitSwap(hotbarSlot);
                 } else {
-                    Slot inventorySlot = findValidSlot(s -> s.id >= 9 && s.id <= 35);
+                    Slot inventorySlot = findValidSlot(s -> s.id >= 0 && s.id <= 35);
                     if (inventorySlot != null) {
                         startLegitSwap(inventorySlot);
                     }
@@ -86,6 +86,7 @@ public class AutoSwap extends Module {
         wasBackPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
         wasLeftPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
         wasRightPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
+        wasJumpPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.jumpKey.getDefaultKey().getCode());
 
         swapPhase = SwapPhase.SLOWING_DOWN;
         actionStartTime = System.currentTimeMillis();
@@ -107,13 +108,14 @@ public class AutoSwap extends Module {
                 mc.player.input.movementSideways = 0;
                 if (mc.player.isSprinting()) {
                     mc.player.setSprinting(false);
-                    AutoSprint.tickStop = 10;
+                    AutoSprint.tickStop = 5;
                 }
                 if (!keysOverridden) {
                     mc.options.forwardKey.setPressed(false);
                     mc.options.backKey.setPressed(false);
                     mc.options.leftKey.setPressed(false);
                     mc.options.rightKey.setPressed(false);
+                    mc.options.jumpKey.setPressed(false);
                     keysOverridden = true;
                 }
                 if (elapsed > 1) {
@@ -133,7 +135,7 @@ public class AutoSwap extends Module {
             case SWAP -> {
                 if (playerFullyStopped) {
                     if (targetSlot != null) {
-                        InventoryTask.moveItem(targetSlot, 45, true, true);
+                        InventoryTask.moveItem(targetSlot, 45, false, false);
                     }
                     swapPhase = SwapPhase.SPEEDING_UP;
                     actionStartTime = System.currentTimeMillis();
@@ -174,11 +176,13 @@ public class AutoSwap extends Module {
         boolean currentBack = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
         boolean currentLeft = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
         boolean currentRight = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
+        boolean currentJump = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.jumpKey.getDefaultKey().getCode());
 
         mc.options.forwardKey.setPressed(wasForwardPressed && currentForward);
         mc.options.backKey.setPressed(wasBackPressed && currentBack);
         mc.options.leftKey.setPressed(wasLeftPressed && currentLeft);
         mc.options.rightKey.setPressed(wasRightPressed && currentRight);
+        mc.options.jumpKey.setPressed(wasJumpPressed && currentJump);
         keysOverridden = false;
     }
 
@@ -192,18 +196,35 @@ public class AutoSwap extends Module {
         Item firstType = getItemByType(firstItem.getSelected());
         Item secondType = getItemByType(secondItem.getSelected());
         Item offHandItem = mc.player.getOffHandStack().getItem();
+        String offHandItemName = mc.player.getOffHandStack().getName().getString();
 
-        if (firstType == secondType) {
-            return null;
+        if (offHandItem == firstType) {
+            Slot second = InventoryTask.getSlot(secondType,
+                    Comparator.comparing(s -> s.getStack().hasEnchantments()),
+                    combinedPredicate.and(s -> s.getStack().getItem() == secondType && !s.getStack().getName().getString().equals(offHandItemName))
+            );
+            if (second != null) return second;
         }
 
-        if (offHandItem != firstType) {
-            Slot first = InventoryTask.getSlot(firstType, Comparator.comparing(s -> s.getStack().hasEnchantments()), combinedPredicate);
+        if (offHandItem == secondType) {
+            Slot first = InventoryTask.getSlot(firstType,
+                    Comparator.comparing(s -> s.getStack().hasEnchantments()),
+                    combinedPredicate.and(s -> s.getStack().getItem() == firstType && !s.getStack().getName().getString().equals(offHandItemName))
+            );
             if (first != null) return first;
         }
 
-        if (offHandItem != secondType) {
-            Slot second = InventoryTask.getSlot(secondType, Comparator.comparing(s -> s.getStack().hasEnchantments()), combinedPredicate);
+        if (offHandItem != firstType && offHandItem != secondType) {
+            Slot first = InventoryTask.getSlot(firstType,
+                    Comparator.comparing(s -> s.getStack().hasEnchantments()),
+                    combinedPredicate.and(s -> s.getStack().getItem() == firstType && !s.getStack().getName().getString().equals(offHandItemName))
+            );
+            if (first != null) return first;
+
+            Slot second = InventoryTask.getSlot(secondType,
+                    Comparator.comparing(s -> s.getStack().hasEnchantments()),
+                    combinedPredicate.and(s -> s.getStack().getItem() == secondType && !s.getStack().getName().getString().equals(offHandItemName))
+            );
             if (second != null) return second;
         }
 

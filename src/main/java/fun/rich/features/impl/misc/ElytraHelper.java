@@ -44,13 +44,10 @@ public class ElytraHelper extends Module {
 
     enum ElytraPhase { READY, SLOWING_DOWN, WAITING_STOP, SWAP, SPEEDING_UP, FINISHED }
     ElytraPhase elytraPhase = ElytraPhase.READY;
-    boolean slowingDown = false;
-    float slowdownFactor = 1.0f;
-    long swapStartTime = 0L;
+    long actionStartTime = 0L;
     Slot targetSlot = null;
-    boolean wasSprintingBefore = false;
     boolean playerFullyStopped = false;
-    boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
+    boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed, wasJumpPressed;
     boolean keysOverridden = false;
 
     enum FireworkPhase { READY, START, SWAP_TO_HOTBAR, WAITING_TO_USE, USE_FIREWORK, SWAP_BACK_TO_INV, FINISH }
@@ -71,17 +68,6 @@ public class ElytraHelper extends Module {
         if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem().equals(Items.ELYTRA) && recast.isValue()) {
             if (mc.player.isOnGround()) e.setJumping(true);
             else if (!mc.player.isGliding()) PlayerInteractionHelper.startFallFlying();
-        }
-
-        if (slowingDown && mc.player != null) {
-            if (elytraPhase == ElytraPhase.SLOWING_DOWN || elytraPhase == ElytraPhase.WAITING_STOP) {
-                mc.player.input.movementForward = 0;
-                mc.player.input.movementSideways = 0;
-                if (mc.player.isSprinting()) {
-                    mc.player.setSprinting(false);
-                    AutoSprint.tickStop = 10;
-                }
-            }
         }
     }
 
@@ -119,7 +105,7 @@ public class ElytraHelper extends Module {
         if (autoFireworkSetting.isValue() && mc.player != null && mc.player.isGliding()) {
             long now = System.currentTimeMillis();
             if (now - lastAutoFireworkTime >= (long) fireworkDelay.getValue()) {
-                if (fireworkPhase == FireworkPhase.READY) {
+                if (fireworkPhase == FireworkPhase.READY && elytraPhase == ElytraPhase.READY) {
                     if (modeSetting.getSelected().equals("Default")) {
                         InventoryResult hotbar = InventoryToolkit.findItemInHotBar(Items.FIREWORK_ROCKET);
                         if (hotbar.found()) {
@@ -236,7 +222,7 @@ public class ElytraHelper extends Module {
         if (slot != null) {
             Slot fireWork = InventoryTask.getSlot(Items.FIREWORK_ROCKET);
             boolean elytra = slot.getStack().getItem().equals(Items.ELYTRA);
-            InventoryTask.moveItem(slot, 6, true, true);
+            InventoryTask.moveItem(slot, 6, false, false);
 
             if (startSetting.isValue() && fireWork != null && elytra) {
                 script.cleanup().addTickStep(4, () -> {
@@ -253,19 +239,14 @@ public class ElytraHelper extends Module {
         targetSlot = chestPlate();
         if (targetSlot == null) return;
 
-        if (mc.player != null) {
-            wasSprintingBefore = mc.player.isSprinting();
-        }
-
         wasForwardPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.forwardKey.getDefaultKey().getCode());
         wasBackPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
         wasLeftPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
         wasRightPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
+        wasJumpPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.jumpKey.getDefaultKey().getCode());
 
         elytraPhase = ElytraPhase.SLOWING_DOWN;
-        swapStartTime = System.currentTimeMillis();
-        slowingDown = true;
-        slowdownFactor = 1.0f;
+        actionStartTime = System.currentTimeMillis();
         playerFullyStopped = false;
         keysOverridden = false;
     }
@@ -276,8 +257,7 @@ public class ElytraHelper extends Module {
             return;
         }
 
-        long elapsed = System.currentTimeMillis() - swapStartTime -125;
-        final long totalStopTime = 150;
+        long elapsed = System.currentTimeMillis() - actionStartTime;
 
         switch (elytraPhase) {
             case SLOWING_DOWN -> {
@@ -285,16 +265,17 @@ public class ElytraHelper extends Module {
                 mc.player.input.movementSideways = 0;
                 if (mc.player.isSprinting()) {
                     mc.player.setSprinting(false);
-                    AutoSprint.tickStop = 110;
+                    AutoSprint.tickStop = 5;
                 }
                 if (!keysOverridden) {
                     mc.options.forwardKey.setPressed(false);
                     mc.options.backKey.setPressed(false);
                     mc.options.leftKey.setPressed(false);
                     mc.options.rightKey.setPressed(false);
+                    mc.options.jumpKey.setPressed(false);
                     keysOverridden = true;
                 }
-                if (elapsed > 250) {
+                if (elapsed > 1) {
                     elytraPhase = ElytraPhase.WAITING_STOP;
                 }
             }
@@ -303,11 +284,7 @@ public class ElytraHelper extends Module {
                 mc.player.input.movementSideways = 0;
                 double velocityX = Math.abs(mc.player.getVelocity().x);
                 double velocityZ = Math.abs(mc.player.getVelocity().z);
-                double velocityY = Math.abs(mc.player.getVelocity().y);
-                boolean isCompletelyStill = velocityX < 0.001 && velocityZ < 0.001 && (mc.player.isOnGround() || velocityY < 0.001);
-
-                long swapTime = (long) (totalStopTime * 0.5);
-                if ((isCompletelyStill && elapsed >= swapTime) || elapsed > totalStopTime) {
+                if (velocityX < 0.001 && velocityZ < 0.001 || elapsed > 15) {
                     playerFullyStopped = true;
                     elytraPhase = ElytraPhase.SWAP;
                 }
@@ -316,7 +293,8 @@ public class ElytraHelper extends Module {
                 if (playerFullyStopped) {
                     if (targetSlot != null) {
                         boolean elytra = targetSlot.getStack().getItem().equals(Items.ELYTRA);
-                        InventoryTask.moveItem(targetSlot, 6, true, true);
+                        InventoryTask.moveItem(targetSlot, 6, false, false);
+
                         if (startSetting.isValue() && elytra) {
                             Slot fireWork = InventoryTask.getSlot(Items.FIREWORK_ROCKET);
                             if (fireWork != null) {
@@ -330,35 +308,25 @@ public class ElytraHelper extends Module {
                         }
                     }
                     elytraPhase = ElytraPhase.SPEEDING_UP;
-                    slowdownFactor = 0.0f;
-                    swapStartTime = System.currentTimeMillis();
-                    slowingDown = false;
+                    actionStartTime = System.currentTimeMillis();
+
                     if (keysOverridden) {
                         restoreKeyStates();
                     }
                 }
             }
             case SPEEDING_UP -> {
-                long speedupElapsed = System.currentTimeMillis() - swapStartTime;
+                long speedupElapsed = System.currentTimeMillis() - actionStartTime;
                 float speedupProgress = Math.min(1.0f, speedupElapsed / 20.0f);
-                slowdownFactor = speedupProgress;
                 if (mc.player.input != null) {
                     boolean forward = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.forwardKey.getDefaultKey().getCode());
-                    boolean back = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
-                    boolean left = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
-                    boolean right = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
-                    float targetForward = 0, targetStrafe = 0;
-                    if (forward) targetForward = 1.0f;
-                    if (back) targetForward = -1.0f;
-                    if (left) targetStrafe = 1.0f;
-                    if (right) targetStrafe = -1.0f;
-                    mc.player.input.movementForward = lerp(mc.player.input.movementForward, targetForward * slowdownFactor, 0.4f);
-                    mc.player.input.movementSideways = lerp(mc.player.input.movementSideways, targetStrafe * slowdownFactor, 0.4f);
-                    if (speedupProgress > 1f && forward && !mc.player.isSprinting()) {
+                    float targetForward = forward ? 1.0f : 0;
+                    mc.player.input.movementForward = lerp(mc.player.input.movementForward, targetForward * speedupProgress, 0.4f);
+                    if (speedupProgress > 0.4f && forward && !mc.player.isSprinting()) {
                         mc.player.setSprinting(true);
                     }
                 }
-                if (speedupElapsed > 125) {
+                if (speedupElapsed > 25) {
                     elytraPhase = ElytraPhase.FINISHED;
                 }
             }
@@ -371,12 +339,13 @@ public class ElytraHelper extends Module {
         boolean currentBack = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
         boolean currentLeft = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
         boolean currentRight = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
+        boolean currentJump = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.jumpKey.getDefaultKey().getCode());
 
         mc.options.forwardKey.setPressed(wasForwardPressed && currentForward);
         mc.options.backKey.setPressed(wasBackPressed && currentBack);
         mc.options.leftKey.setPressed(wasLeftPressed && currentLeft);
         mc.options.rightKey.setPressed(wasRightPressed && currentRight);
-
+        mc.options.jumpKey.setPressed(wasJumpPressed && currentJump);
         keysOverridden = false;
     }
 
@@ -388,16 +357,9 @@ public class ElytraHelper extends Module {
         if (keysOverridden) {
             restoreKeyStates();
         }
-        slowingDown = false;
-        slowdownFactor = 1.0f;
-        targetSlot = null;
         elytraPhase = ElytraPhase.READY;
-        wasSprintingBefore = false;
+        targetSlot = null;
         playerFullyStopped = false;
-        wasForwardPressed = false;
-        wasBackPressed = false;
-        wasLeftPressed = false;
-        wasRightPressed = false;
     }
 
     private Slot chestPlate() {

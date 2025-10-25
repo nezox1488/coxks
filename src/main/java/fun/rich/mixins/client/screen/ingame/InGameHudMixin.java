@@ -46,7 +46,7 @@ public abstract class InGameHudMixin implements QuickImports {
         boolean debugHudVisible = client.getDebugHud().shouldShowDebugHud();
         boolean tabVisible = client.options.playerListKey.isPressed();
 
-        if (!client.options.hudHidden && !debugHudVisible && !tabVisible) {
+        if (!client.options.hudHidden && !debugHudVisible) {
             context.getMatrices().push();
             context.getMatrices().translate(0.0F, 0.0F, 400.0F);
 

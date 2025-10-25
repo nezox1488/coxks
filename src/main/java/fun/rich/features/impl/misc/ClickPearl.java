@@ -36,7 +36,7 @@ public class ClickPearl extends Module {
     private int pearlSlot = -1;
     private long actionStartTime = 0L;
     private boolean keysOverridden = false;
-    private boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
+    private boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed, wasJumpPressed;
 
     private enum Phase { READY, SLOWING_DOWN, WAITING_STOP, PREPARE, AWAIT_SWITCH, THROW, SPEEDING_UP, FINISH }
     private Phase phase = Phase.READY;
@@ -86,6 +86,8 @@ public class ClickPearl extends Module {
                 wasBackPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
                 wasLeftPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
                 wasRightPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
+                wasJumpPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.jumpKey.getDefaultKey().getCode());
+
                 phase = Phase.SLOWING_DOWN;
                 actionStartTime = System.currentTimeMillis();
             } else {
@@ -192,11 +194,13 @@ public class ClickPearl extends Module {
         boolean currentBack = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());
         boolean currentLeft = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.leftKey.getDefaultKey().getCode());
         boolean currentRight = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.rightKey.getDefaultKey().getCode());
+        boolean currentJump = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.jumpKey.getDefaultKey().getCode());
 
         MC.options.forwardKey.setPressed(wasForwardPressed && currentForward);
         MC.options.backKey.setPressed(wasBackPressed && currentBack);
         MC.options.leftKey.setPressed(wasLeftPressed && currentLeft);
         MC.options.rightKey.setPressed(wasRightPressed && currentRight);
+        MC.options.jumpKey.setPressed(wasJumpPressed && currentJump);
         keysOverridden = false;
     }
 

@@ -32,6 +32,25 @@ public class Vector {
         );
     }
 
+    public static Vec3d brain(Entity entity, float min, float max) {
+        double distance = mc.player.getPos().distanceTo(entity.getPos());
+
+        double normalizedDistance = MathHelper.clamp((distance - min) / (max - min), 0, 1);
+        double heightFactor = normalizedDistance;
+
+        double minHeight = 0.2;
+        double maxHeight = 0.8;
+        double targetHeight = minHeight + (maxHeight - minHeight) * heightFactor;
+
+        double targetY = entity.getY() + (entity.getHeight() * targetHeight);
+
+        return new Vec3d(
+                entity.getX(),
+                targetY,
+                entity.getZ()
+        );
+    }
+
     public static Vec3d custom(Entity entity, int pointCount, float switchDelay) {
         if (updateTimer.every(1000) || cachedPoints.isEmpty()) {
             generateRandomPoints(entity, pointCount);

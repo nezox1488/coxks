@@ -134,7 +134,10 @@ public class StrikeManager implements QuickImports {
     }
 
     private void attack(StrikerConstructor.AttackPerpetratorConfigurable config) {
-        mc.interactionManager.attackEntity(mc.player, config.getTarget());
+        float chance = Calculate.getRandom(0, 100);
+        if (chance < Aura.getInstance().getHitChance().getValue()) {
+            mc.interactionManager.attackEntity(mc.player, config.getTarget());
+        }
         mc.player.swingHand(Hand.MAIN_HAND);
     }
 
