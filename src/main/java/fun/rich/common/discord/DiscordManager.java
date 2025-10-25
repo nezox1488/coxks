@@ -33,7 +33,7 @@ public class DiscordManager implements QuickImports {
                             .setStartTimestamp(System.currentTimeMillis() / 1000)
                             .setDetails("User: " + UserProfile.getInstance().profile("username"))
                             .setState("Uid: " + UserProfile.getInstance().profile("uid"))
-                            .setLargeImage("https://i.postimg.cc/s2ZDJz5w/RZtronics-1.png", "https://richclient.fun/")
+                            .setLargeImage("https://i.postimg.cc/nznMWbhM/0001-0250.gif", "https://richclient.fun/")
                             .setSmallImage(Rich.getInstance().getDiscordManager().getInfo().avatarUrl, "https://richclient.fun/")
                             .setButtons(RPCButton.create("Телеграм", "https://t.me/richclientnew"),
                                     RPCButton.create("Дискорд", "https://discord.gg/zYctK4mjZZ"))
