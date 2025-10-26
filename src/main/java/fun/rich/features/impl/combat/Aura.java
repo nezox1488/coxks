@@ -100,7 +100,7 @@ public class Aura extends Module {
     public static float legitSprintNeed;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("FunTime", "Fov Legit", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
+            .value("FunTime", "Legit Snap", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
             .selected("FunTime");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")
@@ -193,7 +193,7 @@ public class Aura extends Module {
 
         @EventHandler
         public void drawEvent(DrawEvent e){
-            if (mc.player == null || !aimMode.isSelected("Fov Legit")) return;
+            if (mc.player == null || !aimMode.isSelected("Legit Snap")) return;
 
             if (mc.options.getPerspective().isFirstPerson()) {
                 MatrixStack matrix = e.getDrawContext().getMatrices();
@@ -207,7 +207,7 @@ public class Aura extends Module {
                 float fovScale = (float) (450.0 / fov);
                 float dynamicRadius = baseRadius * fovScale;
 
-                targetScale = mc.player.isSprinting() ? 0.9f : 1.0f;
+                targetScale = mc.player.isSprinting() ? 0.9f : 1f;
                 currentScale = Calculate.interpolateSmooth(2.5, currentScale, targetScale);
 
                 float finalRadius = dynamicRadius * currentScale;
@@ -278,7 +278,7 @@ public class Aura extends Module {
     private LivingEntity updateTarget() {
         TargetFinder.EntityFilter filter = new TargetFinder.EntityFilter(targetType.getSelected());
         float range = attackRange.getValue() + RANGE_MARGIN + (mc.player.isGliding() && ElytraTarget.getInstance().isState() ? ElytraTarget.getInstance().elytraFindRange.getValue() : lookRange.getValue());
-        targetSelector.searchTargets(mc.world.getEntities(), range, aimMode.isSelected("Fov Legit") ? 35 : 360, attackSetting.isSelected("Ignore The Walls"));
+        targetSelector.searchTargets(mc.world.getEntities(), range, aimMode.isSelected("Legit Snap") ? (mc.player.isSprinting() ? 29 : 33) : 360, attackSetting.isSelected("Ignore The Walls"));
         targetSelector.validateTarget(filter::isValid);
         return targetSelector.getCurrentTarget();
     }
@@ -299,7 +299,7 @@ public class Aura extends Module {
         fakeRotate = false;
         shouldRotate = switch (aimMode.getSelected()) {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
-            case "Fov Legit" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
+            case "Legit Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
             case "d" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
                 boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(300);
@@ -409,7 +409,7 @@ public class Aura extends Module {
             case "SpookyTime" -> new SPAngle();
             case "ReallyWorld" -> new RWAngle();
             case "Snap" -> new SnapAngle();
-            case "Fov Legit" -> new SnapAngle();
+            case "Legit Snap" -> new SnapAngle();
             case "Matrix" -> new MatrixAngle();
             default -> new LinearConstructor();
         };
