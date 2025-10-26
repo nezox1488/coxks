@@ -44,7 +44,7 @@ public class FTAngle extends RotateConstructor {
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
         if (entity != null && attackHandler.getAttackTimer().finished(400)) {
-            float speed = randomLerp(0.65F, 0.85F);
+            float speed = randomLerp(0.65F, 0.95F);
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);

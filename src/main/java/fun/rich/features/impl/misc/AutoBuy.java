@@ -35,7 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AutoBuy extends Module {
-    SelectSetting leaveType = new SelectSetting("Тип обхода", "Проверяющий").value("Проверяющий", "Покупающий");
+    SelectSetting leaveType = new SelectSetting("Тип обхода", "Покупающий").value("Проверяющий", "Покупающий");
     SliderSettings timer2 = new SliderSettings("Таймер обновления аукциона", "").setValue(500).range(250, 1000);
     BooleanSetting bypassDelay = new BooleanSetting("Обход задержки 1.16.5 анках", "").visible(() -> leaveType.isSelected("Покупающий"));
     BooleanSetting bypassDelay1214 = new BooleanSetting("Обход задержки 1.21.4 анках", "").visible(() -> leaveType.isSelected("Покупающий"));
@@ -48,7 +48,7 @@ public class AutoBuy extends Module {
     TimerUtil ahSpamTimer = TimerUtil.create();
 
     ServerManager serverManager = new ServerManager();
-    ConnectionManager connectionManager = new ConnectionManager();
+    ConnectionManager connectionManager;
     BuyQueueManager queueManager = new BuyQueueManager();
     AutoBuyManager autoBuyManager = AutoBuyManager.getInstance();
 
@@ -92,6 +92,7 @@ public class AutoBuy extends Module {
             mc.options.pauseOnLostFocus = false;
         }
 
+        connectionManager = new ConnectionManager();
         connectionManager.setRunning(true);
         connectionManager.setMessageHandler(this::handleMessage);
         connectionManager.setConnectionHandler(this::handleConnection);
@@ -106,8 +107,11 @@ public class AutoBuy extends Module {
     @Override
     public void deactivate() {
         super.deactivate();
-        connectionManager.stopAll();
-        connectionManager.shutdown();
+        if (connectionManager != null) {
+            connectionManager.stopAll();
+            connectionManager.shutdown();
+            connectionManager = null;
+        }
     }
 
     private void handleMessage(String line) {
@@ -182,7 +186,7 @@ public class AutoBuy extends Module {
 
     @EventHandler
     public void onTick(TickEvent e) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.world == null || connectionManager == null) return;
         if (!autoBuyManager.isEnabled()) return;
 
         if (waitingForServerLoad) {

@@ -26,7 +26,7 @@ public class ChestStealer extends Module {
     StopWatch stopWatch = new StopWatch();
 
     SelectSetting modeSetting = new SelectSetting("Тип", "Выбирает тип стила")
-            .value("FunTime", "WhiteList", "Default");
+            .value("FunTime", "WhiteList", "Default").selected("FunTime");
     SliderSettings delaySetting = new SliderSettings("Задержка", "Задержка между кликами по слоту")
             .setValue(100).range(0, 1000).visible(() -> modeSetting.isSelected("WhiteList") || modeSetting.isSelected("Default"));
     MultiSelectSetting itemSettings = new MultiSelectSetting("Предметы", "Выберите предметы, которые вор будет подбирать")

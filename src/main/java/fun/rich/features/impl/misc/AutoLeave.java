@@ -20,10 +20,10 @@ import fun.rich.display.hud.StaffList;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AutoLeave extends Module {
     SelectSetting leaveType = new SelectSetting("Тип выхода", "Позволяет выбрать тип выхода")
-            .value("Hub", "Main Menu");
+            .value("Hub", "Main Menu").selected("Main Menu");
 
     MultiSelectSetting triggerSetting = new MultiSelectSetting("Триггеры", "Выберите, в каких случаях произойдет выход")
-            .value("Players", "Staff");
+            .value("Players", "Staff").selected("Players", "Staff");
 
     SliderSettings distanceSetting = new SliderSettings("Максимальная дистанция", "Максимальная дистанция для активации авто-выхода")
             .setValue(10).range(5, 40).visible(() -> triggerSetting.isSelected("Players"));

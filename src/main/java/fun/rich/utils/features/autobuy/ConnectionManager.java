@@ -28,19 +28,30 @@ public class ConnectionManager {
     private final Map<Socket, BufferedReader> ins = new ConcurrentHashMap<>();
     private final Map<Socket, Boolean> clientInAuction = new ConcurrentHashMap<>();
 
-    private final ExecutorService executorService = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r);
-        t.setPriority(Thread.MAX_PRIORITY);
-        t.setDaemon(true);
-        return t;
-    });
+    private ExecutorService executorService;
 
     private volatile boolean running = false;
 
     private Consumer<String> messageHandler;
     private Consumer<Socket> connectionHandler;
 
+    public ConnectionManager() {
+        initExecutorService();
+    }
+
+    private void initExecutorService() {
+        executorService = Executors.newCachedThreadPool(r -> {
+            Thread t = new Thread(r);
+            t.setPriority(Thread.MAX_PRIORITY);
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
     public void startServer() {
+        if (executorService == null || executorService.isShutdown()) {
+            initExecutorService();
+        }
         if (serverSocket == null || serverSocket.isClosed()) {
             executorService.execute(() -> {
                 try {
@@ -56,6 +67,9 @@ public class ConnectionManager {
     }
 
     public void startClient() {
+        if (executorService == null || executorService.isShutdown()) {
+            initExecutorService();
+        }
         if (clientSocket == null || clientSocket.isClosed()) {
             executorService.execute(() -> {
                 while (running && (clientSocket == null || clientSocket.isClosed())) {
@@ -96,7 +110,9 @@ public class ConnectionManager {
                 if (connectionHandler != null) {
                     connectionHandler.accept(conn);
                 }
-                executorService.execute(() -> readerThread(conn));
+                if (executorService != null && !executorService.isShutdown()) {
+                    executorService.execute(() -> readerThread(conn));
+                }
             }
         } catch (IOException ignored) {}
     }
@@ -109,7 +125,9 @@ public class ConnectionManager {
             while ((line = in.readLine()) != null) {
                 if (messageHandler != null) {
                     String finalLine = line;
-                    executorService.execute(() -> messageHandler.accept(finalLine));
+                    if (executorService != null && !executorService.isShutdown()) {
+                        executorService.execute(() -> messageHandler.accept(finalLine));
+                    }
                 }
             }
         } catch (IOException ignored) {}
@@ -125,7 +143,9 @@ public class ConnectionManager {
             while ((line = clientIn.readLine()) != null) {
                 if (messageHandler != null) {
                     String finalLine = line;
-                    executorService.execute(() -> messageHandler.accept(finalLine));
+                    if (executorService != null && !executorService.isShutdown()) {
+                        executorService.execute(() -> messageHandler.accept(finalLine));
+                    }
                 }
             }
         } catch (IOException ignored) {}
@@ -208,10 +228,15 @@ public class ConnectionManager {
 
     public void shutdown() {
         running = false;
-        executorService.shutdownNow();
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
     }
 
     public ExecutorService getExecutorService() {
+        if (executorService == null || executorService.isShutdown()) {
+            initExecutorService();
+        }
         return executorService;
     }
 }
