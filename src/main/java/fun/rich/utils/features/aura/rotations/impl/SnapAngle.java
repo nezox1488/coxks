@@ -20,7 +20,7 @@ public class SnapAngle extends RotateConstructor {
 
     @Override
     public Turns limitAngleChange(Turns currentAngle, Turns targetAngle, Vec3d vec3d, Entity entity) {
-        if (entity !=null) {
+        if (entity !=null && Aura.getInstance().getAimMode().isSelected("Snap")) {
             Vec3d aimPoint = Vector.hitbox(entity, 1, 1, 1, 2);
             targetAngle = MathAngle.calculateAngle(aimPoint);
         }

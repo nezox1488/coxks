@@ -3,11 +3,16 @@ package fun.rich.features.impl.movement;
 import antidaunleak.api.annotation.Native;
 import fun.rich.utils.features.aura.warp.Turns;
 import fun.rich.utils.client.chat.ChatMessage;
+import fun.rich.utils.interactions.inv.InventoryFlowManager;
+import fun.rich.utils.interactions.inv.InventoryResult;
 import fun.rich.utils.interactions.inv.InventoryTask;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -15,6 +20,7 @@ import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -38,7 +44,10 @@ import fun.rich.utils.features.aura.warp.TurnsConfig;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
 import fun.rich.utils.features.aura.rotations.impl.SnapAngle;
 
+import java.util.function.IntPredicate;
 import java.util.stream.Stream;
+
+import static net.minecraft.world.gen.chunk.DebugChunkGenerator.getBlockState;
 
 @Setter
 @Getter
@@ -49,7 +58,7 @@ public class Spider extends Module {
     StopWatch stopWatch = new StopWatch();
 
     SelectSetting mode = new SelectSetting("Режим", "Выбирает режим")
-            .value("SpookyTime", "FunTime").selected("Block");
+            .value("SpookyTime", "FunTime", "Slime Block", "Water Bucket").selected("Slime Block");
 
     public Spider() {
         super("Spider", ModuleCategory.MOVEMENT);
@@ -59,9 +68,23 @@ public class Spider extends Module {
     private double lastWaterY = 0;
     private long lastWaterPlaceTime = 0;
 
+    @NonFinal
+    int cooldown;
+    @NonFinal
+    boolean startSetPitch = false;
+    private Block getBlockState(BlockPos blockPos) {
+        return mc.world.getBlockState(blockPos).getBlock();
+    }
 
+    @Override
+    public void deactivate() {
+        if (mode.isSelected("Slime Block")) {
+            mc.options.jumpKey.setPressed(false);
+        }
+    }
     @EventHandler
     public void onPostTick(PostTickEvent e) {
+
         if (mode.isSelected("FunTime")) {
             if (mc.options.jumpKey.isPressed()) return;
             Box playerBox = mc.player.getBoundingBox().expand(-1e-3);
@@ -78,44 +101,68 @@ public class Spider extends Module {
             }
         }
 
-        if (mode.isSelected("SpookyTime") || mode.isSelected("FixedPitch")) {
+//        if (mode.isSelected("Test") && stopWatch.finished(200) && mc.player.isTouchingWater()) {
+//            mc.player.setVelocity(0, 0.45F, 0);
+//            stopWatch.reset();
+//        }
 
-            if (mc.player.horizontalCollision) {
-                mc.options.forwardKey.setPressed(false);
+        if (mode.isSelected("Water Bucket")) {
+            if (mc.player.getMainHandStack().getItem() == Items.WATER_BUCKET && mc.player.horizontalCollision) {
+                mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.player.setVelocity(mc.player.getVelocity().x, 0.3, mc.player.getVelocity().z);
             }
+        }
 
-            int waterBucketSlot = InventoryTask.getHotbarSlotId(i -> mc.player.getInventory().getStack(i).getItem() == Items.WATER_BUCKET);
-            boolean hasWaterBucketInMain = mc.player.getMainHandStack().getItem() == Items.WATER_BUCKET;
+        if (mode.isSelected("SpookyTime") && stopWatch.finished(310)) {
+            if (mc.player.getMainHandStack().getItem() == Items.WATER_BUCKET && mc.player.horizontalCollision) {
 
-            if (waterBucketSlot >= 0 && waterBucketSlot <= 8) {
-                mc.options.jumpKey.setPressed(true);
-                mc.options.sneakKey.setPressed(true);
-                mc.player.getInventory().setSelectedSlot(waterBucketSlot);
-            } else {
-                ChatMessage.brandmessage("Нужно ведро воды в хотбаре");
+                mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0, mc.player.getYaw(), mc.player.getPitch()));
+                mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                mc.player.setVelocity(mc.player.getVelocity().x, 0.35, mc.player.getVelocity().z);
             }
+            stopWatch.reset();
+        }
 
-            if (hasWaterBucketInMain) {
-                BlockPos placeablePos = getPlaceableWaterBlock();
-                if (placeablePos != null && stopWatch.finished(340)) {
-                    mc.player.setPitch(75);
-                    Vec3d vec = placeablePos.toCenterPos();
-                    Direction direction = Direction.getFacing(vec.x - mc.player.getX(), vec.y - mc.player.getY(), vec.z - mc.player.getZ());
-                    mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 1, mc.player.getYaw(), mc.player.getPitch()));
-                    mc.player.networkHandler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                    stopWatch.reset();
-                    mc.player.setVelocity(mc.player.getVelocity().x, 0.35, mc.player.getVelocity().z);
-                }
+        if (mode.isSelected("Slime Block")) {
+            BlockPos blockX = new BlockPos(mc.player.getBlockX() + 1, mc.player.getBlockY(), mc.player.getBlockZ());
+            BlockPos blockZ = new BlockPos(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ() + 1);
+            BlockPos blockNegativeX = new BlockPos(mc.player.getBlockX() - 1, mc.player.getBlockY(), mc.player.getBlockZ());
+            BlockPos blockNegativeZ = new BlockPos(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ() - 1);
+
+            int slimeSlot = InventoryTask.getHotbarSlotId(i -> mc.player.getInventory().getStack(i).getItem() == Items.SLIME_BLOCK);
+            HitResult hitResult = mc.crosshairTarget;
+            if (!mc.player.horizontalCollision) return;
+            if (getBlockState(blockX) != Blocks.SLIME_BLOCK && getBlockState(blockZ) != Blocks.SLIME_BLOCK && getBlockState(blockNegativeX) != Blocks.SLIME_BLOCK && getBlockState(blockNegativeZ) != Blocks.SLIME_BLOCK) return;
+            if (mc.player.getVelocity().y <= -1) return;
+
+            if (hitResult instanceof BlockHitResult blockHitResult) {
+                Direction side = blockHitResult.getSide();
+
+                if (getBlockState(blockHitResult.getBlockPos()) == Blocks.AIR) return;
+
+                BlockHitResult result = new BlockHitResult(blockHitResult.getPos(), side, blockHitResult.getBlockPos(), false);
+
+                mc.player.getInventory().setSelectedSlot(slimeSlot);
+
+                startSetPitch = true;
+                mc.player.setPitch(54);
+                mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, result);
+                mc.player.swingHand(Hand.MAIN_HAND);
+
+                if (cooldown >= 0.5) {
+                    mc.player.setVelocity(mc.player.getVelocity().x, 0.62, mc.player.getVelocity().z);
+                    cooldown = 0;
+                } else cooldown++;
             }
         }
     }
 
 
     @EventHandler
-
     public void onRotationUpdate(RotationUpdateEvent e) {
         if (e.getType() == EventType.PRE) {
-            if (mode.isSelected("Block")) {
+            if (mode.isSelected("Slime Block")) {
                 boolean offHand = mc.player.getOffHandStack().getItem() instanceof BlockItem;
                 int slotId = InventoryTask.getHotbarSlotId(i -> mc.player.getInventory().getStack(i).getItem() instanceof BlockItem);
                 BlockPos blockPos = findPos();

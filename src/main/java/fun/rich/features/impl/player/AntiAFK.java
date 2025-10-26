@@ -60,7 +60,7 @@ public class AntiAFK extends Module {
     @EventHandler
     public void tick(TickEvent e) {
         if (PlayerInteractionHelper.nullCheck()) return;
-        long intervalMs = (long) (time.getValue() * 60);
+        long intervalMs = (long) (time.getValue() * 60 * 100);
         if (timer.every(intervalMs)) {
             List<String> modes = multiSetting.getSelected();
 

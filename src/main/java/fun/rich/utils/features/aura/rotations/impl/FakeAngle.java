@@ -31,7 +31,7 @@ public class FakeAngle extends RotateConstructor {
     public Turns limitAngleChange(Turns currentAngle, Turns targetAngle, Vec3d vec3d, Entity entity) {
 
         if (entity != null) {
-            Vec3d aimPoint = Vector.brain(entity, 0F, 2F);
+            Vec3d aimPoint = Vector.brain(entity, 0F, 5F);
             targetAngle = MathAngle.calculateAngle(aimPoint);
         }
         Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
@@ -40,8 +40,8 @@ public class FakeAngle extends RotateConstructor {
 
         float rotationDifference = (float) Math.hypot(yawDelta, pitchDelta);
 
-        float straightLineYaw = Math.abs(yawDelta / rotationDifference) * 65.0F;
-        float straightLinePitch = Math.abs(pitchDelta / rotationDifference) * 65.0F;
+        float straightLineYaw = Math.abs(yawDelta / rotationDifference) * 360;
+        float straightLinePitch = Math.abs(pitchDelta / rotationDifference) * 360;
 
         float jitterYaw = (float) (8 * Math.sin(System.currentTimeMillis() / 85D));
         float jitterPitch = (float) (8 * Math.sin(System.currentTimeMillis() / 95D));

@@ -2,6 +2,7 @@ package fun.rich.features.impl.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import fun.rich.features.impl.combat.TriggerBot;
 import fun.rich.features.module.setting.implement.ColorSetting;
 import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.utils.client.managers.event.types.EventType;
@@ -24,6 +25,7 @@ import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
@@ -69,26 +71,37 @@ public class TargetESP extends Module {
     public void onWorldRender(WorldRenderEvent e) {
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         StopWatch attackTimer = attackHandler.getAttackTimer();
-        esp_anim.setDirection(Aura.getInstance().getTarget() != null ? Direction.FORWARDS : Direction.BACKWARDS);
+
+        LivingEntity currentTarget = null;
+        LivingEntity lastTarget = null;
+
+        if (Aura.getInstance().isState()) {
+            currentTarget = Aura.getInstance().getTarget();
+            lastTarget = Aura.getInstance().getLastTarget();
+        } else if (TriggerBot.getInstance().isState()) {
+            currentTarget = TriggerBot.getInstance().target;
+            lastTarget = TriggerBot.getInstance().target;
+        }
+
+        esp_anim.setDirection(currentTarget != null ? Direction.FORWARDS : Direction.BACKWARDS);
         float anim = esp_anim.getOutput().floatValue();
 
-        if (Aura.getInstance().getLastTarget() != null && !esp_anim.isFinished(Direction.BACKWARDS)) {
-            float red = MathHelper.clamp((Aura.getInstance().getLastTarget().hurtTime - tickCounter.getTickDelta(false)) / 20, 0, 1);
+        if (lastTarget != null && !esp_anim.isFinished(Direction.BACKWARDS)) {
+            float red = MathHelper.clamp((lastTarget.hurtTime - tickCounter.getTickDelta(false)) / 20, 0, 1);
             switch (targetEspType.getSelected()) {
-                case "Cube" -> Render3D.drawCube(Aura.getInstance().getLastTarget(), anim, red, cubeType.getSelected());
-                case "Circle" -> Render3D.drawCircle(e.getStack(), Aura.getInstance().getLastTarget(), anim, red);
-                case "Ghosts" -> Render3D.drawGhosts(Aura.getInstance().getLastTarget(), anim, red, 0.62F);
+                case "Cube" -> Render3D.drawCube(lastTarget, anim, red, cubeType.getSelected());
+                case "Circle" -> Render3D.drawCircle(e.getStack(), lastTarget, anim, red);
+                case "Ghosts" -> Render3D.drawGhosts(lastTarget, anim, red, 0.62F);
                 case "Crystals" -> {
-                    if (crystalList.isEmpty() || Aura.getInstance().getLastTarget() != lastRenderedTarget) {
-                        createCrystals(Aura.getInstance().getLastTarget());
-                        lastRenderedTarget = Aura.getInstance().getLastTarget();
+                    if (crystalList.isEmpty() || lastTarget != lastRenderedTarget) {
+                        createCrystals(lastTarget);
+                        lastRenderedTarget = lastTarget;
                     }
-                    renderCrystals(e.getStack(), Aura.getInstance().getLastTarget(), anim, red);
+                    renderCrystals(e.getStack(), lastTarget, anim, red);
                 }
             }
         }
     }
-
     private Entity lastRenderedTarget = null;
     private final List<Crystal> crystalList = new ArrayList<>();
     private float rotationAngle = 0;

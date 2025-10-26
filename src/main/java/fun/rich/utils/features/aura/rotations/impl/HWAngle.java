@@ -35,7 +35,7 @@ public class HWAngle extends RotateConstructor {
         float pitchDelta = angleDelta.getPitch();
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
 
-        float speed = canAttack ? randomLerp(0.85F, 0.96F) : 0.4F;
+        float speed = canAttack ? randomLerp(0.86F, 0.96F) : 0.4F;
 
         float maxRotation = 180F;
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * maxRotation);

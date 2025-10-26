@@ -6,6 +6,7 @@ import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.display.interfaces.QuickImports;
 import fun.rich.utils.client.managers.event.types.EventType;
 import fun.rich.features.impl.combat.Aura;
+import fun.rich.features.impl.combat.TriggerBot;
 import fun.rich.utils.features.aura.warp.Turns;
 import fun.rich.utils.features.aura.utils.MathAngle;
 import fun.rich.utils.features.aura.utils.RaycastAngle;
@@ -71,8 +72,7 @@ public class StrikeManager implements QuickImports {
             if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;
         }
 
-        String sprintMode = Aura.getInstance().getSprintReset().getSelected();
-
+        String sprintMode = getSprintMode();
         if (sprintMode.equals("Legit") && !isSprinting()) {
             attackEntity(config);
         }
@@ -82,7 +82,15 @@ public class StrikeManager implements QuickImports {
             mc.player.sendSprintingPacket();
             attackEntity(config);
         }
+    }
 
+    private String getSprintMode() {
+        if (Aura.getInstance().isState()) {
+            return Aura.getInstance().getSprintReset().getSelected();
+        } else if (TriggerBot.getInstance().isState()) {
+            return TriggerBot.getInstance().sprintReset.getSelected();
+        }
+        return "Legit";
     }
 
     void preAttackEntity(StrikerConstructor.AttackPerpetratorConfigurable config) {
@@ -90,9 +98,9 @@ public class StrikeManager implements QuickImports {
             mc.interactionManager.stopUsingItem(mc.player);
             shieldWatch.reset();
         }
-        String sprintMode = Aura.getInstance().getSprintReset().getSelected();
+        String sprintMode = getSprintMode();
         if (sprintMode.equals("Legit")) {
-            if (mc.player.isSprinting() && mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue()) {
+            if (mc.player.isSprinting() && getTargetDistance() <= getAttackRange()) {
                 AutoSprint.tickStop = 2;
                 mc.options.sprintKey.setPressed(false);
                 mc.player.setSprinting(false);
@@ -100,15 +108,13 @@ public class StrikeManager implements QuickImports {
             }
             return;
         }
-
-
     }
 
     void postAttackEntity(StrikerConstructor.AttackPerpetratorConfigurable config) {
     }
 
     void attackEntity(StrikerConstructor.AttackPerpetratorConfigurable config) {
-        if (Aura.getInstance().getAttackSetting().isSelected("Fake Lag")) {
+        if (Aura.getInstance().isState() && Aura.getInstance().getAttackSetting().isSelected("Fake Lag")) {
             Aura.getInstance().tickStop = 1;
         }
         attack(config);
@@ -135,10 +141,15 @@ public class StrikeManager implements QuickImports {
 
     private void attack(StrikerConstructor.AttackPerpetratorConfigurable config) {
         float chance = Calculate.getRandom(0, 100);
-        if (chance < Aura.getInstance().getHitChance().getValue() && Aura.getInstance().getAttackSetting().isSelected("Hit Chance")) {
-            mc.interactionManager.attackEntity(mc.player, config.getTarget());
-        }
-        if (!Aura.getInstance().getAttackSetting().isSelected("Hit Chance")) {
+        if (Aura.getInstance().isState() && Aura.getInstance().getAttackSetting().isSelected("Hit Chance")) {
+            if (chance < Aura.getInstance().getHitChance().getValue()) {
+                mc.interactionManager.attackEntity(mc.player, config.getTarget());
+            }
+        } else if (TriggerBot.getInstance().isState() && TriggerBot.getInstance().attackSetting.isSelected("Hit Chance")) {
+            if (chance < TriggerBot.getInstance().hitChance.getValue()) {
+                mc.interactionManager.attackEntity(mc.player, config.getTarget());
+            }
+        } else {
             mc.interactionManager.attackEntity(mc.player, config.getTarget());
         }
         mc.player.swingHand(Hand.MAIN_HAND);
@@ -146,6 +157,24 @@ public class StrikeManager implements QuickImports {
 
     private boolean isSprinting() {
         return EventListener.serverSprint && !mc.player.isGliding() && !mc.player.isTouchingWater();
+    }
+
+    private float getAttackRange() {
+        if (Aura.getInstance().isState()) {
+            return Aura.getInstance().getAttackRange().getValue();
+        } else if (TriggerBot.getInstance().isState()) {
+            return TriggerBot.getInstance().attackRange.getValue();
+        }
+        return 3.0f;
+    }
+
+    private double getTargetDistance() {
+        if (Aura.getInstance().isState() && Aura.getInstance().getTarget() != null) {
+            return mc.player.distanceTo(Aura.getInstance().getTarget());
+        } else if (TriggerBot.getInstance().isState() && TriggerBot.getInstance().target != null) {
+            return mc.player.distanceTo(TriggerBot.getInstance().target);
+        }
+        return 0;
     }
 
     public boolean canAttack(StrikerConstructor.AttackPerpetratorConfigurable config, int ticks) {
@@ -187,7 +216,14 @@ public class StrikeManager implements QuickImports {
 
     private boolean isPlayerInCriticalState(PlayerSimulation simulated, int ticks) {
         boolean fall = simulated.fallDistance > 0 && (simulated.fallDistance < 0.08 || !PlayerSimulation.simulateLocalPlayer(ticks + 1).onGround);;
-        if (Aura.getInstance().getSmartCrits().isValue() && !mc.options.jumpKey.isPressed() && mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue()) {
+        boolean smartCritsEnabled = false;
+        if (Aura.getInstance().isState()) {
+            smartCritsEnabled = Aura.getInstance().getSmartCrits().isValue();
+        } else if (TriggerBot.getInstance().isState()) {
+            smartCritsEnabled = TriggerBot.getInstance().smartCrits.isValue();
+        }
+
+        if (smartCritsEnabled && !mc.options.jumpKey.isPressed() && getTargetDistance() <= getAttackRange()) {
             return simulated.onGround || (!simulated.onGround && fall);
         }
 

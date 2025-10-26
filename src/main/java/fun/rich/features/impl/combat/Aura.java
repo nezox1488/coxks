@@ -3,12 +3,17 @@ package fun.rich.features.impl.combat;
 import antidaunleak.api.annotation.Native;
 import fun.rich.events.player.MotionEvent;
 import fun.rich.events.player.TickEvent;
+import fun.rich.events.render.DrawEvent;
 import fun.rich.events.render.WorldRenderEvent;
 import fun.rich.features.impl.movement.Strafe;
 import fun.rich.features.impl.movement.TargetStrafe;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.display.color.ColorAssist;
+import fun.rich.utils.display.font.Fonts;
 import fun.rich.utils.display.geometry.Render3D;
+import fun.rich.utils.display.interfaces.QuickImports;
+import fun.rich.utils.display.shape.ShapeProperties;
+import fun.rich.utils.display.shape.implement.Arc;
 import fun.rich.utils.features.aura.point.MultiPoint;
 import fun.rich.utils.features.aura.rotations.constructor.LinearConstructor;
 import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
@@ -24,6 +29,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.packet.Packet;
@@ -51,6 +57,7 @@ import fun.rich.utils.features.aura.target.TargetFinder;
 import fun.rich.features.impl.render.Hud;
 import org.lwjgl.glfw.GLFW;
 
+import java.awt.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -91,8 +98,8 @@ public class Aura extends Module {
     public static float legitSprintNeed;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("Matrix", "Snap", "FunTime", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld", "TriggerBot")
-            .selected("Matrix");
+            .value("FunTime", "FunTime Legit", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
+            .selected("FunTime");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")
             .value("Players", "Mobs", "Animals", "Friends", "Armor Stand")
@@ -147,7 +154,9 @@ public class Aura extends Module {
                 elytraFindRange,
                 forward,
                 elytraForward
-        );    }
+        );
+        Rich.getInstance().getEventManager().register(new FovCircleRenderer());
+    }
 
     @Override
     public void deactivate() {
@@ -188,6 +197,29 @@ public class Aura extends Module {
         }
     }
 
+    public class FovCircleRenderer implements QuickImports {
+        @EventHandler
+        public void drawEvent(DrawEvent e){
+            if (mc.player == null || !aimMode.isSelected("FunTime Legit") || !Aura.getInstance().isState()) return;
+
+            MatrixStack matrix = e.getDrawContext().getMatrices();
+            float middleW = mc.getWindow().getScaledWidth() / 2f;
+            float middleH = mc.getWindow().getScaledHeight() / 2f;
+
+            double fov = mc.options.getFov().getValue();
+            float baseRadius = 180f;
+            float fovScale = (float) (fov / 70.0);
+            float circleRadius = baseRadius * fovScale;
+
+            arc.render(ShapeProperties.create(matrix, middleW - circleRadius / 2f, middleH - circleRadius / 2f, circleRadius, circleRadius)
+                    .round(0.3F)
+                    .thickness(0.017f)
+                    .end(360)
+                    .color(ColorAssist.getColor(255, 255, 255, 255))
+                    .build());
+        }
+    }
+
     @EventHandler
     public void onWorldRender(WorldRenderEvent e) {
         if (box != null && attackSetting.isSelected("Fake Lag") && target !=null) {
@@ -196,7 +228,6 @@ public class Aura extends Module {
     }
 
     @EventHandler
-
     public void tick(TickEvent e) {
         if (PlayerInteractionHelper.nullCheck()) return;
         if (target == null) return;
@@ -240,10 +271,12 @@ public class Aura extends Module {
         }
     }
 
+    public static boolean shouldRotate;
+
     private LivingEntity updateTarget() {
         TargetFinder.EntityFilter filter = new TargetFinder.EntityFilter(targetType.getSelected());
         float range = attackRange.getValue() + RANGE_MARGIN + (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities") ? elytraFindRange.getValue() : lookRange.getValue());
-        targetSelector.searchTargets(mc.world.getEntities(), range, 360, attackSetting.isSelected("Ignore The Walls"));
+        targetSelector.searchTargets(mc.world.getEntities(), range, aimMode.isSelected("FunTime Legit") ? 35 : 360, attackSetting.isSelected("Ignore The Walls"));
         targetSelector.validateTarget(filter::isValid);
         return targetSelector.getCurrentTarget();
     }
@@ -256,20 +289,15 @@ public class Aura extends Module {
 
         boolean elytraMode = mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities");
 
-        if (aimMode.isSelected("CakeWorld")) {
-            fakeRotate = true;
-        } else {
-            fakeRotate = false;
-        }
-
         if (fakeRotate && target != null) {
             FakeAngle fake = new FakeAngle();
             Turns fakeRot = fake.limitAngleChange(controller.getRotation(), rotation.getAngle(), rotation.getVec(), target);
             controller.setFakeRotation(fakeRot);
         }
-
-        boolean shouldRotate = switch (aimMode.getSelected()) {
+        fakeRotate = false;
+        shouldRotate = switch (aimMode.getSelected()) {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
+            case "FunTime Legit" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
             case "d" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
                 boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(300);
@@ -382,6 +410,7 @@ public class Aura extends Module {
             case "SpookyTime" -> new SPAngle();
             case "ReallyWorld" -> new RWAngle();
             case "Snap" -> new SnapAngle();
+            case "FunTime Legit" -> new SnapAngle();
             case "Matrix" -> new MatrixAngle();
             default -> new LinearConstructor();
         };

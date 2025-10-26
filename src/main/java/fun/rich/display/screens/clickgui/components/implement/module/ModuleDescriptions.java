@@ -21,6 +21,7 @@ public class ModuleDescriptions {
         if (module instanceof Jesus) return "Дает возможность игроку ходить по воде.";
         if (module instanceof ProjectileHelper) return "Помогает игроку наводится на цель.";
         if (module instanceof XRay) return "Позволяет видеть сквозь блоки для поиска ресурсов.";
+        if (module instanceof TriggerBot) return "Бьет сущность если игрок смотрит на нее.";
         if (module instanceof Aura) return "Автоматически атакует ближайших врагов.";
         if (module instanceof AutoSwap) return "Автоматически меняет предметы в руке.";
         if (module instanceof AutoPilot) return "Наводит камеру игрока на ценный предмет сервера ReallyWorld";

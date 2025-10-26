@@ -49,6 +49,7 @@ public class ModuleRepository {
                 new WorldParticles(),
                 new IRC(),
                 new XRay(),
+                new TriggerBot(),
                 new Aura(),
                 new AutoSwap(),
                 new NoFriendDamage(),
