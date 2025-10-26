@@ -91,7 +91,7 @@ public class Aura extends Module {
     public static float legitSprintNeed;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("Matrix", "Snap", "FunTime", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
+            .value("Matrix", "Snap", "FunTime", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld", "TriggerBot")
             .selected("Matrix");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")
@@ -275,7 +275,7 @@ public class Aura extends Module {
                 boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(300);
                 yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(25);
             }
-            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(35);
+            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
             case "SpookyTime" -> true;
             case "CakeWorld" -> true;
             case "ds" -> true;
@@ -290,11 +290,11 @@ public class Aura extends Module {
             default -> false;
         };
 
-        if (shouldRotate) {
+        if (shouldRotate && !aimMode.isSelected("TriggerBot")) {
             controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
         }
 
-        if (elytraMode) {
+        if (elytraMode && !aimMode.isSelected("TriggerBot")) {
             controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
         }
     }

@@ -30,11 +30,10 @@ public class FakeAngle extends RotateConstructor {
     @Override
     public Turns limitAngleChange(Turns currentAngle, Turns targetAngle, Vec3d vec3d, Entity entity) {
 
-        if (entity !=null) {
-            Vec3d aimPoint = Vector.hitbox(entity, 2, 1.7F, 2, 2);
+        if (entity != null) {
+            Vec3d aimPoint = Vector.brain(entity, 0F, 2F);
             targetAngle = MathAngle.calculateAngle(aimPoint);
         }
-
         Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
         float yawDelta = angleDelta.getYaw();
         float pitchDelta = angleDelta.getPitch();
