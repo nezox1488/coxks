@@ -73,8 +73,7 @@ public class StrikeManager implements QuickImports {
 
         boolean elytraMode = Aura.getInstance().getTarget() != null &&
                 Aura.getInstance().getTarget().isGliding() &&
-                mc.player.isGliding() &&
-                Aura.getInstance().getAttackSetting().isSelected("Elytra possibilities");
+                mc.player.isGliding();
 
         if (elytraMode) {
             Vec3d targetVelocity = config.getTarget().getVelocity();
@@ -83,9 +82,6 @@ public class StrikeManager implements QuickImports {
             if (ElytraTarget.shouldElytraTarget) {
                 leadTicks = ElytraTarget.getInstance().elytraForward.getValue();
             }
-
-            if (targetSpeed > 0.35) {
-
 
                 Vec3d predictedPos = config.getTarget().getPos().add(targetVelocity.multiply(leadTicks));
                 Box predictedBox = new Box(
@@ -102,9 +98,8 @@ public class StrikeManager implements QuickImports {
                 if (!predictedBox.raycast(eyePos, eyePos.add(lookVec.multiply(config.getMaximumRange()))).isPresent()) {
                     return;
                 }
-            }
 
-            if (!canAttack(config, 1)) return;
+            if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;
         } else {
             if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;
         }

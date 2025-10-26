@@ -113,7 +113,7 @@ public class Aura extends Module {
             .setValue(1.5f).range(0F, 2F);
 
     MultiSelectSetting attackSetting = new MultiSelectSetting("Настройки", "Позволяет настроить работу функции")
-            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Fake Lag", "Hit Chance")
+            .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Fake Lag", "Hit Chance")
             .selected("Only Critical", "Break Shield");
 
     SliderSettings hitChance = new SliderSettings("Шанс удара в %", "Шанс удара по цели")

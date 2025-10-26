@@ -30,17 +30,17 @@ public class ElytraTarget extends Module {
     public static boolean shouldElytraTarget = false;
 
     public ElytraTarget() {
-        super("ElytraTarget", "Elytra Target", ModuleCategory.MISC);
-        setup(elytraFindRange, elytraForward);
+        super("ElytraTarget", "Elytra Target", ModuleCategory.MOVEMENT);
+        setup(elytraFindRange, elytraForward, forward);
     }
 
     @EventHandler
     private void onEventKey(KeyEvent e) {
-        if (e.key() == forward.getKey()) {
+        if (e.isKeyDown(forward.getKey())) {
             float volume = Hud.getInstance().getModuleVolume();
             shouldElytraTarget = !shouldElytraTarget;
-            Notifications.getInstance().addList("Elytra Forward" + (shouldElytraTarget ? "enabled!" : "disabled"), 1500, null);
-            SoundManager.playSound(SoundManager.ENABLE_MODULE, volume, 1.0f);
+            Notifications.getInstance().addList("Elytra Forward " + (shouldElytraTarget ? "enabled!" : "disabled"), 1500, null);
+            SoundManager.playSound(shouldElytraTarget ? SoundManager.ENABLE_MODULE : SoundManager.DISABLE_MODULE, volume, 1.0f);
         }
     }
 
