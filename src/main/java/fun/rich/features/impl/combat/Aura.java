@@ -179,7 +179,7 @@ public class Aura extends Module {
 
         @EventHandler
         public void drawEvent(DrawEvent e){
-            if (mc.player == null || !aimMode.isSelected("Fov Legit") || !Aura.getInstance().isState()) return;
+            if (mc.player == null || !aimMode.isSelected("Fov Legit")) return;
 
             if (mc.options.getPerspective().isFirstPerson()) {
                 MatrixStack matrix = e.getDrawContext().getMatrices();
@@ -189,7 +189,7 @@ public class Aura extends Module {
                 double fov = mc.options.getFov().getValue();
                 fov = MathHelper.clamp(fov, 30, 110);
 
-                float baseRadius = (float) MathHelper.lerp((fov - 30.0) / 80.0, 65.0, 90.0);
+                float baseRadius = (float) MathHelper.lerp((fov - 30.0) / 80.0, 92.5, 65.0);
                 float fovScale = (float) (450.0 / fov);
                 float dynamicRadius = baseRadius * fovScale;
 
@@ -198,7 +198,7 @@ public class Aura extends Module {
 
                 float finalRadius = dynamicRadius * currentScale;
 
-                float baseThickness = (float) MathHelper.lerp((fov - 30.0) / 80.0, 0.005, 0.017);
+                float baseThickness = (float) MathHelper.lerp((fov - 30.0) / 80.0, 0.003, 0.015);
 
                 arc.render(ShapeProperties.create(matrix, middleW - finalRadius / 2f, middleH - finalRadius / 2f, finalRadius, finalRadius)
                         .round(0.3F)
