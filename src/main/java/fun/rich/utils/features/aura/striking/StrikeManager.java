@@ -1,6 +1,7 @@
 package fun.rich.utils.features.aura.striking;
 
 import fun.rich.features.impl.movement.Blink;
+import fun.rich.features.impl.movement.ElytraTarget;
 import fun.rich.utils.client.Instance;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.display.interfaces.QuickImports;
@@ -36,6 +37,9 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+
 @Setter
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -66,7 +70,40 @@ public class StrikeManager implements QuickImports {
     private static final long SPRINT_COOLDOWN_MS = 200;
     void handleAttack(StrikerConstructor.AttackPerpetratorConfigurable config) {
         if (canAttack(config, 1)) preAttackEntity(config);
-        if (Aura.getInstance().getTarget() !=null && Aura.getInstance().getTarget().distanceTo(mc.player) <= Aura.getInstance().getAttackRange().getValue() && Aura.getInstance().getTarget().isGliding() && mc.player.isGliding() && Aura.getInstance().getAttackSetting().isSelected("Elytra possibilities")) {
+
+        boolean elytraMode = Aura.getInstance().getTarget() != null &&
+                Aura.getInstance().getTarget().isGliding() &&
+                mc.player.isGliding() &&
+                Aura.getInstance().getAttackSetting().isSelected("Elytra possibilities");
+
+        if (elytraMode) {
+            Vec3d targetVelocity = config.getTarget().getVelocity();
+            double targetSpeed = targetVelocity.horizontalLength();
+            float leadTicks = 0;
+            if (ElytraTarget.shouldElytraTarget) {
+                leadTicks = ElytraTarget.getInstance().elytraForward.getValue();
+            }
+
+            if (targetSpeed > 0.35) {
+
+
+                Vec3d predictedPos = config.getTarget().getPos().add(targetVelocity.multiply(leadTicks));
+                Box predictedBox = new Box(
+                        predictedPos.x - config.getTarget().getWidth() / 2,
+                        predictedPos.y,
+                        predictedPos.z - config.getTarget().getWidth() / 2,
+                        predictedPos.x + config.getTarget().getWidth() / 2,
+                        predictedPos.y + config.getTarget().getHeight(),
+                        predictedPos.z + config.getTarget().getWidth() / 2
+                );
+
+                Vec3d eyePos = mc.player.getEyePos();
+                Vec3d lookVec = TurnsConnection.INSTANCE.getRotation().toVector();
+                if (!predictedBox.raycast(eyePos, eyePos.add(lookVec.multiply(config.getMaximumRange()))).isPresent()) {
+                    return;
+                }
+            }
+
             if (!canAttack(config, 1)) return;
         } else {
             if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;

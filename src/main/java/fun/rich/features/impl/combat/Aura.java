@@ -5,6 +5,7 @@ import fun.rich.events.player.MotionEvent;
 import fun.rich.events.player.TickEvent;
 import fun.rich.events.render.DrawEvent;
 import fun.rich.events.render.WorldRenderEvent;
+import fun.rich.features.impl.movement.ElytraTarget;
 import fun.rich.features.impl.movement.Strafe;
 import fun.rich.features.impl.movement.TargetStrafe;
 import fun.rich.utils.client.chat.ChatMessage;
@@ -113,7 +114,7 @@ public class Aura extends Module {
 
     MultiSelectSetting attackSetting = new MultiSelectSetting("Настройки", "Позволяет настроить работу функции")
             .value("Only Critical", "Break Shield", "UnPress Shield", "No Attack When Eat", "Ignore The Walls", "Elytra possibilities", "Fake Lag", "Hit Chance")
-            .selected("Only Critical", "Break Shield", "Elytra possibilities");
+            .selected("Only Critical", "Break Shield");
 
     SliderSettings hitChance = new SliderSettings("Шанс удара в %", "Шанс удара по цели")
             .setValue(100).range(1F, 100F).visible(() -> attackSetting.isSelected("Hit Chance"));
@@ -123,14 +124,6 @@ public class Aura extends Module {
 
     SelectSetting sprintReset = new SelectSetting("Сброс спринта", "Выбор сброса спринта перед ударом")
             .value("Legit", "Packet").selected("Legit");
-
-    SliderSettings elytraFindRange = new SliderSettings("Дистанция элитры", "Дальность поиска цели во время полета на элитре")
-            .setValue(16).range(6F, 32F).visible(() -> attackSetting.isSelected("Elytra possibilities"));
-
-    private final BindSetting forward = new BindSetting("Кнопка перегона", "Кнопка для вкл или выкл перегона").visible(() -> attackSetting.isSelected("Elytra possibilities"));
-
-    SliderSettings elytraForward = new SliderSettings("Значение перегона", "Дальность перегона цели во время полета на элитре")
-            .setValue(3).range(0F, 6F).visible(() -> attackSetting.isSelected("Elytra possibilities"));
 
     BooleanSetting smartCrits = new BooleanSetting("Удары на земле", "Криты только при нажатии пробела")
             .setValue(true).visible(() -> attackSetting.isSelected("Only Critical"));
@@ -149,11 +142,7 @@ public class Aura extends Module {
                 hitChance,
 
                 attackSetting,
-                smartCrits,
-
-                elytraFindRange,
-                forward,
-                elytraForward
+                smartCrits
         );
         Rich.getInstance().getEventManager().register(new FovCircleRenderer());
     }
@@ -246,8 +235,6 @@ public class Aura extends Module {
 
     @EventHandler
     public void onRotationUpdate(RotationUpdateEvent e) {
-        checkForwardToggle();
-
         try {
             if (aimMode.isSelected("FunTime") && Rich.getInstance().getFtCheckClient() != null) {
                 Rich.getInstance().getFtCheckClient().checkAndWarnFunTime();
@@ -275,7 +262,7 @@ public class Aura extends Module {
 
     private LivingEntity updateTarget() {
         TargetFinder.EntityFilter filter = new TargetFinder.EntityFilter(targetType.getSelected());
-        float range = attackRange.getValue() + RANGE_MARGIN + (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities") ? elytraFindRange.getValue() : lookRange.getValue());
+        float range = attackRange.getValue() + RANGE_MARGIN + (mc.player.isGliding() && ElytraTarget.getInstance().isState() ? ElytraTarget.getInstance().elytraFindRange.getValue() : lookRange.getValue());
         targetSelector.searchTargets(mc.world.getEntities(), range, aimMode.isSelected("FunTime Legit") ? 35 : 360, attackSetting.isSelected("Ignore The Walls"));
         targetSelector.validateTarget(filter::isValid);
         return targetSelector.getCurrentTarget();
@@ -331,27 +318,6 @@ public class Aura extends Module {
     public boolean elytraStateForward = false;
     private boolean wasForwardPressed = false;
 
-    private void toggleElytraStateForward() {
-        if (!attackSetting.isSelected("Elytra possibilities")) {
-            return;
-        }
-        elytraStateForward = !elytraStateForward;
-        ChatMessage.brandmessage("Elytra forward state: " + elytraStateForward);
-    }
-
-    private void checkForwardToggle() {
-        if (!attackSetting.isSelected("Elytra possibilities") || mc.currentScreen != null) {
-            return;
-        }
-        boolean isPressedNow = GLFW.glfwGetKey(mc.getWindow().getHandle(), forward.getKey()) == GLFW.GLFW_PRESS;
-
-         if (isPressedNow && !wasForwardPressed) {
-            toggleElytraStateForward();
-        }
-
-        wasForwardPressed = isPressedNow;
-    }
-
     public StrikerConstructor.AttackPerpetratorConfigurable getConfig() {
         float baseRange = attackRange.getValue() + RANGE_MARGIN;
 
@@ -364,16 +330,34 @@ public class Aura extends Module {
         );
 
         Vec3d computedPoint = pointData.getLeft();
+        Box hitbox = pointData.getRight();
 
-        if (mc.player.isGliding() && attackSetting.isSelected("Elytra possibilities") && target.isGliding() && !aimMode.isSelected("Trigger Bot")) {
-            Vec3d lookVec = target.getRotationVec(1.0F).normalize();
-            if (elytraStateForward) {
-                computedPoint = computedPoint.add(lookVec.multiply(elytraForward.getValue()));
+        if (mc.player.isGliding() && target.isGliding()) {
+            Vec3d targetVelocity = target.getVelocity();
+            double targetSpeed = targetVelocity.horizontalLength();
+
+            float leadTicks = 0;
+            if (ElytraTarget.shouldElytraTarget) {
+                leadTicks = ElytraTarget.getInstance().elytraForward.getValue();
+            }
+
+            if (targetSpeed > 0.35) {
+
+                Vec3d predictedPos = target.getPos().add(targetVelocity.multiply(leadTicks));
+                computedPoint = predictedPos.add(0, target.getHeight() / 2, 0);
+
+                hitbox = new Box(
+                        predictedPos.x - target.getWidth() / 2,
+                        predictedPos.y,
+                        predictedPos.z - target.getWidth() / 2,
+                        predictedPos.x + target.getWidth() / 2,
+                        predictedPos.y + target.getHeight(),
+                        predictedPos.z + target.getWidth() / 2
+                );
             }
         }
 
         Turns angle = MathAngle.fromVec3d(computedPoint.subtract(Objects.requireNonNull(mc.player).getEyePos()));
-        Box hitbox = pointData.getRight();
 
         return new StrikerConstructor.AttackPerpetratorConfigurable(
                 target,
