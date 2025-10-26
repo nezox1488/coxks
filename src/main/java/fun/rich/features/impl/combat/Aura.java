@@ -56,6 +56,7 @@ import fun.rich.utils.features.aura.striking.StrikeManager;
 import fun.rich.utils.features.aura.striking.StrikerConstructor;
 import fun.rich.utils.features.aura.target.TargetFinder;
 import fun.rich.features.impl.render.Hud;
+import fun.rich.utils.math.calc.Calculate;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
@@ -99,7 +100,7 @@ public class Aura extends Module {
     public static float legitSprintNeed;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("FunTime", "FunTime Legit", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
+            .value("FunTime", "Fov Legit", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
             .selected("FunTime");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")
@@ -187,25 +188,39 @@ public class Aura extends Module {
     }
 
     public class FovCircleRenderer implements QuickImports {
+        private float currentScale = 1.0f;
+        private float targetScale = 1.0f;
+
         @EventHandler
         public void drawEvent(DrawEvent e){
-            if (mc.player == null || !aimMode.isSelected("FunTime Legit") || !Aura.getInstance().isState()) return;
+            if (mc.player == null || !aimMode.isSelected("Fov Legit")) return;
 
-            MatrixStack matrix = e.getDrawContext().getMatrices();
-            float middleW = mc.getWindow().getScaledWidth() / 2f;
-            float middleH = mc.getWindow().getScaledHeight() / 2f;
+            if (mc.options.getPerspective().isFirstPerson()) {
+                MatrixStack matrix = e.getDrawContext().getMatrices();
+                float middleW = mc.getWindow().getScaledWidth() / 2f;
+                float middleH = mc.getWindow().getScaledHeight() / 2f;
 
-            double fov = mc.options.getFov().getValue();
-            float baseRadius = 180f;
-            float fovScale = (float) (fov / 70.0);
-            float circleRadius = baseRadius * fovScale;
+                double fov = mc.options.getFov().getValue();
+                fov = MathHelper.clamp(fov, 30, 110);
 
-            arc.render(ShapeProperties.create(matrix, middleW - circleRadius / 2f, middleH - circleRadius / 2f, circleRadius, circleRadius)
-                    .round(0.3F)
-                    .thickness(0.017f)
-                    .end(360)
-                    .color(ColorAssist.getColor(255, 255, 255, 255))
-                    .build());
+                float baseRadius = (float) MathHelper.lerp((fov - 30.0) / 80.0, 92.5, 65.0);
+                float fovScale = (float) (450.0 / fov);
+                float dynamicRadius = baseRadius * fovScale;
+
+                targetScale = mc.player.isSprinting() ? 0.9f : 1.0f;
+                currentScale = Calculate.interpolateSmooth(2.5, currentScale, targetScale);
+
+                float finalRadius = dynamicRadius * currentScale;
+
+                float baseThickness = (float) MathHelper.lerp((fov - 30.0) / 80.0, 0.003, 0.015);
+
+                arc.render(ShapeProperties.create(matrix, middleW - finalRadius / 2f, middleH - finalRadius / 2f, finalRadius, finalRadius)
+                        .round(0.3F)
+                        .thickness(baseThickness)
+                        .end(360)
+                        .color(ColorAssist.getColor(255, 255, 255, 255))
+                        .build());
+            }
         }
     }
 
@@ -263,7 +278,7 @@ public class Aura extends Module {
     private LivingEntity updateTarget() {
         TargetFinder.EntityFilter filter = new TargetFinder.EntityFilter(targetType.getSelected());
         float range = attackRange.getValue() + RANGE_MARGIN + (mc.player.isGliding() && ElytraTarget.getInstance().isState() ? ElytraTarget.getInstance().elytraFindRange.getValue() : lookRange.getValue());
-        targetSelector.searchTargets(mc.world.getEntities(), range, aimMode.isSelected("FunTime Legit") ? 35 : 360, attackSetting.isSelected("Ignore The Walls"));
+        targetSelector.searchTargets(mc.world.getEntities(), range, aimMode.isSelected("Fov Legit") ? 35 : 360, attackSetting.isSelected("Ignore The Walls"));
         targetSelector.validateTarget(filter::isValid);
         return targetSelector.getCurrentTarget();
     }
@@ -284,7 +299,7 @@ public class Aura extends Module {
         fakeRotate = false;
         shouldRotate = switch (aimMode.getSelected()) {
             case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
-            case "FunTime Legit" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
+            case "Fov Legit" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
             case "d" -> {
                 PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
                 boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(300);
@@ -394,7 +409,7 @@ public class Aura extends Module {
             case "SpookyTime" -> new SPAngle();
             case "ReallyWorld" -> new RWAngle();
             case "Snap" -> new SnapAngle();
-            case "FunTime Legit" -> new SnapAngle();
+            case "Fov Legit" -> new SnapAngle();
             case "Matrix" -> new MatrixAngle();
             default -> new LinearConstructor();
         };
