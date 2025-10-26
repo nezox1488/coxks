@@ -20,9 +20,8 @@ import java.util.function.Predicate;
 @UtilityClass
 public class RaycastAngle implements QuickImports {
     public BlockHitResult raycast(double range, Turns angle, boolean includeFluids) {
-       return raycast(Objects.requireNonNull(mc.player).getCameraPosVec(1.0F),range,angle,includeFluids);
+        return raycast(Objects.requireNonNull(mc.player).getCameraPosVec(1.0F),range,angle,includeFluids);
     }
-
 
     public BlockHitResult raycast(Vec3d vec, double range, Turns angle, boolean includeFluids) {
         Entity entity = mc.cameraEntity;
@@ -57,7 +56,6 @@ public class RaycastAngle implements QuickImports {
         return mc.world.raycast(new RaycastContext(start, end, shapeType, fluidHandling, entity));
     }
 
-
     public EntityHitResult raytraceEntity(double range, Turns angle, Predicate<Entity> filter) {
         Entity entity = mc.player;
         if (entity == null) return null;
@@ -72,15 +70,21 @@ public class RaycastAngle implements QuickImports {
     }
 
     public boolean rayTrace(StrikerConstructor.AttackPerpetratorConfigurable config) {
-        return rayTrace(TurnsConnection.INSTANCE.getRotation().toVector(),config.getMaximumRange() - 0.25F, config.getBox());
+        boolean elytraMode = mc.player.isGliding() && config.getTarget().isGliding();
+
+        if (elytraMode) {
+            return true;
+        }
+
+        return rayTrace(TurnsConnection.INSTANCE.getRotation().toVector(), config.getMaximumRange() - 0.25F, config.getBox());
     }
 
     public boolean rayTrace(double range, Box box) {
-        return rayTrace(TurnsConnection.INSTANCE.getRotation().toVector(),range - 0.25F,box);
+        return rayTrace(TurnsConnection.INSTANCE.getRotation().toVector(), range - 0.25F, box);
     }
 
     public boolean rayTrace(Vec3d clientVec, double range, Box box) {
         Vec3d cameraVec = Objects.requireNonNull(mc.player).getEyePos();
-        return box.contains(cameraVec) || box.raycast(cameraVec,cameraVec.add(clientVec.multiply(range))).isPresent();
+        return box.contains(cameraVec) || box.raycast(cameraVec, cameraVec.add(clientVec.multiply(range))).isPresent();
     }
 }

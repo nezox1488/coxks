@@ -48,6 +48,7 @@ public class ModuleRepository {
                 new ProjectilePrediction(),
                 new WorldParticles(),
                 new IRC(),
+                new ElytraTarget(),
                 new XRay(),
                 new TriggerBot(),
                 new Aura(),
