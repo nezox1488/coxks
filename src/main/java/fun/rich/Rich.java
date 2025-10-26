@@ -1,16 +1,13 @@
 package fun.rich;
 
-import antidaunleak.api.UserProfile;
 import antidaunleak.api.annotation.Native;
 import fun.rich.commands.manager.CommandRepository;
 import fun.rich.utils.client.managers.file.exception.FileProcessingException;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.client.logs.Logger;
-import fun.rich.utils.client.managers.file.impl.AutoBuySettingsFile;
 import fun.rich.utils.connection.auracheckft.FTCheckClient;
 import fun.rich.utils.connection.irc.IRCManager;
 import fun.rich.utils.connection.tps.TPSCalculate;
-import fun.rich.utils.display.geometry.Render2D;
 import fun.rich.utils.display.scissor.ScissorAssist;
 import net.fabricmc.api.ModInitializer;
 import fun.rich.common.repository.box.BoxESPRepository;
@@ -46,6 +43,16 @@ import java.util.concurrent.TimeUnit;
 import fun.rich.display.screens.mainmenu.altscreen.impl.AccountRepository;
 import fun.rich.utils.client.managers.file.impl.AccountFile;
 import fun.rich.utils.client.managers.file.impl.AutoBuyConfigFile;
+import fun.rich.display.screens.mainmenu.altscreen.impl.Account;
+import fun.rich.mixins.client.IMinecraftClient;
+import net.minecraft.client.session.Session;
+import net.minecraft.client.network.SocialInteractionsManager;
+import net.minecraft.client.session.ProfileKeys;
+import net.minecraft.client.session.report.AbuseReportContext;
+import net.minecraft.client.session.report.ReporterEnvironment;
+import com.mojang.authlib.minecraft.UserApiService;
+import java.util.Optional;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -83,6 +90,7 @@ public class Rich implements ModInitializer {
     boolean reconnecting = false;
 
     @Override
+    @Native
     public void onInitialize() {
         instance = this;
         initClientInfoProvider();
@@ -97,13 +105,41 @@ public class Rich implements ModInitializer {
         ircManager.connect();
         startReconnectTask();
         SoundManager.init();
+        loadCurrentAccount();
 
         MenuScreen menuScreen = new MenuScreen();
         menuScreen.initialize();
         initialized = true;
     }
 
+    @Native
+    private void loadCurrentAccount() {
+        if (accountRepository.currentAccount != null && !accountRepository.currentAccount.isEmpty()) {
+            Account currentAcc = accountRepository.accountList.stream()
+                    .filter(acc -> acc.name.equals(accountRepository.currentAccount))
+                    .findFirst()
+                    .orElse(null);
 
+            if (currentAcc != null) {
+                setSession(currentAcc);
+            }
+        }
+    }
+
+    @Native
+    private void setSession(Account account) {
+        Session newSession = new Session(account.name, UUID.fromString(account.uuid), "0", Optional.empty(), Optional.empty(), Session.AccountType.MOJANG);
+        IMinecraftClient mca = (IMinecraftClient) MinecraftClient.getInstance();
+        mca.setSessionT(newSession);
+        MinecraftClient.getInstance().getGameProfile().getProperties().clear();
+        UserApiService apiService = UserApiService.OFFLINE;
+        mca.setUserApiService(apiService);
+        mca.setSocialInteractionsManagerT(new SocialInteractionsManager(MinecraftClient.getInstance(), apiService));
+        mca.setProfileKeys(ProfileKeys.create(apiService, newSession, MinecraftClient.getInstance().runDirectory.toPath()));
+        mca.setAbuseReportContextT(AbuseReportContext.create(ReporterEnvironment.ofIntegratedServer(), apiService));
+    }
+
+    @Native
     private void initWebSocketClient() {
         try {
             cloudConfigClient = new CloudConfigWebSocketClient(new URI("ws://45.155.205.202:8080"));
@@ -112,7 +148,7 @@ public class Rich implements ModInitializer {
         }
     }
 
-
+    @Native
     private void initFTCheckClient() {
         try {
             ftCheckClient = new FTCheckClient(new URI("ws://45.155.205.202:6312"));
@@ -121,11 +157,13 @@ public class Rich implements ModInitializer {
         }
     }
 
+    @Native
     private void initDraggable() {
         draggableRepository = new DraggableRepository();
         draggableRepository.setup();
     }
 
+    @Native
     private void initModules() {
         moduleRepository = new ModuleRepository();
         moduleRepository.setup();
@@ -133,11 +171,13 @@ public class Rich implements ModInitializer {
         moduleSwitcher = new ModuleSwitcher(moduleRepository.modules(), eventManager);
     }
 
+    @Native
     private void initCommands() {
         commandRepository = new CommandRepository();
         commandDispatcher = new CommandDispatcher(eventManager);
     }
 
+    @Native
     private void initDiscordRPC() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("linux")) {
@@ -147,23 +187,34 @@ public class Rich implements ModInitializer {
         discordManager.init();
     }
 
+    @Native
     private void initClientInfoProvider() {
         File clientDirectory = new File(MinecraftClient.getInstance().runDirectory, "\\Rich\\");
-        File filesDirectory = new File(clientDirectory, "\\files\\");
-        File moduleFilesDirectory = new File(filesDirectory, "\\config\\");
-        clientInfoProvider = new ClientInfo("Rich", "HZeed", "Developer", clientDirectory, filesDirectory, moduleFilesDirectory);
+        File filesDirectory = new File(clientDirectory, "\\Files\\");
+        clientInfoProvider = new ClientInfo("Rich", "HZeed", "Developer", clientDirectory, filesDirectory);
     }
 
+    @Native
     private void initFileManager() {
         DirectoryCreator directoryCreator = new DirectoryCreator();
-        directoryCreator.createDirectories(clientInfoProvider.clientDir(), clientInfoProvider.filesDir(), clientInfoProvider.configsDir());
+        directoryCreator.createDirectories(clientInfoProvider.clientDir(), clientInfoProvider.filesDir());
+
+        File autoBuyDir = new File(clientInfoProvider.clientDir(), "AutoBuy");
+        if (!autoBuyDir.exists()) {
+            autoBuyDir.mkdirs();
+        }
+
+        File customDir = new File(clientInfoProvider.clientDir(), "Custom");
+        if (!customDir.exists()) {
+            customDir.mkdirs();
+        }
+
         fileRepository = new FileRepository();
         fileRepository.setup(this);
         accountRepository = new AccountRepository();
         fileRepository.getClientFiles().add(new AccountFile(accountRepository));
         fileRepository.getClientFiles().add(new AutoBuyConfigFile());
-        fileRepository.getClientFiles().add(new AutoBuySettingsFile());
-        fileController = new FileController(fileRepository.getClientFiles(), clientInfoProvider.filesDir(), clientInfoProvider.configsDir());
+        fileController = new FileController(fileRepository.getClientFiles(), clientInfoProvider.filesDir());
         try {
             fileController.loadFiles();
         } catch (FileProcessingException e) {
@@ -171,12 +222,14 @@ public class Rich implements ModInitializer {
         }
     }
 
+    @Native
     private void initListeners() {
         listenerRepository = new ListenerRepository();
         listenerRepository.setup();
         tpsCalculate = new TPSCalculate();
     }
 
+    @Native
     private void startReconnectTask() {
         reconnectScheduler = Executors.newSingleThreadScheduledExecutor();
         reconnectScheduler.scheduleAtFixedRate(() -> {

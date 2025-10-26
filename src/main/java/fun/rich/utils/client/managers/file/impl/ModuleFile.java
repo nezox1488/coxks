@@ -1,5 +1,6 @@
 package fun.rich.utils.client.managers.file.impl;
 
+import antidaunleak.api.annotation.Native;
 import com.google.gson.*;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
@@ -29,22 +30,25 @@ public class ModuleFile extends ClientFile {
     DraggableRepository draggableRepository;
 
     public ModuleFile(ModuleRepository moduleRepository, DraggableRepository draggableRepository) {
-        super("autoCfg");
+        super("AutoCfg");
         this.moduleRepository = moduleRepository;
         this.draggableRepository = draggableRepository;
     }
 
     @Override
+    @Native
     public void saveToFile(File path) throws FileSaveException {
         saveToFile(path, getName() + ".json");
     }
 
     @Override
+    @Native
     public void loadFromFile(File path) throws FileLoadException {
         loadFromFile(path, getName() + ".json");
     }
 
     @Override
+    @Native
     public void saveToFile(File path, String fileName) throws FileSaveException {
         JsonObject functionObject = createJsonObjectFromModules();
         File file = new File(path, fileName);
@@ -53,6 +57,7 @@ public class ModuleFile extends ClientFile {
     }
 
     @Override
+    @Native
     public void loadFromFile(File path, String fileName) throws FileLoadException {
         File file = new File(path, fileName);
         JsonObject functionObject = readJsonFromFile(file);

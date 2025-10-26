@@ -1,5 +1,6 @@
 package fun.rich.utils.client.managers.file.impl;
 
+import antidaunleak.api.annotation.Native;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
@@ -25,11 +26,12 @@ public class BlockESPFile extends ClientFile {
     BoxESPRepository repository;
 
     public BlockESPFile(BoxESPRepository repository) {
-        super("blockESP");
+        super("BlockESP");
         this.repository = repository;
     }
 
     @Override
+    @Native
     public void saveToFile(File path) throws FileSaveException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File file = new File(path, getName() + ".json");
@@ -44,6 +46,7 @@ public class BlockESPFile extends ClientFile {
     }
 
     @Override
+    @Native
     public void loadFromFile(File path) throws FileLoadException {
         Gson gson = new Gson();
         File file = new File(path, getName() + ".json");

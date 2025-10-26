@@ -1,5 +1,6 @@
 package fun.rich.utils.client.managers.file.impl;
 
+import antidaunleak.api.annotation.Native;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
@@ -20,11 +21,12 @@ public class MacroFile extends ClientFile {
     MacroRepository macroRepository;
 
     public MacroFile(MacroRepository macroRepository) {
-        super("macro");
+        super("Macro");
         this.macroRepository = macroRepository;
     }
 
     @Override
+    @Native
     public void saveToFile(File path) throws FileSaveException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File file = new File(path, getName() + ".json");
@@ -37,6 +39,7 @@ public class MacroFile extends ClientFile {
     }
 
     @Override
+    @Native
     public void loadFromFile(File path) throws FileLoadException {
         Gson gson = new Gson();
         File file = new File(path, getName() + ".json");

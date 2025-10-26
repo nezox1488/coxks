@@ -43,42 +43,36 @@ public class FTAngle extends RotateConstructor {
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        if (entity != null) {
-            float speed = randomLerp(0.75F, 0.9F);
+        if (entity != null && attackHandler.getAttackTimer().finished(400)) {
+            float speed = randomLerp(0.65F, 0.85F);
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
+            float jitterYaw = (float) (randomLerp(15, 13) * Math.sin(System.currentTimeMillis() / 60D));
+            float jitterPitch = (float) (randomLerp(4, 9) * Math.sin(System.currentTimeMillis() / 60D));
+
             Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
-            moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed + 0.2F),
-                    currentAngle.getYaw(), currentAngle.getYaw() + moveYaw));
-            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed + 0.2F),
-                    currentAngle.getPitch(), currentAngle.getPitch() + movePitch));
-
-            if (count > 0 && count % 50 == 0 && !attackHandler.getAttackTimer().finished(350)) {
-                moveAngle.setPitch(
-                        MathHelper.lerp(Math.clamp(0.45F, 0, 1),
-                                currentAngle.getPitch(), -90)
-                );
-                mc.player.swingHand(Hand.MAIN_HAND);
-
-            }
+            moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed),
+                    currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
+            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed),
+                    currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
 
             return moveAngle;
         } else {
-            float speed = attackHandler.getAttackTimer().finished(435) ? 0.6F : 0.01F;
+            float speed = attackHandler.getAttackTimer().finished(450) ? 0.15F : 0.02F;
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
-            float jitterYaw = (float) (14 * Math.sin(System.currentTimeMillis() / 45D));
-            float jitterPitch = (float) (5 * Math.sin(System.currentTimeMillis() / 46D));
+            float jitterYaw = (float) (randomLerp(15, 13) * Math.sin(System.currentTimeMillis() / 70D));
+            float jitterPitch = (float) (randomLerp(4, 9) * Math.sin(System.currentTimeMillis() / 60D));
 
-            if ((!aura.isState() || aura.getTarget() == null) && attackHandler.getAttackTimer().finished(500)) {
+            if ((!aura.isState() || aura.getTarget() == null) && attackHandler.getAttackTimer().finished(1200)) {
                 jitterYaw = 0;
-                speed = 0.65F;
+                speed = 0.35F;
                 jitterPitch = 0;
             }
 
@@ -87,15 +81,6 @@ public class FTAngle extends RotateConstructor {
                     currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
             moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed),
                     currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
-
-            if (count > 0 && count % 50 == 0 && !attackHandler.getAttackTimer().finished(400)) {
-                moveAngle.setPitch(
-                        MathHelper.lerp(Math.clamp(1, 0, 1),
-                                currentAngle.getPitch(), -90)
-                );
-                mc.player.swingHand(Hand.MAIN_HAND);
-
-            }
 
             return moveAngle;
         }

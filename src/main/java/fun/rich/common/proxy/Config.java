@@ -2,8 +2,8 @@ package fun.rich.common.proxy;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import net.fabricmc.loader.api.FabricLoader;
 import org.apache.commons.io.FileUtils;
+import net.minecraft.client.MinecraftClient;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,39 +12,52 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 public class Config {
-    private static final String CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("ProxyServerConfig.json").toString();
+    private static final File CONFIG_DIR = new File(MinecraftClient.getInstance().runDirectory, "Rich/Proxy");
+    private static final File CONFIG_FILE = new File(CONFIG_DIR, "Proxyconfig.json");
+
     public static HashMap<String, Proxy> accounts = new HashMap<>();
     public static String lastPlayerName = "";
 
     public static void loadConfig() {
-        File configFile = new File(CONFIG_PATH);
-
         try {
-            if (!configFile.exists()) {
-                if (!configFile.getParentFile().exists()) {
-                    configFile.getParentFile().mkdirs();
+            if (!CONFIG_DIR.exists()) {
+                CONFIG_DIR.mkdirs();
+            }
+
+            if (!CONFIG_FILE.exists()) {
+                if (!CONFIG_FILE.createNewFile()) {
+                    System.out.println("Error creating Proxyconfig.json file");
                 }
-                if (!configFile.createNewFile()) {
-                    System.out.println("Error creating ProxyServerConfig.json file");
-                }
+                saveConfig();
                 return;
             }
 
-            String configString = FileUtils.readFileToString(configFile, StandardCharsets.UTF_8);
+            String configString = FileUtils.readFileToString(CONFIG_FILE, StandardCharsets.UTF_8);
 
             if (!configString.isEmpty()) {
                 JsonObject configJson = JsonParser.parseString(configString).getAsJsonObject();
-                ProxyServer.proxyEnabled = configJson.get("proxy-enabled").getAsBoolean();
 
-                Type type = new TypeToken<HashMap<String, Proxy>>() {
-                }.getType();
-                accounts = new Gson().fromJson(configJson.get("accounts"), type);
+                if (configJson.has("proxy-enabled")) {
+                    ProxyServer.proxyEnabled = configJson.get("proxy-enabled").getAsBoolean();
+                }
+
+                Type type = new TypeToken<HashMap<String, Proxy>>() {}.getType();
+                if (configJson.has("accounts")) {
+                    accounts = new Gson().fromJson(configJson.get("accounts"), type);
+                }
+
                 if (accounts == null) {
                     accounts = new HashMap<>();
                 }
+
+                if (accounts.containsKey("")) {
+                    ProxyServer.proxy = accounts.get("");
+                } else {
+                    ProxyServer.proxy = new Proxy();
+                }
             }
         } catch (Exception e) {
-            System.out.println("Error reading ProxyServerConfig.json file");
+            System.out.println("Error reading Proxyconfig.json file");
             e.printStackTrace();
         }
     }
@@ -53,9 +66,12 @@ public class Config {
         accounts.put("", proxy);
     }
 
-    
     public static void saveConfig() {
         try {
+            if (!CONFIG_DIR.exists()) {
+                CONFIG_DIR.mkdirs();
+            }
+
             JsonElement accountsJsonObject = new Gson().toJsonTree(accounts);
 
             JsonObject configJson = new JsonObject();
@@ -63,9 +79,9 @@ public class Config {
             configJson.add("accounts", accountsJsonObject);
 
             Gson gsonPretty = new GsonBuilder().setPrettyPrinting().create();
-            FileUtils.write(new File(CONFIG_PATH), gsonPretty.toJson(configJson), StandardCharsets.UTF_8);
+            FileUtils.write(CONFIG_FILE, gsonPretty.toJson(configJson), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            System.out.println("Error writing ProxyServerConfig.json file");
+            System.out.println("Error writing Proxyconfig.json file");
             e.printStackTrace();
         }
     }

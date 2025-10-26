@@ -39,14 +39,27 @@ public class CloudConfigWebSocketClient extends WebSocketClient {
         Logger.error("WebSocket error: " + ex.getMessage());
     }
 
+    public boolean isConnected() {
+        return this.isOpen();
+    }
+
     public String sendAndWaitForResponse(String message) {
-        responseLatch = new CountDownLatch(1);
-        lastResponse = null;
-        send(message);
+        if (!isConnected()) {
+            Logger.error("Cannot send message: WebSocket not connected");
+            return null;
+        }
+
         try {
+            responseLatch = new CountDownLatch(1);
+            lastResponse = null;
+            send(message);
             responseLatch.await(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Logger.error("Interrupted while waiting for WebSocket response: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            Logger.error("Error sending WebSocket message: " + e.getMessage());
+            return null;
         }
         return lastResponse;
     }

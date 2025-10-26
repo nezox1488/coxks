@@ -45,11 +45,12 @@ public class ConfigCommand extends Command {
         args.requireMax(1);
         if (arg.contains("load")) {
             String name = args.getString();
-            if (new File(clientInfoProvider.configsDir(), name + ".json").exists()) {
+            File customDir = new File(clientInfoProvider.clientDir(), "Custom");
+            if (new File(customDir, name + ".json").exists()) {
                 try {
                     var fileRepository = new FileRepository();
                     fileRepository.setup(Rich.getInstance());
-                    var fileController = new FileController(fileRepository.getClientFiles(), clientInfoProvider.filesDir(), clientInfoProvider.configsDir());
+                    var fileController = new FileController(fileRepository.getClientFiles(), clientInfoProvider.filesDir());
                     fileController.loadFile(name + ".json");
                     logDirect(String.format("Конфигурация %s загружена!", name));
                 } catch (FileProcessingException e) {
@@ -88,7 +89,8 @@ public class ConfigCommand extends Command {
         }
         if (arg.contains("dir")) {
             try {
-                Runtime.getRuntime().exec("explorer " + clientInfoProvider.configsDir().getAbsolutePath());
+                File customDir = new File(clientInfoProvider.clientDir(), "Custom");
+                Runtime.getRuntime().exec("explorer " + customDir.getAbsolutePath());
             } catch (IOException e) {
                 logDirect("Папка с конфигурациями не найдена!" + e.getMessage());
             }
@@ -122,7 +124,7 @@ public class ConfigCommand extends Command {
         return "Позволяет взаимодействовать с конфигами в чите";
     }
 
-    
+
     @Override
     public List<String> getLongDesc() {
         return Arrays.asList(
@@ -135,10 +137,11 @@ public class ConfigCommand extends Command {
                 "> config dir - Открывает папку с конфигами."
         );
     }
-    
+
     public List<String> getConfigs() {
         List<String> configs = new ArrayList<>();
-        File[] configFiles = Rich.getInstance().getClientInfoProvider().configsDir().listFiles();
+        File customDir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
+        File[] configFiles = customDir.listFiles();
 
         if (configFiles != null) {
             for (File configFile : configFiles) {

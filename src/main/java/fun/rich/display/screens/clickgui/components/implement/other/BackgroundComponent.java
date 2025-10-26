@@ -520,8 +520,14 @@ public class BackgroundComponent extends AbstractComponent {
                 if (Calculate.isHovered(mouseX, mouseY, configX + 162, configY + 35, 14, 15)) {
                     if (isDefaultTab) {
                         try {
-                            Rich.getInstance().getFileController().loadFile(config + ".json");
-                        } catch (FileLoadException e) {
+                            File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
+                            File configFile = new File(dir, config + ".json");
+                            String json = new String(Files.readAllBytes(configFile.toPath()));
+                            File tempFile = new File(Rich.getInstance().getClientInfoProvider().configsDir(), "temp.json");
+                            Files.write(tempFile.toPath(), json.getBytes());
+                            Rich.getInstance().getFileController().loadFile("temp.json");
+                            tempFile.delete();
+                        } catch (IOException | FileLoadException e) {
                         }
                     } else {
                         loadCloudConfig(config);
@@ -533,8 +539,14 @@ public class BackgroundComponent extends AbstractComponent {
                 if (Calculate.isHovered(mouseX, mouseY, configX + 146, configY + 35, 14, 15)) {
                     if (isDefaultTab) {
                         try {
-                            Rich.getInstance().getFileController().loadFile(config + ".json");
-                        } catch (FileLoadException e) {
+                            File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
+                            File configFile = new File(dir, config + ".json");
+                            String json = new String(Files.readAllBytes(configFile.toPath()));
+                            File tempFile = new File(Rich.getInstance().getClientInfoProvider().configsDir(), "temp.json");
+                            Files.write(tempFile.toPath(), json.getBytes());
+                            Rich.getInstance().getFileController().loadFile("temp.json");
+                            tempFile.delete();
+                        } catch (IOException | FileLoadException e) {
                         }
                     } else {
                         loadCloudConfig(config);
@@ -550,8 +562,11 @@ public class BackgroundComponent extends AbstractComponent {
                             updateFromCloud(config, cloudId);
                         } else {
                             try {
-                                Rich.getInstance().getFileController().saveFile(config + ".json");
-                            } catch (FileSaveException e) {
+                                File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
+                                File configFile = new File(dir, config + ".json");
+                                String json = getCurrentConfigJson();
+                                Files.write(configFile.toPath(), json.getBytes());
+                            } catch (IOException e) {
                             }
                         }
                     } else {
@@ -562,7 +577,8 @@ public class BackgroundComponent extends AbstractComponent {
                 }
                 if (Calculate.isHovered(mouseX, mouseY, configX + 114.35, configY + 35, 14, 15)) {
                     if (isDefaultTab) {
-                        File file = new File(Rich.getInstance().getClientInfoProvider().configsDir(), config + ".json");
+                        File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
+                        File file = new File(dir, config + ".json");
                         file.delete();
                     } else {
                         removeCloudConfig(config);
@@ -641,7 +657,7 @@ public class BackgroundComponent extends AbstractComponent {
         } else if (editingConfig != null) {
             if (keyCode == GLFW.GLFW_KEY_ENTER) {
                 if (isDefaultTab) {
-                    File dir = Rich.getInstance().getClientInfoProvider().configsDir();
+                    File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
                     File oldFile = new File(dir, editingConfig + ".json");
                     File newFile = new File(dir, newName + ".json");
                     if (!newName.isEmpty() && newName.length() <= 15 && oldFile.exists() && (!newFile.exists() || newName.equals(editingConfig))) {
@@ -722,7 +738,7 @@ public class BackgroundComponent extends AbstractComponent {
 
     private List<Map<String, Object>> getLocalConfigs() {
         List<Map<String, Object>> localConfigs = new ArrayList<>();
-        File dir = Rich.getInstance().getClientInfoProvider().configsDir();
+        File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
         File[] configFiles = dir.listFiles();
         if (configFiles != null) {
             for (File configFile : configFiles) {
@@ -763,31 +779,41 @@ public class BackgroundComponent extends AbstractComponent {
     }
 
     private List<Map<String, Object>> getCloudConfigs() {
-        Gson gson = new Gson();
-        Map<String, Object> request = new HashMap<>();
-        request.put("command", "list");
-        request.put("username", UserProfile.getInstance().profile("username"));
-        request.put("uuid", UserProfile.getInstance().profile("uid"));
-        String message = gson.toJson(request);
-        String response = Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
-        if (response == null) return new ArrayList<>();
-        Map<String, Object> respMap = gson.fromJson(response, Map.class);
-        if ((Boolean) respMap.get("success")) {
-            return (List<Map<String, Object>>) respMap.get("data");
+        try {
+            if (!Rich.getInstance().getCloudConfigClient().isConnected()) {
+                return new ArrayList<>();
+            }
+
+            Gson gson = new Gson();
+            Map<String, Object> request = new HashMap<>();
+            request.put("command", "list");
+            request.put("username", UserProfile.getInstance().profile("username"));
+            request.put("uuid", UserProfile.getInstance().profile("uid"));
+            String message = gson.toJson(request);
+            String response = Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
+            if (response == null) return new ArrayList<>();
+            Map<String, Object> respMap = gson.fromJson(response, Map.class);
+            if ((Boolean) respMap.get("success")) {
+                return (List<Map<String, Object>>) respMap.get("data");
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to get cloud configs: " + e.getMessage());
         }
         return new ArrayList<>();
     }
 
     private void createDefaultConfig() {
         Random random = new Random();
-        File dir = Rich.getInstance().getClientInfoProvider().configsDir();
+        File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
         String name;
         do {
             name = "RichConfig" + String.format("%03d", random.nextInt(1000));
         } while (new File(dir, name + ".json").exists());
         try {
-            Rich.getInstance().getFileController().saveFile(name + ".json");
-        } catch (FileSaveException e) {
+            File configFile = new File(dir, name + ".json");
+            String json = getCurrentConfigJson();
+            Files.write(configFile.toPath(), json.getBytes());
+        } catch (IOException e) {
         }
     }
 
@@ -802,7 +828,7 @@ public class BackgroundComponent extends AbstractComponent {
 
     private void clearAllConfigs() {
         if (isDefaultTab) {
-            File dir = Rich.getInstance().getClientInfoProvider().configsDir();
+            File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
             File[] files = dir.listFiles();
             if (files != null) {
                 for (File f : files) {
@@ -820,7 +846,7 @@ public class BackgroundComponent extends AbstractComponent {
 
     private String getCurrentConfigJson() {
         String json = "";
-        File dir = Rich.getInstance().getClientInfoProvider().configsDir();
+        File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
         File temp = new File(dir, "temp.json");
         try {
             Rich.getInstance().getFileController().saveFile("temp.json");
@@ -833,36 +859,52 @@ public class BackgroundComponent extends AbstractComponent {
     }
 
     private String getCloudConfigJson(String name) {
-        Gson gson = new Gson();
-        Map<String, Object> request = new HashMap<>();
-        request.put("command", "load");
-        request.put("username", UserProfile.getInstance().profile("username"));
-        request.put("uuid", UserProfile.getInstance().profile("uid"));
-        request.put("configName", name);
-        String message = gson.toJson(request);
-        String response = Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
-        if (response == null) return null;
-        Map<String, Object> respMap = gson.fromJson(response, Map.class);
-        if ((Boolean) respMap.get("success")) {
-            Object data = respMap.get("data");
-            return gson.toJson(data);
+        try {
+            if (!Rich.getInstance().getCloudConfigClient().isConnected()) {
+                return null;
+            }
+
+            Gson gson = new Gson();
+            Map<String, Object> request = new HashMap<>();
+            request.put("command", "load");
+            request.put("username", UserProfile.getInstance().profile("username"));
+            request.put("uuid", UserProfile.getInstance().profile("uid"));
+            request.put("configName", name);
+            String message = gson.toJson(request);
+            String response = Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
+            if (response == null) return null;
+            Map<String, Object> respMap = gson.fromJson(response, Map.class);
+            if ((Boolean) respMap.get("success")) {
+                Object data = respMap.get("data");
+                return gson.toJson(data);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to get cloud config: " + e.getMessage());
         }
         return null;
     }
 
     private Map<String, Object> getCloudMetadata(String name) {
-        Gson gson = new Gson();
-        Map<String, Object> request = new HashMap<>();
-        request.put("command", "metadata");
-        request.put("username", UserProfile.getInstance().profile("username"));
-        request.put("uuid", UserProfile.getInstance().profile("uid"));
-        request.put("configName", name);
-        String message = gson.toJson(request);
-        String response = Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
-        if (response == null) return null;
-        Map<String, Object> respMap = gson.fromJson(response, Map.class);
-        if ((Boolean) respMap.get("success")) {
-            return (Map<String, Object>) respMap.get("data");
+        try {
+            if (!Rich.getInstance().getCloudConfigClient().isConnected()) {
+                return null;
+            }
+
+            Gson gson = new Gson();
+            Map<String, Object> request = new HashMap<>();
+            request.put("command", "metadata");
+            request.put("username", UserProfile.getInstance().profile("username"));
+            request.put("uuid", UserProfile.getInstance().profile("uid"));
+            request.put("configName", name);
+            String message = gson.toJson(request);
+            String response = Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
+            if (response == null) return null;
+            Map<String, Object> respMap = gson.fromJson(response, Map.class);
+            if ((Boolean) respMap.get("success")) {
+                return (Map<String, Object>) respMap.get("data");
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to get cloud metadata: " + e.getMessage());
         }
         return null;
     }
@@ -891,15 +933,24 @@ public class BackgroundComponent extends AbstractComponent {
 
     private void saveCloudConfigWithJson(String name, String json) {
         if (json.isEmpty()) return;
-        Gson gson = new Gson();
-        Map<String, Object> request = new HashMap<>();
-        request.put("command", "save");
-        request.put("username", UserProfile.getInstance().profile("username"));
-        request.put("uuid", UserProfile.getInstance().profile("uid"));
-        request.put("configName", name);
-        request.put("configData", gson.fromJson(json, Map.class));
-        String message = gson.toJson(request);
-        Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
+        try {
+            if (!Rich.getInstance().getCloudConfigClient().isConnected()) {
+                System.err.println("Cannot save: WebSocket not connected");
+                return;
+            }
+
+            Gson gson = new Gson();
+            Map<String, Object> request = new HashMap<>();
+            request.put("command", "save");
+            request.put("username", UserProfile.getInstance().profile("username"));
+            request.put("uuid", UserProfile.getInstance().profile("uid"));
+            request.put("configName", name);
+            request.put("configData", gson.fromJson(json, Map.class));
+            String message = gson.toJson(request);
+            Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
+        } catch (Exception e) {
+            System.err.println("Failed to save cloud config: " + e.getMessage());
+        }
     }
 
     private void loadCloudConfig(String name) {
@@ -924,7 +975,7 @@ public class BackgroundComponent extends AbstractComponent {
         data.remove("avatar_hash");
         data.put("cloud_id", name);
         json = gson.toJson(data);
-        File dir = Rich.getInstance().getClientInfoProvider().configsDir();
+        File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
         File temp = new File(dir, "temp.json");
         try {
             Files.write(temp.toPath(), json.getBytes());
@@ -960,7 +1011,7 @@ public class BackgroundComponent extends AbstractComponent {
         data.remove("avatar_hash");
         data.put("cloud_id", cloudId);
         json = gson.toJson(data);
-        File dir = Rich.getInstance().getClientInfoProvider().configsDir();
+        File dir = new File(Rich.getInstance().getClientInfoProvider().clientDir(), "Custom");
         File temp = new File(dir, "temp.json");
         try {
             Files.write(temp.toPath(), json.getBytes());
@@ -973,13 +1024,22 @@ public class BackgroundComponent extends AbstractComponent {
     }
 
     private void removeCloudConfig(String name) {
-        Gson gson = new Gson();
-        Map<String, Object> request = new HashMap<>();
-        request.put("command", "remove");
-        request.put("username", UserProfile.getInstance().profile("username"));
-        request.put("uuid", UserProfile.getInstance().profile("uid"));
-        request.put("configName", name);
-        String message = gson.toJson(request);
-        Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
+        try {
+            if (!Rich.getInstance().getCloudConfigClient().isConnected()) {
+                System.err.println("Cannot remove: WebSocket not connected");
+                return;
+            }
+
+            Gson gson = new Gson();
+            Map<String, Object> request = new HashMap<>();
+            request.put("command", "remove");
+            request.put("username", UserProfile.getInstance().profile("username"));
+            request.put("uuid", UserProfile.getInstance().profile("uid"));
+            request.put("configName", name);
+            String message = gson.toJson(request);
+            Rich.getInstance().getCloudConfigClient().sendAndWaitForResponse(message);
+        } catch (Exception e) {
+            System.err.println("Failed to remove cloud config: " + e.getMessage());
+        }
     }
 }

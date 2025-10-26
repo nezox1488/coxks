@@ -47,7 +47,7 @@ public class AuctionUtils {
         if (str == null) return "";
         return str.toLowerCase().trim()
                 .replaceAll("§.", "")
-                .replaceAll("[^a-zа-яё0-9\\s\\[\\]★]", "")
+                .replaceAll("[^a-zа-яё0-9\\s\\[\\]★+]", "")
                 .replaceAll("\\s+", " ");
     }
 
@@ -60,6 +60,8 @@ public class AuctionUtils {
 
         String aNameClean = cleanString(aName);
         String bNameClean = cleanString(bName);
+
+        boolean isKillerPotion = bNameClean.contains("зелье киллера");
 
         var aLore = a.get(DataComponentTypes.LORE);
         var bLoreComp = b.get(DataComponentTypes.LORE);
@@ -78,10 +80,14 @@ public class AuctionUtils {
                 String auctionLoreJoined = String.join(" ", auctionLoreStrings);
 
                 boolean hasOriginalMarker = false;
+                boolean hasPlus12 = false;
+
                 for (String line : auctionLoreStrings) {
                     if (line.contains("оригинальный предмет") || line.contains("★")) {
                         hasOriginalMarker = true;
-                        break;
+                    }
+                    if (line.contains("+12")) {
+                        hasPlus12 = true;
                     }
                 }
 
@@ -93,6 +99,16 @@ public class AuctionUtils {
                     if (expectedStr.isEmpty()) continue;
 
                     boolean isOriginalMarker = expectedStr.contains("оригинальный предмет") || expectedStr.contains("★");
+                    boolean isPlus12Marker = expectedStr.contains("+12");
+
+                    if (isKillerPotion && isPlus12Marker) {
+                        if (!hasPlus12) {
+                            return false;
+                        }
+                        matchCount++;
+                        requiredMatches++;
+                        continue;
+                    }
 
                     if (isOriginalMarker) {
                         if (!hasOriginalMarker) {
@@ -134,6 +150,4 @@ public class AuctionUtils {
 
         return true;
     }
-
-
 }

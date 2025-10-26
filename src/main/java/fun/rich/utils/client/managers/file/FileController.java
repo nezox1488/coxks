@@ -16,13 +16,12 @@ import java.util.concurrent.TimeUnit;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FileController {
     List<ClientFile> clientFiles;
-    File directory, moduleConfigDirectory;
+    File directory;
     ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    public FileController(List<ClientFile> clientFiles, File directory, File moduleConfigDirectory) {
+    public FileController(List<ClientFile> clientFiles, File directory) {
         this.clientFiles = clientFiles;
         this.directory = directory;
-        this.moduleConfigDirectory = moduleConfigDirectory;
         startAutoSave();
     }
 
@@ -86,8 +85,8 @@ public class FileController {
         for (ClientFile clientFile : clientFiles) {
             if (clientFile instanceof ModuleFile) {
                 try {
-                    clientFile.saveToFile(moduleConfigDirectory, fileName);
-                    Logger.info("Successfully saved file: " + fileName + " to " + moduleConfigDirectory.getPath());
+                    clientFile.saveToFile(directory, fileName);
+                    Logger.info("Successfully saved file: " + fileName + " to " + directory.getPath());
                 } catch (FileSaveException e) {
                     throw new FileSaveException("Failed to save file: " + fileName, e);
                 }
@@ -99,8 +98,8 @@ public class FileController {
         for (ClientFile clientFile : clientFiles) {
             if (clientFile instanceof ModuleFile) {
                 try {
-                    clientFile.loadFromFile(moduleConfigDirectory, fileName);
-                    Logger.info("Successfully loaded file: " + fileName + " from " + moduleConfigDirectory.getPath());
+                    clientFile.loadFromFile(directory, fileName);
+                    Logger.info("Successfully loaded file: " + fileName + " from " + directory.getPath());
                 } catch (FileLoadException e) {
                     throw new FileLoadException("Failed to load file: " + fileName, e);
                 }

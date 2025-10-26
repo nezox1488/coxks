@@ -26,6 +26,7 @@ public class ModuleRepository {
                 new Strafe(),
                 new AutoPilot(),
                 new AirStuck(),
+                new NoEntityTrace(),
                 new NoFallDamage(),
                 new ElytraMotion(),
                 new LongJump(),

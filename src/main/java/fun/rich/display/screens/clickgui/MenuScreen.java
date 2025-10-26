@@ -47,6 +47,8 @@ public class MenuScreen extends Screen implements QuickImports {
     private float offsetYPercent = 0.5f;
     private int lastScreenWidth = 0;
     private int lastScreenHeight = 0;
+    private double lastTransformedMouseX = 0;
+    private double lastTransformedMouseY = 0;
 
     public void initialize() {
         animation.setDirection(FORWARDS);
@@ -64,6 +66,16 @@ public class MenuScreen extends Screen implements QuickImports {
         close();
         components.forEach(AbstractComponent::tick);
         super.tick();
+    }
+
+    private double[] transformMouseCoords(double mouseX, double mouseY) {
+        float scale = getScaleAnimation();
+        if (scale <= 0.01f) scale = 1f;
+        float centerX = x + width / 2f;
+        float centerY = y + height / 2f;
+        double transformedX = (mouseX - centerX) / scale + centerX;
+        double transformedY = (mouseY - centerY) / scale + centerY;
+        return new double[]{transformedX, transformedY};
     }
 
     @Override
@@ -88,6 +100,10 @@ public class MenuScreen extends Screen implements QuickImports {
             lastScreenHeight = currentHeight;
         }
 
+        double[] transformed = transformMouseCoords(mouseX, mouseY);
+        lastTransformedMouseX = transformed[0];
+        lastTransformedMouseY = transformed[1];
+
         rectangle.render(ShapeProperties.create(context.getMatrices(), 0, 0, window.getScaledWidth(), window.getScaledHeight()).color(Calculate.applyOpacity(0xFF000000, 100 * getScaleAnimation())).build());
         backgroundComponent.position(x - 20, y).size(width + 40, height);
         autoBuyGuiComponent.position(x - 20, y).size(width + 40, height + 30);
@@ -101,8 +117,8 @@ public class MenuScreen extends Screen implements QuickImports {
         categoryContainerComponent.position(x - 20, y);
 
         Calculate.scale(context.getMatrices(), x + (float) width / 2, y + (float) height / 2, getScaleAnimation(), () -> {
-            components.forEach(component -> component.render(context, mouseX, mouseY, delta));
-            windowManager.render(context, mouseX, mouseY, delta);
+            components.forEach(component -> component.render(context, (int)lastTransformedMouseX, (int)lastTransformedMouseY, delta));
+            windowManager.render(context, (int)lastTransformedMouseX, (int)lastTransformedMouseY, delta);
         });
         super.render(context, mouseX, mouseY, delta);
     }
@@ -122,49 +138,71 @@ public class MenuScreen extends Screen implements QuickImports {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && isHoveringHeader(mouseX, mouseY)) {
+        double[] transformed = transformMouseCoords(mouseX, mouseY);
+
+        if (button == 2 && isHoveringBackground(transformed[0], transformed[1])) {
             guiDragging = true;
-            dragOffsetX = mouseX - x;
-            dragOffsetY = mouseY - y;
+            dragOffsetX = transformed[0] - x;
+            dragOffsetY = transformed[1] - y;
             return true;
         }
 
-        if (!guiDragging && !windowManager.mouseClicked(mouseX, mouseY, button)) {
-            components.forEach(component -> component.mouseClicked(mouseX, mouseY, button));
+        if (!guiDragging) {
+            boolean windowHandled = windowManager.mouseClicked(transformed[0], transformed[1], button);
+            if (!windowHandled) {
+                for (AbstractComponent component : components) {
+                    component.mouseClicked(transformed[0], transformed[1], button);
+                }
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+        double[] transformed = transformMouseCoords(mouseX, mouseY);
+
+        if (button == 2) {
             guiDragging = false;
             offsetXPercent = (x + width / 2f) / window.getScaledWidth();
             offsetYPercent = (y + height / 2f) / window.getScaledHeight();
         }
-        components.forEach(component -> component.mouseReleased(mouseX, mouseY, button));
-        windowManager.mouseReleased(mouseX, mouseY, button);
+
+        for (AbstractComponent component : components) {
+            component.mouseReleased(transformed[0], transformed[1], button);
+        }
+        windowManager.mouseReleased(transformed[0], transformed[1], button);
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (guiDragging && button == 0) {
-            x = (int) (mouseX - dragOffsetX);
-            y = (int) (mouseY - dragOffsetY);
+        double[] transformed = transformMouseCoords(mouseX, mouseY);
+
+        if (guiDragging && button == 2) {
+            x = (int) (transformed[0] - dragOffsetX);
+            y = (int) (transformed[1] - dragOffsetY);
             return true;
         }
 
-        if (!windowManager.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
-            components.forEach(component -> component.mouseDragged(mouseX, mouseY, button, deltaX, deltaY));
+        boolean windowHandled = windowManager.mouseDragged(transformed[0], transformed[1], button, deltaX, deltaY);
+        if (!windowHandled) {
+            for (AbstractComponent component : components) {
+                component.mouseDragged(transformed[0], transformed[1], button, deltaX, deltaY);
+            }
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
-        if (!windowManager.mouseScrolled(mouseX, mouseY, vertical)) {
-            components.forEach(component -> component.mouseScrolled(mouseX, mouseY, vertical));
+        double[] transformed = transformMouseCoords(mouseX, mouseY);
+
+        boolean windowHandled = windowManager.mouseScrolled(transformed[0], transformed[1], vertical);
+        if (!windowHandled) {
+            for (AbstractComponent component : components) {
+                component.mouseScrolled(transformed[0], transformed[1], vertical);
+            }
         }
         return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
     }
@@ -177,7 +215,9 @@ public class MenuScreen extends Screen implements QuickImports {
             return true;
         }
         if (!windowManager.keyPressed(keyCode, scanCode, modifiers)) {
-            components.forEach(component -> component.keyPressed(keyCode, scanCode, modifiers));
+            for (AbstractComponent component : components) {
+                component.keyPressed(keyCode, scanCode, modifiers);
+            }
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -185,7 +225,9 @@ public class MenuScreen extends Screen implements QuickImports {
     @Override
     public boolean charTyped(char chr, int modifiers) {
         if (!windowManager.charTyped(chr, modifiers)) {
-            components.forEach(component -> component.charTyped(chr, modifiers));
+            for (AbstractComponent component : components) {
+                component.charTyped(chr, modifiers);
+            }
         }
         return super.charTyped(chr, modifiers);
     }
@@ -199,12 +241,13 @@ public class MenuScreen extends Screen implements QuickImports {
     public void close() {
         if (animation.finished(BACKWARDS)) {
             TextComponent.typing = false;
+            SearchComponent.typing = false;
             super.close();
         }
     }
 
-    private boolean isHoveringHeader(double mouseX, double mouseY) {
+    private boolean isHoveringBackground(double mouseX, double mouseY) {
         return mouseX >= x - 20 && mouseX <= x + width + 20 &&
-                mouseY >= y && mouseY <= y + 28;
+                mouseY >= y && mouseY <= y + height;
     }
 }

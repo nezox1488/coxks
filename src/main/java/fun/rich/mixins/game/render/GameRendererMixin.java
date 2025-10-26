@@ -3,6 +3,7 @@ package fun.rich.mixins.game.render;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.systems.RenderSystem;
+import fun.rich.features.impl.player.NoEntityTrace;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.GameRenderer;
@@ -53,6 +54,17 @@ public abstract class GameRendererMixin {
             Profilers.get().pop();
             client.crosshairTarget = RaycastAngle.raycast(freeCam.pos,4.5, MathAngle.cameraAngle(),false);
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "findCrosshairTarget", at = @At("HEAD"), cancellable = true)
+    private void findCrosshairTargetHook(Entity camera, double blockInteractionRange, double entityInteractionRange, float tickDelta, CallbackInfoReturnable<HitResult> cir) {
+        NoEntityTrace noEntityTrace = NoEntityTrace.getInstance();
+        if (noEntityTrace != null && noEntityTrace.shouldIgnoreEntityTrace()) {
+            double d = Math.max(blockInteractionRange, entityInteractionRange);
+            Vec3d vec3d = camera.getCameraPosVec(tickDelta);
+            HitResult hitResult = camera.raycast(d, tickDelta, false);
+            cir.setReturnValue(hitResult);
         }
     }
 

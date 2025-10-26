@@ -64,7 +64,6 @@ public class AltScreen implements QuickImports {
     private boolean wasEmpty = true;
     private long lastActionTime = 0;
     private static final long ACTION_DELAY = 250;
-    private static boolean sessionInitialized = false;
 
     public AltScreen(float x, float y) {
         this.panelX = x;
@@ -74,27 +73,6 @@ public class AltScreen implements QuickImports {
         emptyMessageAnimation.setDirection(Direction.FORWARDS);
         emptyMessageAnimation.reset();
         wasEmpty = accountRepository.accountList.isEmpty();
-
-        if (!sessionInitialized) {
-            loadCurrentAccount();
-            sessionInitialized = true;
-        }
-    }
-
-    private void loadCurrentAccount() {
-        if (accountRepository.currentAccount != null &&
-                !accountRepository.currentAccount.isEmpty()) {
-
-            Account currentAcc = accountRepository.accountList.stream()
-                    .filter(acc -> acc.name.equals(accountRepository.currentAccount))
-                    .findFirst()
-                    .orElse(null);
-
-            if (currentAcc != null) {
-                setSession(currentAcc);
-                currentAccount = currentAcc.name;
-            }
-        }
     }
 
     private void initializeAccountAnimations() {
@@ -355,7 +333,7 @@ public class AltScreen implements QuickImports {
     private Color interpolateColor(Color start, Color end, float t) {
         int r = (int) (start.getRed() + (end.getRed() - start.getRed()) * t);
         int g = (int) (start.getGreen() + (end.getGreen() - start.getGreen()) * t);
-        int b = (int) (start.getBlue() + (end.getBlue() - start.getBlue()) * t);
+        int b = (int) (start.getBlue() + (end.getBlue() -start.getBlue()) * t);
         int a = (int) (start.getAlpha() + (end.getAlpha() - start.getAlpha()) * t);
         return new Color(r, g, b, a);
     }

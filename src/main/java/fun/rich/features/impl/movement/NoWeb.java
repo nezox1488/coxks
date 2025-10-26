@@ -31,9 +31,9 @@ public class NoWeb extends Module {
 
     public void onTick(TickEvent e) {
         if (PlayerInteractionHelper.isPlayerInBlock(Blocks.COBWEB)) {
-            double[] speed = Simulations.calculateDirection(0.64);
+            double[] speed = Simulations.calculateDirection(0.35);
             mc.player.addVelocity(speed[0], 0, speed[1]);
-            mc.player.velocity.y = mc.options.jumpKey.isPressed() ? 1.2 : mc.options.sneakKey.isPressed() ? -2 : 0;
+            mc.player.velocity.y = mc.options.jumpKey.isPressed() ? 0.65f : mc.options.sneakKey.isPressed() ? -0.65f : 0;
         }
     }
 }

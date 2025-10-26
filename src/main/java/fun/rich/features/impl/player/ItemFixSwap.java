@@ -23,6 +23,7 @@ public class ItemFixSwap extends Module {
     private ItemStack renderStack = null;
     private boolean pendingWorldApply = false;
     private Object lastWorldRef = null;
+    private int lastServerSlot = -1;
 
     public ItemFixSwap() {
         super("ItemFixSwap", "ItemFixSwap", ModuleCategory.PLAYER);
@@ -37,32 +38,41 @@ public class ItemFixSwap extends Module {
 
     @EventHandler
     public void onHotBarUpdate(HotBarUpdateEvent e) {
-        if (shouldLock()) e.cancel();
-        else ensureSelectedSynced(false);
+        e.cancel();
+        if (mc.player != null && !lockActive && lastServerSlot != -1) {
+            mc.player.getInventory().selectedSlot = lastServerSlot;
+        }
     }
 
     @EventHandler
     public void onHotBarScroll(HotBarScrollEvent e) {
-        if (shouldLock()) e.cancel();
-        else ensureSelectedSynced(false);
+        if (shouldLock()) {
+            e.cancel();
+        }
     }
 
     @EventHandler
-
     public void onTick(TickEvent e) {
         if (lastWorldRef != mc.world) {
             lastWorldRef = mc.world;
             if (mc.world != null) {
                 pendingWorldApply = true;
                 lastSentSlot = -1;
+                lastServerSlot = mc.player != null ? mc.player.getInventory().selectedSlot : 0;
             }
         }
 
         if (mc.world == null || mc.player == null) return;
 
         if (pendingWorldApply) {
-            if (deferredSlot != -1) setSelectedSlot(deferredSlot, true);
-            else ensureSelectedSynced(true);
+            if (lastServerSlot == -1) {
+                lastServerSlot = mc.player.getInventory().selectedSlot;
+            }
+            if (deferredSlot != -1) {
+                setSelectedSlot(deferredSlot, true);
+            } else {
+                ensureSelectedSynced(true);
+            }
             pendingWorldApply = false;
         }
 
@@ -79,7 +89,6 @@ public class ItemFixSwap extends Module {
                 if (currentSelected != lockSlot) {
                     deferredSlot = clamp(currentSelected);
                     mc.player.getInventory().selectedSlot = lockSlot;
-                    sendSelected(lockSlot, true);
                 }
             }
         } else {
@@ -89,13 +98,11 @@ public class ItemFixSwap extends Module {
                     setSelectedSlot(deferredSlot, true);
                     InventoryTask.updateSlots();
                 } else {
-                    ensureSelectedSynced(true);
+                    mc.player.getInventory().selectedSlot = lastServerSlot;
                 }
                 lockSlot = -1;
                 deferredSlot = -1;
                 renderStack = null;
-            } else {
-                ensureSelectedSynced(false);
             }
         }
     }
@@ -111,14 +118,16 @@ public class ItemFixSwap extends Module {
     private void ensureSelectedSynced(boolean force) {
         if (mc.player == null) return;
         int s = clamp(mc.player.getInventory().selectedSlot);
-        sendSelected(s, force || lastSentSlot != s);
+        if (force || lastSentSlot != s) {
+            sendSelected(s, true);
+        }
     }
 
     private void setSelectedSlot(int idx, boolean force) {
         if (mc.player == null) return;
         idx = clamp(idx);
         mc.player.getInventory().selectedSlot = idx;
-        sendSelected(idx, true || force);
+        sendSelected(idx, true);
     }
 
     private void sendSelected(int idx, boolean force) {
@@ -126,6 +135,7 @@ public class ItemFixSwap extends Module {
         if (!force && lastSentSlot == idx) return;
         mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(idx));
         lastSentSlot = idx;
+        lastServerSlot = idx;
     }
 
     private int clamp(int idx) {
