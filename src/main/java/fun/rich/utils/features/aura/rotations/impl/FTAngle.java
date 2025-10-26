@@ -35,7 +35,10 @@ public class FTAngle extends RotateConstructor {
             return new Turns(currentAngle.getYaw(), currentAngle.getPitch());
         }
         Aura aura = Aura.getInstance();
-
+        if (entity !=null) {
+            Vec3d aimPoint = Vector.brain(entity, 1, 3.5F);
+            targetAngle = MathAngle.calculateAngle(aimPoint);
+        }
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         int count = attackHandler.getCount();
         Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
@@ -43,36 +46,33 @@ public class FTAngle extends RotateConstructor {
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        if (entity != null && attackHandler.getAttackTimer().finished(400)) {
-            float speed = randomLerp(0.65F, 0.85F);
+        if (entity != null) {
+            float speed = 0.75F;
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
-            float jitterYaw = (float) (randomLerp(15, 13) * Math.sin(System.currentTimeMillis() / 60D));
-            float jitterPitch = (float) (randomLerp(4, 9) * Math.sin(System.currentTimeMillis() / 60D));
-
             Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
-            moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed),
-                    currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
-            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed),
-                    currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
+            moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed + 0.2F),
+                    currentAngle.getYaw(), currentAngle.getYaw() + moveYaw));
+            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed + 0.2F),
+                    currentAngle.getPitch(), currentAngle.getPitch() + movePitch));
 
             return moveAngle;
         } else {
-            float speed = attackHandler.getAttackTimer().finished(450) ? 0.15F : 0.02F;
+            float speed = attackHandler.getAttackTimer().finished(460) ? 0.6F : 0F;
             float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
             float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
             float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
             float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
 
-            float jitterYaw = (float) (randomLerp(15, 13) * Math.sin(System.currentTimeMillis() / 70D));
-            float jitterPitch = (float) (randomLerp(4, 9) * Math.sin(System.currentTimeMillis() / 60D));
+            float jitterYaw = (float) (16 * Math.sin(System.currentTimeMillis() / 45D));
+            float jitterPitch = (float) (5 * Math.sin(System.currentTimeMillis() / 42D));
 
-            if ((!aura.isState() || aura.getTarget() == null) && attackHandler.getAttackTimer().finished(1200)) {
+            if ((!aura.isState() || aura.getTarget() == null) && attackHandler.getAttackTimer().finished(550)) {
                 jitterYaw = 0;
-                speed = 0.35F;
+                speed = 0.5F;
                 jitterPitch = 0;
             }
 
@@ -81,6 +81,15 @@ public class FTAngle extends RotateConstructor {
                     currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
             moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed),
                     currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
+
+            if (count > 0 && count % 50 == 0 && !attackHandler.getAttackTimer().finished(400)) {
+                moveAngle.setPitch(
+                        MathHelper.lerp(Math.clamp(1, 0, 1),
+                                currentAngle.getPitch(), -90)
+                );
+                mc.player.swingHand(Hand.MAIN_HAND);
+
+            }
 
             return moveAngle;
         }

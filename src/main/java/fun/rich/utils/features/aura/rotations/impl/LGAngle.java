@@ -17,7 +17,7 @@ import java.security.SecureRandom;
 
 public class LGAngle extends RotateConstructor {
     public LGAngle() {
-        super("LonyGrief");
+        super("CakeWorld");
     }
 
     @Override
@@ -36,15 +36,19 @@ public class LGAngle extends RotateConstructor {
             distanceToTarget = (float) mc.player.distanceTo(entity);
         }
 
-        float baseSpeed = 1;
+        float baseSpeed = canAttack ? 0.85F : 0.6F;
 
         float speed = baseSpeed;
+        if (distanceToTarget > 0 && distanceToTarget < 0.66F) {
+            float closeRangeSpeed = MathHelper.clamp(distanceToTarget / 1.5F * 0.35F, 0.1F, 0.6F);
+            speed = Math.min(speed, closeRangeSpeed);
+        }
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (22 * Math.sin(System.currentTimeMillis() / 90D));
-        float jitterPitch = canAttack ? 0 : (float) (11 * Math.sin(System.currentTimeMillis() / 22D));
+        float jitterYaw = canAttack ? 0 : (float) (26 * Math.sin(System.currentTimeMillis() / 35D));
+        float jitterPitch = canAttack ? 0 : (float) (26 * Math.sin(System.currentTimeMillis() / 22D));
 
-        if (!aura.isState() && attackHandler.getAttackTimer().finished(1500)) { jitterYaw = 0; jitterPitch = 0; }
+        if (!aura.isState() || aura.getTarget() == null && attackHandler.getAttackTimer().finished(500)) { jitterYaw = 0; jitterPitch = 0; }
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
         float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
