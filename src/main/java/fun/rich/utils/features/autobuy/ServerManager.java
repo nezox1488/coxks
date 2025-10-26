@@ -13,7 +13,7 @@ public class ServerManager {
     public ServerManager() {
         anarchyServers165 = new ArrayList<>();
         anarchyServers214 = new ArrayList<>();
-        
+
         anarchyServers165.addAll(List.of("/an102", "/an103", "/an104", "/an105", "/an106", "/an107"));
         for (int i = 203; i <= 221; i++) {
             anarchyServers165.add("/an" + i);
@@ -22,7 +22,7 @@ public class ServerManager {
             anarchyServers165.add("/an" + i);
         }
         anarchyServers165.addAll(List.of("/an502", "/an503", "/an504", "/an505", "/an506", "/an507", "/an602"));
-        
+
         anarchyServers214.addAll(List.of("/an11", "/an12", "/an21", "/an23", "/an31", "/an32", "/an51", "/an52"));
     }
 
