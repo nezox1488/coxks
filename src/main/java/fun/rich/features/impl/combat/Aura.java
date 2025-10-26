@@ -99,6 +99,9 @@ public class Aura extends Module {
     @Getter
     public static float legitSprintNeed;
 
+    @NonFinal
+    private FovCircleRenderer fovCircleRenderer;
+
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
             .value("FunTime", "Legit Snap", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
             .selected("FunTime");
@@ -145,7 +148,8 @@ public class Aura extends Module {
                 attackSetting,
                 smartCrits
         );
-        Rich.getInstance().getEventManager().register(new FovCircleRenderer());
+        fovCircleRenderer = new FovCircleRenderer();
+        Rich.getInstance().getEventManager().register(fovCircleRenderer);
     }
 
     @Override
@@ -190,6 +194,8 @@ public class Aura extends Module {
     public class FovCircleRenderer implements QuickImports {
         private float currentScale = 1.0f;
         private float targetScale = 1.0f;
+        private float cachedDynamicFov = 33;
+        private float lastFinalRadius = 0;
 
         @EventHandler
         public void drawEvent(DrawEvent e){
@@ -203,7 +209,7 @@ public class Aura extends Module {
                 double fov = mc.options.getFov().getValue();
                 fov = MathHelper.clamp(fov, 30, 110);
 
-                float baseRadius = (float) MathHelper.lerp((fov - 30.0) / 80.0, 92.5, 65.0);
+                float baseRadius = (float) MathHelper.lerp((fov - 30.0) / 80.0, 106.5, 65.0);
                 float fovScale = (float) (450.0 / fov);
                 float dynamicRadius = baseRadius * fovScale;
 
@@ -211,6 +217,7 @@ public class Aura extends Module {
                 currentScale = Calculate.interpolateSmooth(2.5, currentScale, targetScale);
 
                 float finalRadius = dynamicRadius * currentScale;
+                lastFinalRadius = finalRadius;
 
                 float baseThickness = (float) MathHelper.lerp((fov - 30.0) / 80.0, 0.003, 0.015);
 
@@ -220,7 +227,37 @@ public class Aura extends Module {
                         .end(360)
                         .color(ColorAssist.getColor(255, 255, 255, 255))
                         .build());
+
+                cachedDynamicFov = calculateDynamicFov();
             }
+        }
+
+        private float calculateDynamicFov() {
+            if (mc.player == null || mc.getWindow() == null) return 33;
+
+            double fov = mc.options.getFov().getValue();
+            fov = MathHelper.clamp(fov, 30, 110);
+
+            float screenWidth = mc.getWindow().getScaledWidth();
+            float screenHeight = mc.getWindow().getScaledHeight();
+
+            float circleRadiusInPixels = lastFinalRadius / 2f;
+
+            double horizontalFovRadians = Math.toRadians(fov);
+
+            double pixelsPerRadian = screenWidth / horizontalFovRadians;
+
+            double circleFovRadians = circleRadiusInPixels / pixelsPerRadian;
+
+            float circleFovDegrees = (float) Math.toDegrees(circleFovRadians);
+
+            circleFovDegrees *= 2.0f;
+
+            return MathHelper.clamp(circleFovDegrees, 36, 360);
+        }
+
+        public float getCachedDynamicFov() {
+            return cachedDynamicFov;
         }
     }
 
@@ -278,7 +315,13 @@ public class Aura extends Module {
     private LivingEntity updateTarget() {
         TargetFinder.EntityFilter filter = new TargetFinder.EntityFilter(targetType.getSelected());
         float range = attackRange.getValue() + RANGE_MARGIN + (mc.player.isGliding() && ElytraTarget.getInstance().isState() ? ElytraTarget.getInstance().elytraFindRange.getValue() : lookRange.getValue());
-        targetSelector.searchTargets(mc.world.getEntities(), range, aimMode.isSelected("Legit Snap") ? (mc.player.isSprinting() ? 29 : 33) : 360, attackSetting.isSelected("Ignore The Walls"));
+
+        float dynamicFov = 360;
+        if (aimMode.isSelected("Legit Snap") && fovCircleRenderer != null) {
+            dynamicFov = fovCircleRenderer.getCachedDynamicFov();
+        }
+
+        targetSelector.searchTargets(mc.world.getEntities(), range, dynamicFov, attackSetting.isSelected("Ignore The Walls"));
         targetSelector.validateTarget(filter::isValid);
         return targetSelector.getCurrentTarget();
     }
