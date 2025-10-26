@@ -60,7 +60,7 @@ public class ConnectionManager {
                     ChatMessage.brandmessage("Сервер запущен на порту " + PORT);
                     executorService.execute(this::listenerThread);
                 } catch (IOException e) {
-                    ChatMessage.brandmessage("Ошибка запуска сервера");
+                    ChatMessage.brandmessage("Ошибка запуска сервера: " + e.getMessage());
                 }
             });
         }
@@ -72,8 +72,10 @@ public class ConnectionManager {
         }
         if (clientSocket == null || clientSocket.isClosed()) {
             executorService.execute(() -> {
-                while (running && (clientSocket == null || clientSocket.isClosed())) {
+                int attempts = 0;
+                while (running && (clientSocket == null || clientSocket.isClosed()) && attempts < 50) {
                     try {
+                        Thread.sleep(100);
                         clientSocket = new Socket("localhost", PORT);
                         clientSocket.setTcpNoDelay(true);
                         clientSocket.setPerformancePreferences(0, 1, 0);
@@ -85,8 +87,12 @@ public class ConnectionManager {
                         executorService.execute(this::clientReaderThread);
                         ChatMessage.brandmessage("Подключено к покупающему аккаунту");
                         break;
-                    } catch (IOException e) {
+                    } catch (IOException | InterruptedException e) {
+                        attempts++;
                     }
+                }
+                if (attempts >= 50) {
+                    ChatMessage.brandmessage("Не удалось подключиться к серверу");
                 }
             });
         }
@@ -166,11 +172,9 @@ public class ConnectionManager {
 
     public void sendToAllClients(String message) {
         for (Socket conn : connections) {
-            if (clientInAuction.getOrDefault(conn, false)) {
-                PrintWriter out = outs.get(conn);
-                if (out != null) {
-                    out.println(message);
-                }
+            PrintWriter out = outs.get(conn);
+            if (out != null) {
+                out.println(message);
             }
         }
     }
@@ -187,6 +191,14 @@ public class ConnectionManager {
 
     public long getClientsInAuctionCount() {
         return clientInAuction.values().stream().filter(Boolean::booleanValue).count();
+    }
+
+    public int getConnectionsCount() {
+        return connections.size();
+    }
+
+    public List<Socket> getConnections() {
+        return new CopyOnWriteArrayList<>(connections);
     }
 
     public void stopAll() {
