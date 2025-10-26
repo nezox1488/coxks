@@ -117,6 +117,7 @@ public class Defaultpricec {
         defaultPrices.put("Проклятая стрела", 1790);
         defaultPrices.put("Заряд ветра", 1790);
         defaultPrices.put("Стержень вихря", 1790);
+        defaultPrices.put("Карамельное яблоко", 10000);
     }
 
     public static int getPrice(String displayName) {

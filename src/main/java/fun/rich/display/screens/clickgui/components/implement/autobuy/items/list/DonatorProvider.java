@@ -172,6 +172,13 @@ public class DonatorProvider {
                 Text.literal("размером 9x9x5 блоков")
         );
         donator.add(new CustomItem("[★] Кирка мега-бульдозер", null, Items.NETHERITE_PICKAXE, Defaultpricec.getPrice("Кирка мега-бульдозер"), null, megaBulldozerLore));
+        List<Text> caramelAppleLore = List.of(
+                Text.literal("Это кошмарная конфета для прохождении"),
+                Text.literal("карты таинств - вводи /hellmap"),
+                Text.literal(""),
+                Text.literal("Кошмарность: +5")
+        );
+        donator.add(new CustomItem("Карамельное яблоко", null, Items.APPLE, Defaultpricec.getPrice("Карамельное яблоко"), null, caramelAppleLore));
         return donator;
     }
 }

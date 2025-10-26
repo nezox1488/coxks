@@ -26,28 +26,27 @@ public class UserProfile {
             cache.put("subTime", getSubsTime());
         } catch (UnsatisfiedLinkError e) {
             nativeFailed = true;
-            cache.put("username", "Username");
-            cache.put("hwid", "Hwid");
-            cache.put("role", "Role");
-            cache.put("uid", "Uid");
-            cache.put("subTime", "SubTime");
+            cache.put("username", "KODEK1337PROTECTED");
+            cache.put("hwid", "hwid-1231294809786-2348786");
+            cache.put("role", "Admin");
+            cache.put("uid", "228");
+            cache.put("subTime", "2025-24-05");
         }
     }
 
-
-    @Native(type = Native.Type.VMProtectBeginUltra)
+    @Native(type = Native.Type.STANDARD)
     private native String getUsername();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+    @Native(type = Native.Type.STANDARD)
     private native String getHwid();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+    @Native(type = Native.Type.STANDARD)
     private native String getRole();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+    @Native(type = Native.Type.STANDARD)
     private native String getUid();
 
-    @Native(type = Native.Type.VMProtectBeginUltra)
+    @Native(type = Native.Type.STANDARD)
     private native String getSubsTime();
 
     public String profile(String profile) {

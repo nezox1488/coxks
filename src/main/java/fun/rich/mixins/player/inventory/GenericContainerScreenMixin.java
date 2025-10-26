@@ -32,8 +32,6 @@ public abstract class GenericContainerScreenMixin extends HandledScreen<GenericC
     @Unique
     private static final ContainerBackgroundRender BACKGROUND_RENDER = new ContainerBackgroundRender();
 
-//    private final PurchaseHistoryWindow purchaseHistoryWindow = new PurchaseHistoryWindow();
-
     public GenericContainerScreenMixin(GenericContainerScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
@@ -54,10 +52,6 @@ public abstract class GenericContainerScreenMixin extends HandledScreen<GenericC
             autoBuyButton.setMessage(Text.literal("AutoBuy: " + (autoBuyManager.isEnabled() ? "§aON" : "§cOFF")));
         }
 
-//        if (title.contains("Аукцион") || title.contains("Аукционы") || title.contains("Auction") || title.contains("Поиск")) {
-//            purchaseHistoryWindow.render(context, mouseX, mouseY, delta,
-//                    this.width, this.height, this.backgroundWidth, this.backgroundHeight);
-//        }
     }
 
     private void addButtons(MinecraftClient mc, String titleText) {

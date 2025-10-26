@@ -20,6 +20,10 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import fun.rich.display.screens.clickgui.components.implement.autobuy.manager.AutoBuyManager;
 import fun.rich.utils.client.chat.ChatMessage;
+import fun.rich.events.packet.PacketEvent;
+import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
+import net.minecraft.text.Text;
+import org.apache.commons.lang3.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,7 +31,6 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -42,26 +45,27 @@ import java.util.BitSet;
 import net.minecraft.network.message.LastSeenMessageList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.scoreboard.ScoreboardDisplaySlot;
+import java.util.HashMap;
 
 public class AutoBuy extends Module {
-    SelectSetting leaveType = new SelectSetting("Тип обхода", "Покупающий").value("Проверяющий", "Покупающий");
-    SliderSettings timer2 = new SliderSettings("Таймер обновления аукциона", "").setValue(500).range(250, 1000).visible(() -> leaveType.isSelected("Покупающий"));
-    BooleanSetting bypassDelay = new BooleanSetting("Обход задержки 1.16.5 анках", "").visible(() -> leaveType.isSelected("Покупающий"));
-    BooleanSetting bypassDelay1214 = new BooleanSetting("Обход задержки 1.21.4 анках", "").visible(() -> leaveType.isSelected("Покупающий"));
-
+    SelectSetting leaveType = new SelectSetting("Тип обхода", "Проверяющий").value("Проверяющий", "Покупающий");
+    SliderSettings timer2 = new SliderSettings("Таймер обновления аукциона", "").setValue(500).range(250, 1000);
+    BooleanSetting bypassDelay = new BooleanSetting("Обход задержки 1.16.5 анках", "");
+    BooleanSetting bypassDelay1214 = new BooleanSetting("Обход задержки 1.21.4 анках", "");
     TimerUtil openTimer = TimerUtil.create();
     TimerUtil updateTimer = TimerUtil.create();
     TimerUtil buyTimer = TimerUtil.create();
     TimerUtil switchTimer = TimerUtil.create();
     TimerUtil enterDelayTimer = TimerUtil.create();
     TimerUtil ahSpamTimer = TimerUtil.create();
-
     ConcurrentLinkedQueue<BuyRequest> queue = new ConcurrentLinkedQueue<>();
     ConcurrentLinkedQueue<BuyRequest> priorityQueue = new ConcurrentLinkedQueue<>();
-
     Set<String> notFoundItems = ConcurrentHashMap.newKeySet();
     Set<String> processedItems = ConcurrentHashMap.newKeySet();
-
+    Set<String> sentItems = ConcurrentHashMap.newKeySet();
     AutoBuyManager autoBuyManager = AutoBuyManager.getInstance();
     ServerSocket serverSocket = null;
     Socket clientSocket = null;
@@ -71,33 +75,26 @@ public class AutoBuy extends Module {
     Map<Socket, PrintWriter> outs = new ConcurrentHashMap<>();
     Map<Socket, BufferedReader> ins = new ConcurrentHashMap<>();
     Map<Socket, Boolean> clientInAuction = new ConcurrentHashMap<>();
-    ExecutorService executorService = Executors.newFixedThreadPool(20);
-
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
     boolean open = false;
     boolean serverInAuction = false;
     volatile boolean running = false;
     static final int PORT = 20001;
     int failedCount = 0;
     String currentServer = "";
-    int currentServerIndex = 0;
-
     List<String> anarchyServers165 = new ArrayList<>();
     List<String> anarchyServers214 = new ArrayList<>();
-    List<String> currentServerList = new ArrayList<>();
-
     boolean justEntered = false;
     boolean spammingAh = false;
     boolean waitingForServerLoad = false;
-    Map<String, Long> itemCooldowns = new ConcurrentHashMap<>();
-
     private static final Pattern PURCHASE_PATTERN = Pattern.compile("Вы успешно купили (.+?) за \\$([\\d,]+)!");
-    private static final int MIN_SLOT = 0;
-    private static final int MAX_SLOT = 44;
+    int currentServerIndex = 0;
+    List<AutoBuyableItem> cachedEnabledItems = new ArrayList<>();
+    TimerUtil serverSwitchCooldown = TimerUtil.create();
+    Map<String, Long> lastMessageTime = new ConcurrentHashMap<>();
 
     public AutoBuy() {
         super("Auto Buy", "Auto Buy", ModuleCategory.MISC);
-        setup(leaveType, timer2, bypassDelay, bypassDelay1214);
-
         anarchyServers165.addAll(List.of("/an102", "/an103", "/an104", "/an105", "/an106", "/an107"));
         for (int i = 203; i <= 221; i++) {
             anarchyServers165.add("/an" + i);
@@ -107,7 +104,25 @@ public class AutoBuy extends Module {
         }
         anarchyServers165.addAll(List.of("/an502", "/an503", "/an504", "/an505", "/an506", "/an507", "/an602"));
 
-        anarchyServers214.addAll(List.of("/an11", "/an12", "/an21", "/an23", "/an31", "/an32", "/an51", "/an52"));
+        for (int i = 11; i <= 14; i++) {
+            anarchyServers214.add("/an" + i);
+        }
+        for (int i = 21; i <= 27; i++) {
+            anarchyServers214.add("/an" + i);
+        }
+        for (int i = 31; i <= 34; i++) {
+            anarchyServers214.add("/an" + i);
+        }
+        for (int i = 51; i <= 53; i++) {
+            anarchyServers214.add("/an" + i);
+        }
+        anarchyServers214.add("/an91");
+
+        timer2.visible(() -> leaveType.isSelected("Покупающий"));
+        bypassDelay.visible(() -> leaveType.isSelected("Покупающий"));
+        bypassDelay1214.visible(() -> leaveType.isSelected("Покупающий"));
+
+        setup(leaveType, timer2, bypassDelay, bypassDelay1214);
     }
 
     @Override
@@ -119,23 +134,25 @@ public class AutoBuy extends Module {
         switchTimer.resetCounter();
         enterDelayTimer.resetCounter();
         ahSpamTimer.resetCounter();
+        serverSwitchCooldown.resetCounter();
         open = false;
         serverInAuction = false;
         running = true;
         notFoundItems.clear();
         processedItems.clear();
-        itemCooldowns.clear();
+        sentItems.clear();
+        lastMessageTime.clear();
         failedCount = 0;
         currentServer = "";
-        currentServerIndex = 0;
         justEntered = false;
         spammingAh = false;
         waitingForServerLoad = false;
-
-        if (bypassDelay.isValue() || bypassDelay1214.isValue()) {
+        currentServerIndex = 0;
+        cachedEnabledItems.clear();
+        if (leaveType.isSelected("Покупающий") && (bypassDelay.isValue() || bypassDelay1214.isValue())) {
             mc.options.pauseOnLostFocus = false;
         }
-
+        cacheEnabledItems();
         startConnection();
     }
 
@@ -144,8 +161,17 @@ public class AutoBuy extends Module {
         super.deactivate();
         running = false;
         executorService.shutdownNow();
-        executorService = Executors.newFixedThreadPool(20);
+        executorService = Executors.newFixedThreadPool(10);
         stopAll();
+    }
+
+    private void cacheEnabledItems() {
+        cachedEnabledItems.clear();
+        for (AutoBuyableItem item : autoBuyManager.getAllItems()) {
+            if (item.isEnabled()) {
+                cachedEnabledItems.add(item);
+            }
+        }
     }
 
     private void startConnection() {
@@ -155,7 +181,6 @@ public class AutoBuy extends Module {
                     if (serverSocket == null || serverSocket.isClosed()) {
                         try {
                             serverSocket = new ServerSocket(PORT);
-                            serverSocket.setReuseAddress(true);
                             ChatMessage.brandmessage("Сервер запущен на порту " + PORT);
                             executorService.execute(this::listenerThread);
                         } catch (IOException e) {
@@ -163,15 +188,13 @@ public class AutoBuy extends Module {
                         }
                     }
                     try {
-                        Thread.sleep(50);
+                        Thread.sleep(500);
                     } catch (InterruptedException ignored) {}
                 } else if (leaveType.isSelected("Проверяющий")) {
                     if (clientSocket == null || clientSocket.isClosed()) {
                         try {
                             clientSocket = new Socket("localhost", PORT);
                             clientSocket.setTcpNoDelay(true);
-                            clientSocket.setSoTimeout(0);
-                            clientSocket.setKeepAlive(true);
                             clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
                             clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                             clientOut.println("connect");
@@ -181,7 +204,7 @@ public class AutoBuy extends Module {
                         }
                     }
                     try {
-                        Thread.sleep(50);
+                        Thread.sleep(500);
                     } catch (InterruptedException ignored) {}
                 }
             }
@@ -193,8 +216,6 @@ public class AutoBuy extends Module {
             while (state && serverSocket != null && !serverSocket.isClosed()) {
                 Socket conn = serverSocket.accept();
                 conn.setTcpNoDelay(true);
-                conn.setSoTimeout(0);
-                conn.setKeepAlive(true);
                 connections.add(conn);
                 PrintWriter out = new PrintWriter(conn.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -202,11 +223,6 @@ public class AutoBuy extends Module {
                 ins.put(conn, in);
                 clientInAuction.put(conn, false);
                 ChatMessage.brandmessage("Подключен аккаунт с проверяющим");
-
-                if (!currentServer.isEmpty()) {
-                    out.println("switch_server:" + currentServer);
-                }
-
                 executorService.execute(() -> readerThread(conn));
             }
         } catch (IOException ignored) {}
@@ -232,13 +248,10 @@ public class AutoBuy extends Module {
                 } else if (line.equals("leave_auction")) {
                     clientInAuction.put(conn, false);
                 } else if (line.startsWith("switch_server:")) {
+                    String cmd = line.substring(14);
+                    mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(cmd, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
+                    waitingForServerLoad = true;
                 } else if (line.equals("connect")) {
-                    if (!currentServer.isEmpty()) {
-                        PrintWriter out = outs.get(conn);
-                        if (out != null) {
-                            out.println("switch_server:" + currentServer);
-                        }
-                    }
                 }
             }
         } catch (IOException ignored) {}
@@ -254,19 +267,13 @@ public class AutoBuy extends Module {
                 if (line.equals("update_now")) {
                     if (mc.currentScreen instanceof GenericContainerScreen screen && serverInAuction) {
                         int syncId = screen.getScreenHandler().syncId;
-                        mc.execute(() -> {
-                            mc.interactionManager.clickSlot(syncId, 49, 0, SlotActionType.QUICK_MOVE, mc.player);
-                            updateTimer.resetCounter();
-                        });
+                        mc.interactionManager.clickSlot(syncId, 49, 0, SlotActionType.QUICK_MOVE, mc.player);
+                        updateTimer.resetCounter();
                     }
                 } else if (line.startsWith("switch_server:")) {
                     String cmd = line.substring(14);
-                    mc.execute(() -> {
-                        if (mc.player != null && mc.player.networkHandler != null) {
-                            mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(cmd, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
-                            waitingForServerLoad = true;
-                        }
-                    });
+                    mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(cmd, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
+                    waitingForServerLoad = true;
                 }
             }
         } catch (IOException ignored) {}
@@ -290,7 +297,9 @@ public class AutoBuy extends Module {
         priorityQueue.clear();
         notFoundItems.clear();
         processedItems.clear();
-        itemCooldowns.clear();
+        sentItems.clear();
+        lastMessageTime.clear();
+        cachedEnabledItems.clear();
         if (serverSocket != null) {
             try {
                 serverSocket.close();
@@ -314,31 +323,105 @@ public class AutoBuy extends Module {
         clientIn = null;
     }
 
+    private int getCurrentAnarchyNumber() {
+        if (mc.world == null) return -1;
+        Scoreboard scoreboard = mc.world.getScoreboard();
+        ScoreboardObjective objective = scoreboard.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR);
+        if (objective != null) {
+            String displayName = objective.getDisplayName().getString();
+            if (displayName.contains("Анархия-")) {
+                String[] parts = displayName.split("-");
+                if (parts.length > 1) {
+                    try {
+                        return Integer.parseInt(parts[1].trim());
+                    } catch (NumberFormatException e) {
+                        return -1;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private String getNextServer(List<String> servers) {
+        if (servers.isEmpty()) return null;
+
+        int currentAnarchy = getCurrentAnarchyNumber();
+
+        if (currentAnarchy != -1) {
+            String currentServerCmd = "/an" + currentAnarchy;
+            int currentIdx = servers.indexOf(currentServerCmd);
+
+            if (currentIdx != -1) {
+                currentServerIndex = currentIdx;
+            }
+        }
+
+        currentServerIndex = (currentServerIndex + 1) % servers.size();
+        return servers.get(currentServerIndex);
+    }
+
+    private void switchToNextServer() {
+        if (!serverSwitchCooldown.hasTimeElapsed(3000)) {
+            return;
+        }
+
+        if (!leaveType.isSelected("Покупающий")) {
+            return;
+        }
+
+        List<String> availableServers;
+        if (bypassDelay1214.isValue()) {
+            availableServers = new ArrayList<>(anarchyServers214);
+        } else if (bypassDelay.isValue()) {
+            availableServers = new ArrayList<>(anarchyServers165);
+        } else {
+            return;
+        }
+
+        String newServer = getNextServer(availableServers);
+
+        if (newServer != null) {
+            currentServer = newServer;
+            mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(newServer, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
+            sendToAllClients("switch_server:" + newServer);
+            waitingForServerLoad = true;
+            serverSwitchCooldown.resetCounter();
+            switchTimer.resetCounter();
+            ChatMessage.brandmessage("Переход на сервер: " + newServer);
+        }
+    }
+
     @EventHandler
-    public void onChat(ChatEvent e) {
-        String message = e.getMessage();
-        if (leaveType.isSelected("Покупающий")) {
-            if (message.contains("У Вас не хватает денег!")) {
-                buyTimer.resetCounter();
-                updateTimer.resetCounter();
+    public void onPacket(PacketEvent e) {
+        if (e.getPacket() instanceof GameMessageS2CPacket gameMessage) {
+            Text content = gameMessage.content();
+            String message = content.getString();
+
+            if (message.contains("Вы уже подключены к этому серверу!")) {
+                ChatMessage.brandmessage("Вижу сообщение: Вы уже подключены к этому серверу!");
+                switchToNextServer();
                 return;
             }
-            Matcher matcher = PURCHASE_PATTERN.matcher(message);
-            if (matcher.find()) {
-                String itemName = matcher.group(1);
-                String priceStr = matcher.group(2).replace(",", "");
-                try {
-                    int price = Integer.parseInt(priceStr);
-                    AutoBuyableItem purchasedItem = autoBuyManager.getAllItems().stream()
-                            .filter(item -> item.getDisplayName().equals(itemName))
-                            .findFirst()
-                            .orElse(null);
-                    if (purchasedItem != null) {
-                        PurchaseHistoryWindow.addPurchase(purchasedItem, price);
-                    } else {
-                        PurchaseHistoryWindow.addPurchase(itemName, price);
-                    }
-                } catch (NumberFormatException ignored) {}
+
+            if (leaveType.isSelected("Покупающий")) {
+                Matcher matcher = PURCHASE_PATTERN.matcher(message);
+                if (matcher.find()) {
+                    String itemName = matcher.group(1);
+                    String priceStr = matcher.group(2).replace(",", "");
+                    try {
+                        int price = Integer.parseInt(priceStr);
+                        AutoBuyableItem purchasedItem = autoBuyManager.getAllItems().stream()
+                                .filter(item -> item.getDisplayName().equals(itemName))
+                                .findFirst()
+                                .orElse(null);
+                        if (purchasedItem != null) {
+                            PurchaseHistoryWindow.addPurchase(purchasedItem, price);
+                        } else {
+                            PurchaseHistoryWindow.addPurchase(itemName, price);
+                        }
+                    } catch (NumberFormatException ignored) {}
+                }
             }
         }
     }
@@ -363,7 +446,7 @@ public class AutoBuy extends Module {
                 }
             }
             if (spammingAh) {
-                if (ahSpamTimer.hasTimeElapsed(10500)) {
+                if (ahSpamTimer.hasTimeElapsed(1250)) {
                     if (mc.player.networkHandler != null) {
                         mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket("/ah", Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
                     }
@@ -386,8 +469,10 @@ public class AutoBuy extends Module {
                     serverInAuction = true;
                     notFoundItems.clear();
                     processedItems.clear();
+                    sentItems.clear();
                     justEntered = false;
                     spammingAh = false;
+                    cacheEnabledItems();
                     if (leaveType.isSelected("Проверяющий") && clientOut != null) {
                         clientOut.println("enter_auction");
                     }
@@ -414,23 +499,19 @@ public class AutoBuy extends Module {
 
                     if (request != null) {
                         BuyRequest finalRequest = request;
-                        executorService.execute(() -> {
-                            Slot targetSlot = findSlotByItemAndPrice(slots, finalRequest.itemName, finalRequest.price);
-                            if (targetSlot != null) {
-                                mc.execute(() -> {
-                                    mc.interactionManager.clickSlot(syncId, targetSlot.id, 0, SlotActionType.QUICK_MOVE, mc.player);
-                                    buyTimer.resetCounter();
-                                    updateTimer.resetCounter();
-                                    failedCount = 0;
-                                });
-                            } else {
-                                String itemKey = finalRequest.itemName + "|" + finalRequest.price;
-                                if (!notFoundItems.contains(itemKey)) {
-                                    notFoundItems.add(itemKey);
-                                }
-                                failedCount++;
+                        Slot targetSlot = findSlotByItemAndPrice(slots, finalRequest.itemName, finalRequest.price);
+                        if (targetSlot != null) {
+                            mc.interactionManager.clickSlot(syncId, targetSlot.id, 0, SlotActionType.QUICK_MOVE, mc.player);
+                            buyTimer.resetCounter();
+                            updateTimer.resetCounter();
+                            failedCount = 0;
+                        } else {
+                            String itemKey = finalRequest.itemName + "|" + finalRequest.price;
+                            if (!notFoundItems.contains(itemKey)) {
+                                notFoundItems.add(itemKey);
                             }
-                        });
+                            failedCount++;
+                        }
                     }
 
                     if (failedCount > 3) {
@@ -450,26 +531,35 @@ public class AutoBuy extends Module {
                         notFoundItems.clear();
                     }
                 } else if (leaveType.isSelected("Проверяющий")) {
-                    executorService.execute(() -> {
-                        List<Slot> bestSlots = findMatchingSlots(slots);
-                        if (!bestSlots.isEmpty()) {
-                            long now = System.currentTimeMillis();
-                            for (Slot bestSlot : bestSlots) {
-                                ItemStack stack = bestSlot.getStack();
-                                String itemName = stack.getName().getString();
-                                String cleanName = AuctionUtils.funTimePricePattern.matcher(itemName).replaceAll("").trim();
-                                int price = AuctionUtils.getPrice(stack);
-                                String itemKey = cleanName + "|" + price;
+                    List<Slot> bestSlots = findMatchingSlots(slots);
+                    if (!bestSlots.isEmpty()) {
+                        Map<String, Integer> itemCounts = new HashMap<>();
+                        for (Slot bestSlot : bestSlots) {
+                            ItemStack stack = bestSlot.getStack();
+                            String itemName = stack.getName().getString();
+                            String cleanName = AuctionUtils.funTimePricePattern.matcher(itemName).replaceAll("").trim();
+                            int price = AuctionUtils.getPrice(stack);
+                            String itemKey = cleanName + "|" + price;
 
-                                Long lastSent = itemCooldowns.get(itemKey);
-                                if (lastSent == null || (now - lastSent) > 10) {
-                                    itemCooldowns.put(itemKey, now);
-                                    sendBuy(cleanName, price);
-                                }
+                            itemCounts.put(cleanName, itemCounts.getOrDefault(cleanName, 0) + 1);
+
+                            if (!sentItems.contains(itemKey)) {
+                                sentItems.add(itemKey);
+                                sendBuy(cleanName, price);
                             }
-                            buyTimer.resetCounter();
                         }
-                    });
+
+                        long currentTime = System.currentTimeMillis();
+                        for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
+                            String itemName = entry.getKey();
+                            Long lastTime = lastMessageTime.get(itemName);
+                            if (lastTime == null || currentTime - lastTime > 2000) {
+                                ChatMessage.brandmessage("Вижу предмет: " + itemName + " x" + entry.getValue());
+                                lastMessageTime.put(itemName, currentTime);
+                            }
+                        }
+                        buyTimer.resetCounter();
+                    }
                 }
             } else if (title.contains("Подозрительная цена")) {
                 openTimer.resetCounter();
@@ -488,6 +578,7 @@ public class AutoBuy extends Module {
                     serverInAuction = false;
                     notFoundItems.clear();
                     processedItems.clear();
+                    sentItems.clear();
                     if (leaveType.isSelected("Проверяющий") && clientOut != null) {
                         clientOut.println("leave_auction");
                     }
@@ -499,40 +590,30 @@ public class AutoBuy extends Module {
                 serverInAuction = false;
                 notFoundItems.clear();
                 processedItems.clear();
+                sentItems.clear();
                 if (leaveType.isSelected("Проверяющий") && clientOut != null) {
                     clientOut.println("leave_auction");
                 }
             }
         }
 
-        if ((bypassDelay.isValue() || bypassDelay1214.isValue()) && leaveType.isSelected("Покупающий")) {
-            if (switchTimer.hasTimeElapsed(90000)) {
-                if (bypassDelay1214.isValue()) {
-                    currentServerList = anarchyServers214;
-                } else {
-                    currentServerList = anarchyServers165;
-                }
-
-                if (!currentServerList.isEmpty()) {
-                    currentServerIndex = (currentServerIndex + 1) % currentServerList.size();
-                    String newServer = currentServerList.get(currentServerIndex);
-                    currentServer = newServer;
-
-                    mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(newServer, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
-                    sendToAllClients("switch_server:" + newServer);
-                    waitingForServerLoad = true;
-
-                    ChatMessage.brandmessage("Переход на сервер: " + newServer + " (" + (currentServerIndex + 1) + "/" + currentServerList.size() + ")");
-                }
+        if (leaveType.isSelected("Покупающий") && (bypassDelay.isValue() || bypassDelay1214.isValue())) {
+            if (switchTimer.hasTimeElapsed(50000)) {
+                switchToNextServer();
             }
         }
     }
 
     private Slot findSlotByItemAndPrice(List<Slot> slots, String itemName, int expectedPrice) {
-        for (int i = MIN_SLOT; i <= MAX_SLOT; i++) {
+        for (int i = 0; i <= 44; i++) {
             Slot slot = slots.get(i);
             if (slot.getStack().isEmpty()) continue;
             ItemStack stack = slot.getStack();
+
+            if (AuctionUtils.isArmorItem(stack) && AuctionUtils.hasThornsEnchantment(stack)) {
+                continue;
+            }
+
             String stackName = stack.getName().getString();
             stackName = AuctionUtils.funTimePricePattern.matcher(stackName).replaceAll("").trim();
             int price = AuctionUtils.getPrice(stack);
@@ -545,22 +626,24 @@ public class AutoBuy extends Module {
 
     private List<Slot> findMatchingSlots(List<Slot> slots) {
         List<Slot> matching = new ArrayList<>();
-        List<AutoBuyableItem> enabledItems = new ArrayList<>();
 
-        for (AutoBuyableItem item : autoBuyManager.getAllItems()) {
-            if (item.isEnabled()) {
-                enabledItems.add(item);
-            }
+        if (cachedEnabledItems.isEmpty()) {
+            cacheEnabledItems();
         }
 
-        for (int i = MIN_SLOT; i <= MAX_SLOT; i++) {
+        for (int i = 0; i <= 44; i++) {
             Slot slot = slots.get(i);
             if (slot.getStack().isEmpty()) continue;
             ItemStack stack = slot.getStack();
+
+            if (AuctionUtils.isArmorItem(stack) && AuctionUtils.hasThornsEnchantment(stack)) {
+                continue;
+            }
+
             int price = AuctionUtils.getPrice(stack);
             if (price <= 0) continue;
 
-            for (AutoBuyableItem item : enabledItems) {
+            for (AutoBuyableItem item : cachedEnabledItems) {
                 int maxPrice = item.getSettings().getBuyBelow();
                 if (price > maxPrice) continue;
 
@@ -577,7 +660,7 @@ public class AutoBuy extends Module {
         }
 
         matching.sort(Comparator.comparingInt(slot -> AuctionUtils.getPrice(slot.getStack())));
-        return matching.isEmpty() ? matching : matching.subList(0, Math.min(5, matching.size()));
+        return matching;
     }
 
     private void sendToAllClients(String message) {
@@ -586,7 +669,6 @@ public class AutoBuy extends Module {
                 PrintWriter out = outs.get(conn);
                 if (out != null) {
                     out.println(message);
-                    out.flush();
                 }
             }
         }
@@ -595,7 +677,6 @@ public class AutoBuy extends Module {
     private void sendBuy(String itemName, int price) {
         if (clientOut != null) {
             clientOut.println("buy:" + itemName + "|" + price);
-            clientOut.flush();
         }
     }
 

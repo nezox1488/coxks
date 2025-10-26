@@ -49,8 +49,7 @@ public class PotionProvider {
         List<Text> killerLore = List.of(
                 Text.literal("Осторожно! Зелье Киллера"),
                 Text.literal("вызывает кровожадность"),
-                Text.literal("и повышает выносливость!"),
-                Text.literal("+12")
+                Text.literal("и повышает выносливость!")
         );
         potions.add(new CustomItem("[★] Зелье Киллера", null, Items.SPLASH_POTION, Defaultpricec.getPrice("Зелье Киллера"),
                 new PotionContentsComponent(Optional.empty(), Optional.of(0xFF0000), List.of(), Optional.empty()), killerLore));
