@@ -51,6 +51,7 @@ public class Defaultpricec {
         defaultPrices.put("Нагрудник крушителя", 500000);
         defaultPrices.put("Незеритовый блок", 50000);
         defaultPrices.put("Незеритовый слиток", 50000);
+        defaultPrices.put("Незеритовое улучшение", 50000);
         defaultPrices.put("Обсидиан", 1000);
         defaultPrices.put("Огненный смерч", 20000);
         defaultPrices.put("Отмычка к Сферам", 1000);

@@ -18,6 +18,7 @@ public class MiscProvider {
         misc.add(new KrushItem("Бирка", Items.NAME_TAG, new ItemStack(Items.NAME_TAG), Defaultpricec.getPrice("Бирка")));
         misc.add(new KrushItem("Трезубец", Items.TRIDENT, new ItemStack(Items.TRIDENT), Defaultpricec.getPrice("Трезубец")));
         misc.add(new KrushItem("Незеритовый слиток", Items.NETHERITE_INGOT, new ItemStack(Items.NETHERITE_INGOT), Defaultpricec.getPrice("Незеритовый слиток")));
+        misc.add(new KrushItem("Незеритовое улучшение", Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, new ItemStack(Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE), Defaultpricec.getPrice("Незеритовое улучшение")));
         misc.add(new KrushItem("Алмаз", Items.DIAMOND, new ItemStack(Items.DIAMOND), Defaultpricec.getPrice("Алмаз")));
         misc.add(new KrushItem("Алмазный блок", Items.DIAMOND_BLOCK, new ItemStack(Items.DIAMOND_BLOCK), Defaultpricec.getPrice("Алмазный блок")));
         misc.add(new KrushItem("Золотой слиток", Items.GOLD_INGOT, new ItemStack(Items.GOLD_INGOT), Defaultpricec.getPrice("Золотой слиток")));
@@ -55,6 +56,6 @@ public class MiscProvider {
         misc.add(new KrushItem("Ключ испытаний", Items.TRIAL_KEY, new ItemStack(Items.TRIAL_KEY), Defaultpricec.getPrice("Ключ испытаний")));
         misc.add(new KrushItem("Заряд ветра", Items.WIND_CHARGE, new ItemStack(Items.WIND_CHARGE), Defaultpricec.getPrice("Заряд ветра")));
         misc.add(new KrushItem("Стержень вихря", Items.BREEZE_ROD, new ItemStack(Items.BREEZE_ROD), Defaultpricec.getPrice("Стержень вихря")));
-      return misc;
+        return misc;
     }
 }
