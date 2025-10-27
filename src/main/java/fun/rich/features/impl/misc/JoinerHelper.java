@@ -75,7 +75,7 @@ public class JoinerHelper extends Module {
                     }
                 } else if (serverSelection.isSelected("SpookyTime Duels") && Network.isSpookyTime()) {
                     if (s.contains("» дуэли")) {
-                        if (System.currentTimeMillis() - lastActionTime > 50) {
+                        if (System.currentTimeMillis() - lastActionTime > 70) {
                             mc.player.inventory.selectedSlot = 0;
                             InventoryTask.clickSlot(i, 0, SlotActionType.PICKUP, false);
                             lastActionTime = System.currentTimeMillis();
@@ -83,7 +83,7 @@ public class JoinerHelper extends Module {
                         }
                     }
                     if (s.contains("липкий поршень")) {
-                        if (System.currentTimeMillis() - lastActionTime > 50) {
+                        if (System.currentTimeMillis() - lastActionTime > 70) {
                             InventoryTask.clickSlot(i, 0, SlotActionType.PICKUP, false);
                             lastActionTime = System.currentTimeMillis();
                         }

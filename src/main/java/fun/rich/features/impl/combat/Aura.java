@@ -340,27 +340,31 @@ public class Aura extends Module {
             controller.setFakeRotation(fakeRot);
         }
         fakeRotate = false;
-        shouldRotate = switch (aimMode.getSelected()) {
-            case "Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100);
-            case "Legit Snap" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
-            case "d" -> {
-                PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
-                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.2 && attackHandler.getAttackTimer().finished(300);
-                yield isJumpPeakOrFalling || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(25);
+        switch (aimMode.getSelected()) {
+
+
+            case "FunTime" -> {
+                if (attackHandler.canAttack(config, 5)) {
+                        controller.clear();
+                        controller.rotateTo(rotation, target, 40, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
+                }
             }
-            case "FunTime" -> attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(15);
-            case "SpookyTime" -> true;
-            case "CakeWorld" -> true;
-            case "ds" -> true;
-            case "ReallyWorld" -> true;
-            case "HvH" -> true;
-            case "Matrix" -> true;
+
             case "HolyWorld" -> {
-                PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(1);
-                boolean isJumpPeakOrFalling = !simulated.onGround && simulated.velocity.getY() <= 0.06;
-                yield isJumpPeakOrFalling && mc.player.distanceTo(Aura.getInstance().getTarget()) <= Aura.getInstance().getAttackRange().getValue() || attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100) ;
+                if (attackHandler.canAttack(config, 10) || !attackHandler.getAttackTimer().finished(150)) {
+                    controller.rotateTo(rotation, target, 10, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
+                }
             }
-            default -> false;
+
+            case "Legit Snap" -> {
+                if (attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100)) {
+                    controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
+                }
+            }
+
+            case "ReallyWorld", "SpookyTime", "CakeWorld" -> {
+                controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
+            }
         };
 
         if (shouldRotate && !aimMode.isSelected("TriggerBot")) {

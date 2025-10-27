@@ -69,7 +69,7 @@ public class StrikeManager implements QuickImports {
     private boolean didStopSprint = false;
     private static final long SPRINT_COOLDOWN_MS = 200;
     void handleAttack(StrikerConstructor.AttackPerpetratorConfigurable config) {
-        if (canAttack(config, 1)) preAttackEntity(config);
+        if (canAttack(config, 0)) preAttackEntity(config);
 
         boolean elytraMode = Aura.getInstance().getTarget() != null &&
                 Aura.getInstance().getTarget().isGliding() &&
@@ -83,25 +83,25 @@ public class StrikeManager implements QuickImports {
                 leadTicks = ElytraTarget.getInstance().elytraForward.getValue();
             }
 
-                Vec3d predictedPos = config.getTarget().getPos().add(targetVelocity.multiply(leadTicks));
-                Box predictedBox = new Box(
-                        predictedPos.x - config.getTarget().getWidth() / 2,
-                        predictedPos.y,
-                        predictedPos.z - config.getTarget().getWidth() / 2,
-                        predictedPos.x + config.getTarget().getWidth() / 2,
-                        predictedPos.y + config.getTarget().getHeight(),
-                        predictedPos.z + config.getTarget().getWidth() / 2
-                );
+            Vec3d predictedPos = config.getTarget().getPos().add(targetVelocity.multiply(leadTicks));
+            Box predictedBox = new Box(
+                    predictedPos.x - config.getTarget().getWidth() / 2,
+                    predictedPos.y,
+                    predictedPos.z - config.getTarget().getWidth() / 2,
+                    predictedPos.x + config.getTarget().getWidth() / 2,
+                    predictedPos.y + config.getTarget().getHeight(),
+                    predictedPos.z + config.getTarget().getWidth() / 2
+            );
 
-                Vec3d eyePos = mc.player.getEyePos();
-                Vec3d lookVec = TurnsConnection.INSTANCE.getRotation().toVector();
-                if (!predictedBox.raycast(eyePos, eyePos.add(lookVec.multiply(config.getMaximumRange()))).isPresent()) {
-                    return;
-                }
+            Vec3d eyePos = mc.player.getEyePos();
+            Vec3d lookVec = TurnsConnection.INSTANCE.getRotation().toVector();
+            if (!predictedBox.raycast(eyePos, eyePos.add(lookVec.multiply(config.getMaximumRange()))).isPresent()) {
+                return;
+            }
 
-            if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;
+            if (!RaycastAngle.rayTrace(config) || !canAttack(config, 0)) return;
         } else {
-            if (!RaycastAngle.rayTrace(config) || !canAttack(config, 1)) return;
+            if (!RaycastAngle.rayTrace(config) || !canAttack(config, 0)) return;
         }
 
         String sprintMode = getSprintMode();
@@ -210,28 +210,40 @@ public class StrikeManager implements QuickImports {
     }
 
     public boolean canAttack(StrikerConstructor.AttackPerpetratorConfigurable config, int ticks) {
-        for (int i = 0;i <= (int) .1;i++) {
-            if (canCrit(config, (int) .1)) {
+        for (int i = 0; i <= ticks; i++) {
+            if (canCrit(config, i)) {
                 return true;
             }
         }
         return false;
     }
-
     public boolean canCrit(StrikerConstructor.AttackPerpetratorConfigurable config, int ticks) {
         if (mc.player.isUsingItem() && !mc.player.getActiveItem().getItem().equals(Items.SHIELD) && config.isEatAndAttack()) {
             return false;
         }
 
-        if (!clickScheduler.isCooldownComplete(false, 1)) {
-            return false;
-        }
+        if (!clickScheduler.isCooldownComplete(false, 1)) { return false; }
 
         PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(ticks);
+        boolean noRestrict = !hasMovementRestrictions(simulated);
+        boolean critState = isPlayerInCriticalState(simulated, ticks);
+        if (Aura.getInstance().getSmartCrits().isValue() && Aura.getInstance().isState()) {
+            if (noRestrict) {
+                return critState || simulated.onGround;
+            } else {
+                return true;
+            }
+        }
+        if (TriggerBot.getInstance().smartCrits.isValue() && TriggerBot.getInstance().isState()) {
+            if (noRestrict) {
+                return critState || simulated.onGround;
+            } else {
+                return true;
+            }
+        }
         if (config.isOnlyCritical() && !hasMovementRestrictions(simulated)) {
             return isPlayerInCriticalState(simulated, ticks);
         }
-
         return true;
     }
 
@@ -247,18 +259,7 @@ public class StrikeManager implements QuickImports {
     }
 
     private boolean isPlayerInCriticalState(PlayerSimulation simulated, int ticks) {
-        boolean fall = simulated.fallDistance > 0 && (simulated.fallDistance < 0.08 || !PlayerSimulation.simulateLocalPlayer(ticks + 1).onGround);;
-        boolean smartCritsEnabled = false;
-        if (Aura.getInstance().isState()) {
-            smartCritsEnabled = Aura.getInstance().getSmartCrits().isValue();
-        } else if (TriggerBot.getInstance().isState()) {
-            smartCritsEnabled = TriggerBot.getInstance().smartCrits.isValue();
-        }
-
-        if (smartCritsEnabled && !mc.options.jumpKey.isPressed() && getTargetDistance() <= getAttackRange()) {
-            return simulated.onGround || (!simulated.onGround && fall);
-        }
-
+        boolean fall = simulated.fallDistance > 0;
         return !simulated.onGround && (fall);
     }
 }

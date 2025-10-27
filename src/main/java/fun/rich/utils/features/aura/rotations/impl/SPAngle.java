@@ -17,9 +17,15 @@ import fun.rich.utils.math.time.StopWatch;
 
 import java.security.SecureRandom;
 
+import static java.lang.Math.random;
+
 public class SPAngle extends RotateConstructor {
-    private boolean redirectDirectionChosen = false;
-    private boolean redirectToRight = true;
+    private static final float ROTATION_SPEED = 25.5F;
+    private static final float LIMIT_ROTATION_SPEED = 44.5F;
+    private static final float SHAKE_INTENSITY = 2.2F;
+    private static final float SHAKE_SPEED = 0.32F;
+    private static final float EPSILON = 1.0E-3F;
+    private static final SecureRandom RANDOM = new SecureRandom();
     public SPAngle() {
         super("SpookyTime");
     }
@@ -27,57 +33,61 @@ public class SPAngle extends RotateConstructor {
     @Override
     public Turns limitAngleChange(Turns currentAngle, Turns targetAngle, Vec3d vec3d, Entity entity) {
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
-        StopWatch attackTimer = attackHandler.getAttackTimer();
         Aura aura = Aura.getInstance();
-        int count = attackHandler.getCount();
 
-        Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
-        float yawDelta = angleDelta.getYaw();
-        float pitchDelta = angleDelta.getPitch();
-        float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
-        boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
-
-        float speed = canAttack ? 0.8f : 0.67F;
-        float jitterYaw = canAttack ? 0 : Calculate.getRandom(-4, 4);
-        float jitterPitch = canAttack ? 0 : Calculate.getRandom(-3, 3);
-
-        float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
-        float linePitch = (Math.abs(pitchDelta / rotationDifference) * 100);
-
-        float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
-        float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
-        if (entity instanceof LivingEntity livingEntity) {
-            double targetHeight = livingEntity.getHeight();
-            double torsoHeight = targetHeight * 0.26;
-            Vec3d playerPos = MinecraftClient.getInstance().player.getPos().add(0, 1.5, 0);
-            Vec3d entityPos = livingEntity.getPos();
-            double deltaY = (entityPos.y + torsoHeight) - playerPos.y;
-            double deltaX = entityPos.x - playerPos.x;
-            double deltaZ = entityPos.z - playerPos.z;
-            double horizontalDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-            float torsoPitch = (float) Math.toDegrees(-Math.atan2(deltaY, horizontalDistance));
-            torsoPitch = MathHelper.clamp(torsoPitch, -90.0f, 90.0f);
-
-            if (currentAngle.getPitch() > torsoPitch) {
-                float pitchAdjustment = Math.min(8.0f, currentAngle.getPitch() - torsoPitch);
-                movePitch -= pitchAdjustment;
-            }
-        }
+        Turns delta = MathAngle.calculateDelta(currentAngle, targetAngle);
+        float yawDelta = delta.getYaw();
+        float pitchDelta = delta.getPitch();
+        float length = (float) Math.hypot(yawDelta, pitchDelta);
+        final float ANGLE_LIMIT_YAW = (float) Math.min(Math.abs(yawDelta), 74 + (random() * 1.0329834f));
+        final float ANGLE_LIMIT_PITCH = (float) Math.min(Math.abs(pitchDelta), 32.334);
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
-        moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed), currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
 
-        float pitchSpeed = pitchDelta < 0 ? 0.55F : 0.8F;
-        moveAngle.setPitch(MathHelper.lerp(pitchSpeed, currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
-        return new Turns(moveAngle.getYaw(), moveAngle.getPitch());
+        if (length > EPSILON) {
+            boolean limitReached =  Math.abs(pitchDelta) >= ANGLE_LIMIT_PITCH;
+            float maxStep = limitReached ? LIMIT_ROTATION_SPEED : ROTATION_SPEED;
+            float step = Math.min(length, maxStep);
+            float scale = step / length;
+            if (!limitReached) {
+                scale = easeTowardsTarget(scale);
+            }
+
+            float newPitch = MathHelper.clamp(currentAngle.getPitch() + pitchDelta * scale, -89.0F, 90.0F);
+            moveAngle.setPitch(newPitch);
+        }
+
+        if (length > EPSILON) {
+            boolean limitReached =  Math.abs(yawDelta) >= ANGLE_LIMIT_YAW;
+            float maxStep = limitReached ? LIMIT_ROTATION_SPEED : ROTATION_SPEED;
+            float step = Math.min(length, maxStep);
+            float scale = step / length;
+            if (!limitReached) {
+                scale = easeTowardsTarget(scale);
+            }
+
+            float newYaw = currentAngle.getYaw() + yawDelta * scale;
+            moveAngle.setYaw(newYaw);
+        }
+
+        return moveAngle.adjustSensitivity();
     }
 
+    private void applyBodyMotion(Turns angle) {
+        if (mc.player == null) return;
 
-    private float randomLerp(float min, float max) {
-        return MathHelper.lerp(new SecureRandom().nextFloat(), min, max);
+        float time = (System.currentTimeMillis() % 12000L) / 1200.0F;
+        float swayPhase = time * SHAKE_SPEED * MathHelper.TAU;
+        float swayYaw = MathHelper.sin(swayPhase) * SHAKE_INTENSITY;
+
+        angle.setYaw(angle.getYaw() + swayYaw);
+    }
+
+    private float easeTowardsTarget(float value) {
+        return value * (0.5F + 0.5F * value);
     }
 
     @Override
     public Vec3d randomValue() {
-        return new Vec3d(0, 0, 0);
+        return new Vec3d(0.1, 0.1, 0.1);
     }
 }

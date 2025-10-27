@@ -36,7 +36,7 @@ public class LGAngle extends RotateConstructor {
             distanceToTarget = (float) mc.player.distanceTo(entity);
         }
 
-        float baseSpeed = canAttack ? 0.85F : 0.6F;
+        float baseSpeed = canAttack ? 1F : 0.6F;
 
         float speed = baseSpeed;
         if (distanceToTarget > 0 && distanceToTarget < 0.66F) {
@@ -45,15 +45,15 @@ public class LGAngle extends RotateConstructor {
         }
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (12 * Math.sin(System.currentTimeMillis() / 37D));
-        float jitterPitch = canAttack ? 0 : (float) (10 * Math.sin(System.currentTimeMillis() / 24D));
+        float jitterYaw = canAttack ? 0 : (float) (15 * Math.sin(System.currentTimeMillis() / 17D));
+        float jitterPitch = canAttack ? 0 : (float) (12 * Math.sin(System.currentTimeMillis() / 14D));
 
         if (!aura.isState() || aura.getTarget() == null && attackHandler.getAttackTimer().finished(500)) { jitterYaw = 0; jitterPitch = 0; }
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
         float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
-        moveAngle.setYaw(MathHelper.lerp(speed, currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
-        moveAngle.setPitch(MathHelper.lerp(speed, currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
+        moveAngle.setYaw(MathHelper.lerp(baseSpeed, currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
+        moveAngle.setPitch(MathHelper.lerp(baseSpeed, currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
 
         return moveAngle;
     }

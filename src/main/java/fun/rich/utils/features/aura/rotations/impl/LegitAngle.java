@@ -2,6 +2,7 @@ package fun.rich.utils.features.aura.rotations.impl;
 
 import fun.rich.Rich;
 import fun.rich.features.impl.combat.Aura;
+import fun.rich.utils.features.aura.point.Vector;
 import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
 import fun.rich.utils.features.aura.striking.StrikeManager;
 import fun.rich.utils.features.aura.utils.MathAngle;
@@ -18,42 +19,52 @@ public class LegitAngle extends RotateConstructor {
         super("Matrix");
     }
 
+    private boolean isPullingBack = false;
+    private long pullBackStartTime = 0;
+    private final SecureRandom random = new SecureRandom();
+
     @Override
     public Turns limitAngleChange(Turns currentAngle, Turns targetAngle, Vec3d vec3d, Entity entity) {
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         Aura aura = Aura.getInstance();
         StopWatch attackTimer = attackHandler.getAttackTimer();
-
+        if (entity !=null) {
+            Vec3d aimPoint = Vector.brain(entity, 1, 4);
+            targetAngle = MathAngle.calculateAngle(aimPoint);
+        }
         Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
         float yawDelta = angleDelta.getYaw(), pitchDelta = angleDelta.getPitch();
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        float preAttackSpeed = 1;
-        float postAttackSpeed = randomLerp(0, 0.5F);
-        float speed = canAttack ? preAttackSpeed : postAttackSpeed;
+        if (!attackTimer.finished(300) && !isPullingBack) {
+            isPullingBack = true;
+            pullBackStartTime = System.currentTimeMillis();
+        }
+
+        float preAttackSpeed = 0.75F;
+        float speed = !attackTimer.finished(450 ) ? 0.05F : 0.75F;
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * (canAttack ? 360 : 100));
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (randomLerp(0, 6) * Math.sin(System.currentTimeMillis() / randomLerp(15F, 145F)));
-        float jitterPitch = canAttack ? 0 : (float) (randomLerp(1, 3) * Math.sin(System.currentTimeMillis() / randomLerp(15F, 145F)));
+        float jitterYaw = canAttack ? 0 : (float) (12 * Math.sin(System.currentTimeMillis() / 45D));
+        float jitterPitch = canAttack ? 0 : (float) (3 * Math.sin(System.currentTimeMillis() / 55D));
 
         if (!aura.isState() || entity == null) {
-            speed = 0.7F;
             jitterYaw = 0;
             jitterPitch = 0;
         }
 
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
-        float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
+        float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch) ;
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
         moveAngle.setYaw(MathHelper.lerp(randomLerp(speed, speed), currentAngle.getYaw(), currentAngle.getYaw() + moveYaw) + jitterYaw);
-        moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed), currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
+        moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed), currentAngle.getPitch(), currentAngle.getPitch() + movePitch) +  jitterPitch);
 
         return moveAngle;
     }
 
     private float randomLerp(float min, float max) {
-        return MathHelper.lerp(new SecureRandom().nextFloat(), min, max);
+        return MathHelper.lerp(random.nextFloat(), min, max);
     }
 
     @Override

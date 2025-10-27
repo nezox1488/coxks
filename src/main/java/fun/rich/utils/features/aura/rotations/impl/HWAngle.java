@@ -35,7 +35,7 @@ public class HWAngle extends RotateConstructor {
         float pitchDelta = angleDelta.getPitch();
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
 
-        float speed = canAttack ? randomLerp(0.86F, 0.96F) : 0.4F;
+        float speed = canAttack ? randomLerp(0.86F, 0.96F) : randomLerp(0.1F, 0.4F);
 
         float maxRotation = 180F;
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * maxRotation);
@@ -61,6 +61,6 @@ public class HWAngle extends RotateConstructor {
 
     @Override
     public Vec3d randomValue() {
-        return new Vec3d(0, 0, 0);
+        return new Vec3d(0.1, 0.1, 0.1);
     }
 }
