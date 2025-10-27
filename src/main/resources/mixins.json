@@ -26,6 +26,7 @@
     "player.entity.PlayerEntityMixin",
     "player.input.KeyboardMixin",
     "player.inventory.GenericContainerScreenMixin",
+    "player.inventory.ShulkerBoxScreenMixin",
     "player.item.ArmorItemMixin",
     "player.item.ItemMixin"
   ],

@@ -1,4 +1,4 @@
-package fun.rich.features.impl.misc;
+package fun.rich.features.impl.player;
 
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import fun.rich.utils.interactions.inv.InventoryTask;
@@ -19,10 +19,10 @@ import fun.rich.events.item.ClickSlotEvent;
 public class ItemScroller extends Module {
     StopWatch stopWatch = new StopWatch();
 
-    SliderSettings scrollerSetting = new SliderSettings("Задержка прокрутки предметов", "Выберите задержку прокрутки предметов").setValue(100).range(0, 200);
+    SliderSettings scrollerSetting = new SliderSettings("Задержка прокрутки предметов", "Выберите задержку прокрутки предметов").setValue(50).range(0, 200);
 
     public ItemScroller() {
-        super("ItemScroller","Item Scroller", ModuleCategory.MISC);
+        super("ItemScroller","Item Scroller", ModuleCategory.PLAYER);
         setup(scrollerSetting);
     }
 
