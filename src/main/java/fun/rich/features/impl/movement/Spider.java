@@ -125,35 +125,61 @@ public class Spider extends Module {
         }
 
         if (mode.isSelected("Slime Block")) {
-            BlockPos blockX = new BlockPos(mc.player.getBlockX() + 1, mc.player.getBlockY(), mc.player.getBlockZ());
-            BlockPos blockZ = new BlockPos(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ() + 1);
-            BlockPos blockNegativeX = new BlockPos(mc.player.getBlockX() - 1, mc.player.getBlockY(), mc.player.getBlockZ());
-            BlockPos blockNegativeZ = new BlockPos(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ() - 1);
+            BlockPos playerPos = mc.player.getBlockPos();
+            BlockPos[] adjacentBlocks = {
+                    playerPos.east(),
+                    playerPos.west(),
+                    playerPos.north(),
+                    playerPos.south()
+            };
 
-            int slimeSlot = InventoryTask.getHotbarSlotId(i -> mc.player.getInventory().getStack(i).getItem() == Items.SLIME_BLOCK);
-            HitResult hitResult = mc.crosshairTarget;
-            if (!mc.player.horizontalCollision) return;
-            if (getBlockState(blockX) != Blocks.SLIME_BLOCK && getBlockState(blockZ) != Blocks.SLIME_BLOCK && getBlockState(blockNegativeX) != Blocks.SLIME_BLOCK && getBlockState(blockNegativeZ) != Blocks.SLIME_BLOCK) return;
-            if (mc.player.getVelocity().y <= -1) return;
+            boolean hasAdjacentSlime = false;
+            for (BlockPos pos : adjacentBlocks) {
+                if (getBlockState(pos) == Blocks.SLIME_BLOCK) {
+                    hasAdjacentSlime = true;
+                    break;
+                }
+            }
 
-            if (hitResult instanceof BlockHitResult blockHitResult) {
-                Direction side = blockHitResult.getSide();
+            if (!hasAdjacentSlime || !mc.player.horizontalCollision || mc.player.getVelocity().y <= -1) {
+                return;
+            }
 
-                if (getBlockState(blockHitResult.getBlockPos()) == Blocks.AIR) return;
+            HitResult crosshair = mc.crosshairTarget;
+            if (crosshair instanceof BlockHitResult blockHit) {
+                Direction face = blockHit.getSide();
+                BlockPos targetPos = blockHit.getBlockPos();
 
-                BlockHitResult result = new BlockHitResult(blockHitResult.getPos(), side, blockHitResult.getBlockPos(), false);
+                if (getBlockState(targetPos) == Blocks.AIR) {
+                    return;
+                }
 
-                mc.player.getInventory().setSelectedSlot(slimeSlot);
+                int slimeSlot = InventoryTask.getHotbarSlotId(i ->
+                        mc.player.getInventory().getStack(i).getItem() == Items.SLIME_BLOCK
+                );
 
-                startSetPitch = true;
-                mc.player.setPitch(54);
-                mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, result);
-                mc.player.swingHand(Hand.MAIN_HAND);
+                if (slimeSlot != -1) {
+                    mc.player.getInventory().setSelectedSlot(slimeSlot);
+                    startSetPitch = true;
+                    mc.player.setPitch(54);
 
-                if (cooldown >= 0.5) {
-                    mc.player.setVelocity(mc.player.getVelocity().x, 0.62, mc.player.getVelocity().z);
-                    cooldown = 0;
-                } else cooldown++;
+                    BlockHitResult interaction = new BlockHitResult(
+                            blockHit.getPos(),
+                            face,
+                            targetPos,
+                            false
+                    );
+
+                    mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, interaction);
+                    mc.player.swingHand(Hand.MAIN_HAND);
+
+                    if (cooldown >= 0.5) {
+                        mc.player.setVelocity(mc.player.getVelocity().x, 0.63, mc.player.getVelocity().z);
+                        cooldown = 0;
+                    } else {
+                        cooldown++;
+                    }
+                }
             }
         }
     }

@@ -58,7 +58,7 @@ public class AutoTotem extends Module {
     private int previousMainHandSlot = -1;
     private boolean needsReturn = false;
 
-    private enum Phase { READY, SLOWING_DOWN, WAITING_STOP, SWAP_TOTEM, AWAIT_SWITCH, RESTORE_SLOT, SPEEDING_UP, FINISH }
+    private enum Phase { READY, SLOWING_DOWN, SWAP_TOTEM, AWAIT_SWITCH, RESTORE_SLOT, SPEEDING_UP, FINISH }
 
     public AutoTotem() {
         super("AutoTotem", "Auto Totem", ModuleCategory.COMBAT);
@@ -203,22 +203,12 @@ public class AutoTotem extends Module {
                     keysOverridden = true;
                 }
                 if (elapsed > 1) {
-                    phase = Phase.WAITING_STOP;
-                }
-            }
-            case WAITING_STOP -> {
-                MC.player.input.movementForward = 0;
-                MC.player.input.movementSideways = 0;
-                double vx = Math.abs(MC.player.getVelocity().x);
-                double vz = Math.abs(MC.player.getVelocity().z);
-                if ((vx < 0.001 && vz < 0.001) || elapsed > 15) {
-                    playerFullyStopped = true;
                     phase = Phase.SWAP_TOTEM;
                     actionStartTime = System.currentTimeMillis();
                 }
             }
             case SWAP_TOTEM -> {
-                if (playerFullyStopped && elapsed > 25) {
+                if (elapsed > 25) {
                     if (totemSlot < 0) {
                         resetState();
                         return;

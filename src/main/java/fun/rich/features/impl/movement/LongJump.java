@@ -7,12 +7,14 @@ import fun.rich.features.module.setting.implement.SelectSetting;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.events.player.TickEvent;
+import fun.rich.utils.math.time.StopWatch;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.SlimeBlock;
+import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.BoatEntity;
@@ -27,6 +29,7 @@ public class LongJump extends Module {
     private boolean wasInShulkerScreen = false;
     @NonFinal
     private boolean wasOnSlimeBlock = false;
+    private StopWatch timer = new StopWatch();
     public LongJump() {
         super("LongJump", "Long Jump", ModuleCategory.MOVEMENT);
         setup(modeSetting);
@@ -37,16 +40,9 @@ public class LongJump extends Module {
     private void tickEvent(TickEvent event) {
         if (modeSetting.isSelected("Shulker Screen")) {
             if (mc.currentScreen instanceof ShulkerBoxScreen) {
-                float yaw = (float) Math.toRadians(mc.player.getYaw());
-                double x = -Math.sin(yaw) * 1.0;
-                double z = Math.cos(yaw) * 1.0;
-                mc.player.addVelocity(0, 1F, 0);
-            }
-            if (mc.currentScreen instanceof ShulkerBoxScreen) {
-                wasInShulkerScreen = true;
-            } else if (wasInShulkerScreen && mc.currentScreen == null && isNearShulkerBox()) {
-                mc.player.addVelocity(0, 2.4, 0);
-                wasInShulkerScreen = false;
+                StopWatch speedTimer = new StopWatch();
+                float speed = 0.9F;
+                mc.player.addVelocity(0, speed, 0);
             }
         }
 

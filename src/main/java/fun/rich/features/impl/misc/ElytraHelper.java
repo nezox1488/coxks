@@ -219,10 +219,11 @@ public class ElytraHelper extends Module {
 
     private void executeDefaultSwap() {
         Slot slot = chestPlate();
+
         if (slot != null) {
             Slot fireWork = InventoryTask.getSlot(Items.FIREWORK_ROCKET);
             boolean elytra = slot.getStack().getItem().equals(Items.ELYTRA);
-            InventoryTask.moveItem(slot, 6, false, false);
+            InventoryTask.moveItem(slot, 6, false, true);
 
             if (startSetting.isValue() && fireWork != null && elytra) {
                 script.cleanup().addTickStep(4, () -> {
@@ -265,7 +266,7 @@ public class ElytraHelper extends Module {
                 mc.player.input.movementSideways = 0;
                 if (mc.player.isSprinting()) {
                     mc.player.setSprinting(false);
-                    AutoSprint.tickStop = 5;
+                    AutoSprint.tickStop = 1;
                 }
                 if (!keysOverridden) {
                     mc.options.forwardKey.setPressed(false);
@@ -284,7 +285,7 @@ public class ElytraHelper extends Module {
                 mc.player.input.movementSideways = 0;
                 double velocityX = Math.abs(mc.player.getVelocity().x);
                 double velocityZ = Math.abs(mc.player.getVelocity().z);
-                if (velocityX < 0.001 && velocityZ < 0.001 || elapsed > 15) {
+                if (velocityX < 0.001 && velocityZ < 0.001 || elapsed > 1) {
                     playerFullyStopped = true;
                     elytraPhase = ElytraPhase.SWAP;
                 }
@@ -317,7 +318,7 @@ public class ElytraHelper extends Module {
             }
             case SPEEDING_UP -> {
                 long speedupElapsed = System.currentTimeMillis() - actionStartTime;
-                float speedupProgress = Math.min(1.0f, speedupElapsed / 20.0f);
+                float speedupProgress = Math.min(1.0f, speedupElapsed / 1.0f);
                 if (mc.player.input != null) {
                     boolean forward = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.forwardKey.getDefaultKey().getCode());
                     float targetForward = forward ? 1.0f : 0;
@@ -326,7 +327,7 @@ public class ElytraHelper extends Module {
                         mc.player.setSprinting(true);
                     }
                 }
-                if (speedupElapsed > 25) {
+                if (speedupElapsed > 1) {
                     elytraPhase = ElytraPhase.FINISHED;
                 }
             }

@@ -38,7 +38,7 @@ public class ClickPearl extends Module {
     private boolean keysOverridden = false;
     private boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed, wasJumpPressed;
 
-    private enum Phase { READY, SLOWING_DOWN, WAITING_STOP, PREPARE, AWAIT_SWITCH, THROW, SPEEDING_UP, FINISH }
+    private enum Phase { READY, SLOWING_DOWN, PREPARE, AWAIT_SWITCH, THROW, SPEEDING_UP, FINISH }
     private Phase phase = Phase.READY;
 
     public ClickPearl() {
@@ -47,7 +47,6 @@ public class ClickPearl extends Module {
     }
 
     @EventHandler
-
     public void onTick(TickEvent e) {
         if (MC.player == null || MC.world == null) {
             resetState();
@@ -113,25 +112,17 @@ public class ClickPearl extends Module {
                 MC.player.input.movementSideways = 0;
                 if (MC.player.isSprinting()) {
                     MC.player.setSprinting(false);
-                    AutoSprint.tickStop = 10;
+                    AutoSprint.tickStop = 1;
                 }
                 if (!keysOverridden) {
                     MC.options.forwardKey.setPressed(false);
                     MC.options.backKey.setPressed(false);
                     MC.options.leftKey.setPressed(false);
                     MC.options.rightKey.setPressed(false);
+                    MC.options.jumpKey.setPressed(false);
                     keysOverridden = true;
                 }
                 if (elapsed > 1) {
-                    phase = Phase.WAITING_STOP;
-                }
-            }
-            case WAITING_STOP -> {
-                MC.player.input.movementForward = 0;
-                MC.player.input.movementSideways = 0;
-                double velocityX = Math.abs(MC.player.getVelocity().x);
-                double velocityZ = Math.abs(MC.player.getVelocity().z);
-                if ((velocityX < 0.001 && velocityZ < 0.001) || elapsed > 15) {
                     phase = Phase.PREPARE;
                 }
             }

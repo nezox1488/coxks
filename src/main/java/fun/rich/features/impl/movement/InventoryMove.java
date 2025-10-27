@@ -6,6 +6,7 @@ import fun.rich.utils.interactions.inv.InventoryFlowManager;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket;
@@ -116,13 +117,8 @@ public class InventoryMove extends Module {
         switch (movePhase) {
             case SLOWING_DOWN -> {
                 if (mc.player != null && mc.player.input != null) {
-                    mc.player.input.movementForward *= 0.2f;
-                    mc.player.input.movementSideways *= 0.2f;
-                }
-
-                if (mc.player != null && mc.player.isSprinting()) {
-                    mc.player.setSprinting(false);
-                    AutoSprint.tickStop = 5;
+                    mc.player.input.movementForward = 0;
+                    mc.player.input.movementSideways = 0;
                 }
 
                 if (!keysOverridden) {
@@ -134,7 +130,7 @@ public class InventoryMove extends Module {
                     keysOverridden = true;
                 }
 
-                if (elapsed > 80) {
+                if (elapsed > 1) {
                     movePhase = MovePhase.SEND_PACKETS;
                     actionStartTime = System.currentTimeMillis();
                 }
@@ -159,7 +155,7 @@ public class InventoryMove extends Module {
 
             case SPEEDING_UP -> {
                 long speedupElapsed = System.currentTimeMillis() - actionStartTime;
-                float speedupProgress = Math.min(1.0f, speedupElapsed / 120.0f);
+                float speedupProgress = Math.min(1.0f, speedupElapsed / 1.0f);
 
                 if (keysOverridden) {
                     restoreKeyStates();
@@ -175,7 +171,7 @@ public class InventoryMove extends Module {
                     }
                 }
 
-                if (speedupElapsed > 150) {
+                if (speedupElapsed > 1) {
                     movePhase = MovePhase.FINISHED;
                 }
             }
@@ -218,6 +214,7 @@ public class InventoryMove extends Module {
 
     @EventHandler
     public void onClickSlot(ClickSlotEvent e) {
+
         if (mode.isSelected("Legit")) {
             SlotActionType actionType = e.getActionType();
             if ((packetsHeld || Simulations.hasPlayerMovement()) && ((e.getButton() == 1 && !actionType.equals(SlotActionType.SWAP) && !actionType.equals(SlotActionType.THROW)) || actionType.equals(SlotActionType.PICKUP_ALL))) {
