@@ -32,7 +32,7 @@ public class SnapAngle extends RotateConstructor {
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        float speed = 1;
+        float speed = 0.5f;
 
         float maxRotation = 360.0f;
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * maxRotation);

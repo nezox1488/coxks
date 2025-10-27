@@ -23,7 +23,6 @@ import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.events.packet.PacketEvent;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.Text;
-import org.apache.commons.lang3.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,18 +48,30 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardDisplaySlot;
 import java.util.HashMap;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.item.BlockItem;
+import net.minecraft.block.ShulkerBoxBlock;
+import net.minecraft.item.BundleItem;
+import net.minecraft.screen.GenericContainerScreenHandler;
+import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 
 public class AutoBuy extends Module {
     SelectSetting leaveType = new SelectSetting("Тип обхода", "Проверяющий").value("Проверяющий", "Покупающий");
     SliderSettings timer2 = new SliderSettings("Таймер обновления аукциона", "").setValue(500).range(250, 1000);
     BooleanSetting bypassDelay = new BooleanSetting("Обход задержки 1.16.5 анках", "");
     BooleanSetting bypassDelay1214 = new BooleanSetting("Обход задержки 1.21.4 анках", "");
+    BooleanSetting autoStorage = new BooleanSetting("Автоскладирование", "");
     TimerUtil openTimer = TimerUtil.create();
     TimerUtil updateTimer = TimerUtil.create();
     TimerUtil buyTimer = TimerUtil.create();
     TimerUtil switchTimer = TimerUtil.create();
     TimerUtil enterDelayTimer = TimerUtil.create();
     TimerUtil ahSpamTimer = TimerUtil.create();
+    TimerUtil hubCheckTimer = TimerUtil.create();
+    TimerUtil afkActionTimer = TimerUtil.create();
+    TimerUtil storageTimer = TimerUtil.create();
+    TimerUtil storageActionTimer = TimerUtil.create();
+    TimerUtil auctionEnterTimer = TimerUtil.create();
     ConcurrentLinkedQueue<BuyRequest> queue = new ConcurrentLinkedQueue<>();
     ConcurrentLinkedQueue<BuyRequest> priorityQueue = new ConcurrentLinkedQueue<>();
     Set<String> notFoundItems = ConcurrentHashMap.newKeySet();
@@ -92,6 +103,21 @@ public class AutoBuy extends Module {
     List<AutoBuyableItem> cachedEnabledItems = new ArrayList<>();
     TimerUtil serverSwitchCooldown = TimerUtil.create();
     Map<String, Long> lastMessageTime = new ConcurrentHashMap<>();
+    boolean inHub = false;
+    boolean wasInAfk = false;
+    boolean performingAfkAction = false;
+    int afkActionStep = 0;
+    boolean storageActive = false;
+    int storageStep = 0;
+    int storageAttempts = 0;
+    boolean waitingForAuctionClose = false;
+    boolean searchingShulker = false;
+    boolean buyingShulker = false;
+    int currentShulkerIndex = 0;
+    List<Integer> shulkerSlots = new ArrayList<>();
+    int itemTransferIndex = 0;
+    boolean allShulkersFilled = false;
+    boolean canStartStorage = false;
 
     public AutoBuy() {
         super("Auto Buy", "Auto Buy", ModuleCategory.MISC);
@@ -121,8 +147,9 @@ public class AutoBuy extends Module {
         timer2.visible(() -> leaveType.isSelected("Покупающий"));
         bypassDelay.visible(() -> leaveType.isSelected("Покупающий"));
         bypassDelay1214.visible(() -> leaveType.isSelected("Покупающий"));
+        autoStorage.visible(() -> leaveType.isSelected("Покупающий"));
 
-        setup(leaveType, timer2, bypassDelay, bypassDelay1214);
+        setup(leaveType, timer2, bypassDelay, bypassDelay1214, autoStorage);
     }
 
     @Override
@@ -135,6 +162,11 @@ public class AutoBuy extends Module {
         enterDelayTimer.resetCounter();
         ahSpamTimer.resetCounter();
         serverSwitchCooldown.resetCounter();
+        hubCheckTimer.resetCounter();
+        afkActionTimer.resetCounter();
+        storageTimer.resetCounter();
+        storageActionTimer.resetCounter();
+        auctionEnterTimer.resetCounter();
         open = false;
         serverInAuction = false;
         running = true;
@@ -149,6 +181,21 @@ public class AutoBuy extends Module {
         waitingForServerLoad = false;
         currentServerIndex = 0;
         cachedEnabledItems.clear();
+        inHub = false;
+        wasInAfk = false;
+        performingAfkAction = false;
+        afkActionStep = 0;
+        storageActive = false;
+        storageStep = 0;
+        storageAttempts = 0;
+        waitingForAuctionClose = false;
+        searchingShulker = false;
+        buyingShulker = false;
+        currentShulkerIndex = 0;
+        shulkerSlots.clear();
+        itemTransferIndex = 0;
+        allShulkersFilled = false;
+        canStartStorage = false;
         if (leaveType.isSelected("Покупающий") && (bypassDelay.isValue() || bypassDelay1214.isValue())) {
             mc.options.pauseOnLostFocus = false;
         }
@@ -163,6 +210,16 @@ public class AutoBuy extends Module {
         executorService.shutdownNow();
         executorService = Executors.newFixedThreadPool(10);
         stopAll();
+        resetMovementKeys();
+    }
+
+    private void resetMovementKeys() {
+        if (mc.options != null) {
+            mc.options.forwardKey.setPressed(false);
+            mc.options.backKey.setPressed(false);
+            mc.options.leftKey.setPressed(false);
+            mc.options.rightKey.setPressed(false);
+        }
     }
 
     private void cacheEnabledItems() {
@@ -247,10 +304,6 @@ public class AutoBuy extends Module {
                     clientInAuction.put(conn, true);
                 } else if (line.equals("leave_auction")) {
                     clientInAuction.put(conn, false);
-                } else if (line.startsWith("switch_server:")) {
-                    String cmd = line.substring(14);
-                    mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(cmd, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
-                    waitingForServerLoad = true;
                 } else if (line.equals("connect")) {
                 }
             }
@@ -274,6 +327,7 @@ public class AutoBuy extends Module {
                     String cmd = line.substring(14);
                     mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(cmd, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
                     waitingForServerLoad = true;
+                    hubCheckTimer.resetCounter();
                 }
             }
         } catch (IOException ignored) {}
@@ -343,6 +397,24 @@ public class AutoBuy extends Module {
         return -1;
     }
 
+    private boolean isInHub() {
+        if (mc.world == null) return true;
+        Scoreboard scoreboard = mc.world.getScoreboard();
+        ScoreboardObjective objective = scoreboard.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR);
+        if (objective == null) {
+            return true;
+        }
+        String displayName = objective.getDisplayName().getString();
+        return !displayName.contains("Анархия-");
+    }
+
+    private boolean isInAfkMode() {
+        if (mc.inGameHud == null) return false;
+        return mc.inGameHud.getBossBarHud().bossBars.values().stream()
+                .map(bar -> bar.getName().getString().toLowerCase())
+                .anyMatch(text -> text.contains("afk"));
+    }
+
     private String getNextServer(List<String> servers) {
         if (servers.isEmpty()) return null;
 
@@ -388,7 +460,482 @@ public class AutoBuy extends Module {
             waitingForServerLoad = true;
             serverSwitchCooldown.resetCounter();
             switchTimer.resetCounter();
-            ChatMessage.brandmessage("Переход на сервер: " + newServer);
+            hubCheckTimer.resetCounter();
+        }
+    }
+
+    private void joinAnarchyFromHub() {
+        List<String> availableServers;
+        if (bypassDelay1214.isValue()) {
+            availableServers = anarchyServers214;
+        } else if (bypassDelay.isValue()) {
+            availableServers = anarchyServers165;
+        } else {
+            return;
+        }
+
+        if (!availableServers.isEmpty()) {
+            String server = availableServers.get(0);
+            mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket(server, Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
+            if (leaveType.isSelected("Покупающий")) {
+                sendToAllClients("switch_server:" + server);
+            }
+            waitingForServerLoad = true;
+            hubCheckTimer.resetCounter();
+        }
+    }
+
+    private void handleAfkMode() {
+        boolean currentlyInAfk = isInAfkMode();
+
+        if (currentlyInAfk && !wasInAfk) {
+            performingAfkAction = true;
+            afkActionStep = 0;
+            afkActionTimer.resetCounter();
+        }
+
+        wasInAfk = currentlyInAfk;
+
+        if (performingAfkAction) {
+            if (afkActionTimer.hasTimeElapsed(100)) {
+                switch (afkActionStep) {
+                    case 0:
+                        mc.options.forwardKey.setPressed(true);
+                        afkActionStep++;
+                        afkActionTimer.resetCounter();
+                        break;
+                    case 1:
+                        mc.options.forwardKey.setPressed(false);
+                        afkActionStep++;
+                        afkActionTimer.resetCounter();
+                        break;
+                    case 2:
+                        float currentYaw = mc.player.getYaw();
+                        mc.player.setYaw(currentYaw + 45);
+                        afkActionStep++;
+                        afkActionTimer.resetCounter();
+                        break;
+                    case 3:
+                        performingAfkAction = false;
+                        afkActionStep = 0;
+                        break;
+                }
+            }
+        }
+    }
+
+    private int getFreeInventorySlots() {
+        int freeSlots = 0;
+        for (int i = 9; i < 36; i++) {
+            if (mc.player.getInventory().getStack(i).isEmpty()) {
+                freeSlots++;
+            }
+        }
+        return freeSlots;
+    }
+
+    private boolean isShulkerBox(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (stack.getItem() instanceof BlockItem blockItem) {
+            return blockItem.getBlock() instanceof ShulkerBoxBlock;
+        }
+        return false;
+    }
+
+    private boolean isBag(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        return stack.getItem() instanceof BundleItem;
+    }
+
+    private int countTotalShulkers() {
+        int count = 0;
+        for (int i = 0; i < 36; i++) {
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (isShulkerBox(stack)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int getFirstFreeHotbarSlot() {
+        for (int i = 0; i < 3; i++) {
+            if (mc.player.getInventory().getStack(i).isEmpty()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private List<Integer> findShulkerSlotsInHotbar() {
+        List<Integer> slots = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (isShulkerBox(stack)) {
+                slots.add(i);
+            }
+        }
+        return slots;
+    }
+
+    private boolean isShulkerFull(List<Slot> slots) {
+        for (int i = 0; i < 27; i++) {
+            if (i < slots.size() && slots.get(i).getStack().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void handleAutoStorage() {
+        if (!autoStorage.isValue()) return;
+        if (!leaveType.isSelected("Покупающий")) return;
+        if (allShulkersFilled) return;
+        if (!canStartStorage) return;
+
+        if (!storageActive) {
+            int freeSlots = getFreeInventorySlots();
+            if (freeSlots <= 2) {
+                storageActive = true;
+                storageStep = 0;
+                storageAttempts = 0;
+                waitingForAuctionClose = false;
+                searchingShulker = false;
+                buyingShulker = false;
+                currentShulkerIndex = 0;
+                shulkerSlots.clear();
+                itemTransferIndex = 0;
+                storageTimer.resetCounter();
+                storageActionTimer.resetCounter();
+            }
+            return;
+        }
+
+        if (!storageActionTimer.hasTimeElapsed(300)) {
+            return;
+        }
+
+        switch (storageStep) {
+            case 0:
+                if (mc.currentScreen instanceof GenericContainerScreen) {
+                    mc.player.closeHandledScreen();
+                    waitingForAuctionClose = true;
+                    storageAttempts = 0;
+                    storageTimer.resetCounter();
+                    storageStep = 1;
+                } else {
+                    storageStep = 2;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 1:
+                if (!(mc.currentScreen instanceof GenericContainerScreen)) {
+                    waitingForAuctionClose = false;
+                    storageTimer.resetCounter();
+                    storageStep = 15;
+                } else if (storageTimer.hasTimeElapsed(5000)) {
+                    waitingForAuctionClose = false;
+                    storageTimer.resetCounter();
+                    storageStep = 15;
+                } else {
+                    storageAttempts++;
+                    if (storageAttempts > 3) {
+                        mc.player.closeHandledScreen();
+                        storageTimer.resetCounter();
+                    }
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 15:
+                if (storageTimer.hasTimeElapsed(500)) {
+                    storageStep = 2;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 2:
+                shulkerSlots = findShulkerSlotsInHotbar();
+                int totalShulkers = countTotalShulkers();
+                if (totalShulkers >= 3) {
+                    storageStep = 20;
+                } else {
+                    storageStep = 3;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 3:
+                int currentTotalShulkers = countTotalShulkers();
+                if (currentTotalShulkers >= 3) {
+                    storageStep = 20;
+                } else {
+                    if (!searchingShulker) {
+                        mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket("/ah search Шалкер пустой", Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
+                        searchingShulker = true;
+                        storageTimer.resetCounter();
+                    }
+                    if (mc.currentScreen instanceof GenericContainerScreen) {
+                        storageTimer.resetCounter();
+                        storageStep = 35;
+                    } else if (storageTimer.hasTimeElapsed(6000)) {
+                        searchingShulker = false;
+                        storageStep = 3;
+                    }
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 35:
+                if (storageTimer.hasTimeElapsed(500)) {
+                    storageStep = 4;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 4:
+                if (mc.currentScreen instanceof GenericContainerScreen screen) {
+                    List<Slot> slots = screen.getScreenHandler().slots;
+                    Slot cheapestShulker = null;
+                    int lowestPrice = 100001;
+                    for (int i = 0; i <= 44; i++) {
+                        Slot slot = slots.get(i);
+                        ItemStack stack = slot.getStack();
+                        if (isShulkerBox(stack)) {
+                            int price = AuctionUtils.getPrice(stack);
+                            if (price > 0 && price <= 100000 && price < lowestPrice) {
+                                cheapestShulker = slot;
+                                lowestPrice = price;
+                            }
+                        }
+                    }
+                    if (cheapestShulker != null) {
+                        int syncId = screen.getScreenHandler().syncId;
+                        mc.interactionManager.clickSlot(syncId, cheapestShulker.id, 0, SlotActionType.QUICK_MOVE, mc.player);
+                        buyingShulker = true;
+                        storageTimer.resetCounter();
+                        storageStep = 45;
+                    } else {
+                        int syncId = screen.getScreenHandler().syncId;
+                        mc.interactionManager.clickSlot(syncId, 49, 0, SlotActionType.QUICK_MOVE, mc.player);
+                        storageTimer.resetCounter();
+                    }
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 45:
+                if (storageTimer.hasTimeElapsed(1500)) {
+                    if (mc.currentScreen instanceof GenericContainerScreen) {
+                        mc.player.closeHandledScreen();
+                    }
+                    storageTimer.resetCounter();
+                    storageStep = 46;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 46:
+                if (storageTimer.hasTimeElapsed(500)) {
+                    searchingShulker = false;
+                    buyingShulker = false;
+                    storageStep = 2;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 20:
+                for (int i = 9; i < 36; i++) {
+                    ItemStack stack = mc.player.getInventory().getStack(i);
+                    if (isShulkerBox(stack)) {
+                        int freeHotbarSlot = getFirstFreeHotbarSlot();
+                        if (freeHotbarSlot != -1) {
+                            if (mc.currentScreen == null) {
+                                mc.setScreen(new InventoryScreen(mc.player));
+                                storageTimer.resetCounter();
+                                storageStep = 21;
+                            } else {
+                                storageStep = 21;
+                            }
+                            return;
+                        }
+                    }
+                }
+                storageStep = 5;
+                storageActionTimer.resetCounter();
+                break;
+
+            case 21:
+                if (storageTimer.hasTimeElapsed(300)) {
+                    boolean moved = false;
+                    for (int i = 9; i < 36; i++) {
+                        ItemStack stack = mc.player.getInventory().getStack(i);
+                        if (isShulkerBox(stack)) {
+                            int freeHotbarSlot = getFirstFreeHotbarSlot();
+                            if (freeHotbarSlot != -1) {
+                                mc.interactionManager.clickSlot(mc.player.currentScreenHandler.syncId, i, freeHotbarSlot, SlotActionType.SWAP, mc.player);
+                                moved = true;
+                                storageTimer.resetCounter();
+                                break;
+                            }
+                        }
+                    }
+                    if (moved) {
+                        storageStep = 22;
+                    } else {
+                        storageStep = 5;
+                    }
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 22:
+                if (storageTimer.hasTimeElapsed(300)) {
+                    if (mc.currentScreen != null) {
+                        mc.player.closeHandledScreen();
+                        storageTimer.resetCounter();
+                        storageStep = 23;
+                    } else {
+                        storageStep = 20;
+                    }
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 23:
+                if (storageTimer.hasTimeElapsed(300)) {
+                    storageStep = 20;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 5:
+                shulkerSlots = findShulkerSlotsInHotbar();
+                if (shulkerSlots.isEmpty()) {
+                    storageActive = false;
+                    allShulkersFilled = false;
+                    storageStep = 0;
+                } else {
+                    currentShulkerIndex = 0;
+                    storageStep = 6;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 6:
+                if (mc.currentScreen instanceof GenericContainerScreen) {
+                    mc.player.closeHandledScreen();
+                    storageTimer.resetCounter();
+                    storageStep = 65;
+                } else {
+                    storageStep = 7;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 65:
+                if (storageTimer.hasTimeElapsed(300)) {
+                    storageStep = 7;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 7:
+                if (storageTimer.hasTimeElapsed(300)) {
+                    int hotbarSlot = shulkerSlots.get(currentShulkerIndex);
+                    mc.player.getInventory().selectedSlot = hotbarSlot;
+                    storageTimer.resetCounter();
+                    storageStep = 8;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 8:
+                if (storageTimer.hasTimeElapsed(200)) {
+                    mc.options.useKey.setPressed(true);
+                    storageTimer.resetCounter();
+                    storageStep = 9;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 9:
+                if (storageTimer.hasTimeElapsed(100)) {
+                    mc.options.useKey.setPressed(false);
+                    storageTimer.resetCounter();
+                    storageStep = 10;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 10:
+                if (mc.currentScreen instanceof ShulkerBoxScreen) {
+                    itemTransferIndex = 0;
+                    storageTimer.resetCounter();
+                    storageStep = 11;
+                } else if (storageTimer.hasTimeElapsed(3000)) {
+                    storageStep = 6;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 11:
+                if (storageTimer.hasTimeElapsed(500)) {
+                    storageStep = 12;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 12:
+                if (mc.currentScreen instanceof ShulkerBoxScreen screen) {
+                    List<Slot> slots = screen.getScreenHandler().slots;
+
+                    if (isShulkerFull(slots)) {
+                        mc.player.closeHandledScreen();
+                        storageTimer.resetCounter();
+                        storageStep = 13;
+                        storageActionTimer.resetCounter();
+                        break;
+                    }
+
+                    boolean itemMoved = false;
+                    for (int i = 27; i < slots.size(); i++) {
+                        Slot slot = slots.get(i);
+                        ItemStack stack = slot.getStack();
+                        if (!stack.isEmpty() && !isShulkerBox(stack) && !isBag(stack)) {
+                            int syncId = screen.getScreenHandler().syncId;
+                            mc.interactionManager.clickSlot(syncId, slot.id, 0, SlotActionType.QUICK_MOVE, mc.player);
+                            itemMoved = true;
+                            storageTimer.resetCounter();
+                            break;
+                        }
+                    }
+
+                    if (!itemMoved) {
+                        mc.player.closeHandledScreen();
+                        storageTimer.resetCounter();
+                        storageStep = 13;
+                    }
+                } else {
+                    storageStep = 10;
+                }
+                storageActionTimer.resetCounter();
+                break;
+
+            case 13:
+                if (storageTimer.hasTimeElapsed(300)) {
+                    currentShulkerIndex++;
+                    if (currentShulkerIndex >= shulkerSlots.size()) {
+                        allShulkersFilled = true;
+                        storageActive = false;
+                        storageStep = 0;
+                    } else {
+                        storageStep = 6;
+                    }
+                }
+                storageActionTimer.resetCounter();
+                break;
         }
     }
 
@@ -399,7 +946,6 @@ public class AutoBuy extends Module {
             String message = content.getString();
 
             if (message.contains("Вы уже подключены к этому серверу!")) {
-                ChatMessage.brandmessage("Вижу сообщение: Вы уже подключены к этому серверу!");
                 switchToNextServer();
                 return;
             }
@@ -431,11 +977,37 @@ public class AutoBuy extends Module {
         if (mc.player == null || mc.world == null) return;
         if (!autoBuyManager.isEnabled()) return;
 
+        handleAfkMode();
+        handleAutoStorage();
+
+        if (storageActive) {
+            return;
+        }
+
+        boolean wasInHub = inHub;
+        inHub = isInHub();
+
+        if (inHub && hubCheckTimer.hasTimeElapsed(3000)) {
+            if ((bypassDelay.isValue() || bypassDelay1214.isValue())) {
+                joinAnarchyFromHub();
+            }
+            hubCheckTimer.resetCounter();
+        }
+
+        if (wasInHub && !inHub) {
+            waitingForServerLoad = false;
+            justEntered = true;
+            enterDelayTimer.resetCounter();
+            switchTimer.resetCounter();
+            allShulkersFilled = false;
+        }
+
         if (waitingForServerLoad) {
             waitingForServerLoad = false;
             justEntered = true;
             enterDelayTimer.resetCounter();
             switchTimer.resetCounter();
+            allShulkersFilled = false;
         }
 
         if ((bypassDelay.isValue() || bypassDelay1214.isValue())) {
@@ -445,7 +1017,7 @@ public class AutoBuy extends Module {
                     ahSpamTimer.resetCounter();
                 }
             }
-            if (spammingAh) {
+            if (spammingAh && !performingAfkAction) {
                 if (ahSpamTimer.hasTimeElapsed(1250)) {
                     if (mc.player.networkHandler != null) {
                         mc.player.networkHandler.sendPacket(new ChatMessageC2SPacket("/ah", Instant.now(), 0L, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
@@ -466,17 +1038,25 @@ public class AutoBuy extends Module {
                     openTimer.resetCounter();
                     updateTimer.resetCounter();
                     buyTimer.resetCounter();
+                    auctionEnterTimer.resetCounter();
                     serverInAuction = true;
                     notFoundItems.clear();
                     processedItems.clear();
                     sentItems.clear();
                     justEntered = false;
                     spammingAh = false;
+                    canStartStorage = false;
                     cacheEnabledItems();
                     if (leaveType.isSelected("Проверяющий") && clientOut != null) {
                         clientOut.println("enter_auction");
                     }
                     return;
+                }
+
+                if (autoStorage.isValue() && !canStartStorage) {
+                    if (auctionEnterTimer.hasTimeElapsed(5000)) {
+                        canStartStorage = true;
+                    }
                 }
 
                 if (leaveType.isSelected("Покупающий")) {
@@ -554,7 +1134,6 @@ public class AutoBuy extends Module {
                             String itemName = entry.getKey();
                             Long lastTime = lastMessageTime.get(itemName);
                             if (lastTime == null || currentTime - lastTime > 2000) {
-                                ChatMessage.brandmessage("Вижу предмет: " + itemName + " x" + entry.getValue());
                                 lastMessageTime.put(itemName, currentTime);
                             }
                         }
@@ -576,6 +1155,7 @@ public class AutoBuy extends Module {
                 if (open) {
                     open = false;
                     serverInAuction = false;
+                    canStartStorage = false;
                     notFoundItems.clear();
                     processedItems.clear();
                     sentItems.clear();
@@ -588,6 +1168,7 @@ public class AutoBuy extends Module {
             if (open) {
                 open = false;
                 serverInAuction = false;
+                canStartStorage = false;
                 notFoundItems.clear();
                 processedItems.clear();
                 sentItems.clear();
@@ -598,7 +1179,7 @@ public class AutoBuy extends Module {
         }
 
         if (leaveType.isSelected("Покупающий") && (bypassDelay.isValue() || bypassDelay1214.isValue())) {
-            if (switchTimer.hasTimeElapsed(50000)) {
+            if (!inHub && switchTimer.hasTimeElapsed(60000)) {
                 switchToNextServer();
             }
         }
@@ -665,11 +1246,9 @@ public class AutoBuy extends Module {
 
     private void sendToAllClients(String message) {
         for (Socket conn : connections) {
-            if (clientInAuction.getOrDefault(conn, false)) {
-                PrintWriter out = outs.get(conn);
-                if (out != null) {
-                    out.println(message);
-                }
+            PrintWriter out = outs.get(conn);
+            if (out != null) {
+                out.println(message);
             }
         }
     }
