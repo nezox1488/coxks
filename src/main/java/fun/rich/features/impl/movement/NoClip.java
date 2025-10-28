@@ -88,7 +88,6 @@ public class NoClip extends Module {
     }
 
     @EventHandler
-
     public void onPacket(PacketEvent event) {
         if (!state) return;
         double x = mc.player.getX();

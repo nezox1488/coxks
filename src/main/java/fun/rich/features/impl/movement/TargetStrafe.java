@@ -1,5 +1,6 @@
 package fun.rich.features.impl.movement;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.events.player.InputEvent;
 import fun.rich.events.player.TickEvent;
 import fun.rich.features.impl.combat.Aura;
@@ -173,6 +174,7 @@ public class TargetStrafe extends Module {
 
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent event) {
         if (mc.player == null || mc.world == null) return;
 

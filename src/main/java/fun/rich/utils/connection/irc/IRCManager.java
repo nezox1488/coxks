@@ -15,7 +15,7 @@ public class IRCManager {
         return client;
     }
 
-
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void connect() {
         if (isConnecting.get()) {
             return;

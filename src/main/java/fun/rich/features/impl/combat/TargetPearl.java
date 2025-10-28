@@ -65,7 +65,7 @@ public class TargetPearl extends Module {
     }
 
     @EventHandler
-
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onRotationUpdate(RotationUpdateEvent e) {
         if (e.getType() == EventType.PRE) {
             LivingEntity target = Aura.getInstance().getLastTarget();

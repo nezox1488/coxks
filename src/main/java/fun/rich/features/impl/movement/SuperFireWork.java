@@ -30,7 +30,7 @@ public class SuperFireWork extends Module {
 
 
     @EventHandler
-
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onFirework(FireworkEvent e) {
         if (modeSetting.isSelected("Grim")) {
             int ff = TurnsConnection.INSTANCE.getRotation().getYaw() > 0F ? 45 : -45;

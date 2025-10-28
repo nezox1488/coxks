@@ -1,5 +1,6 @@
 package fun.rich.features.impl.misc;
 
+import antidaunleak.api.annotation.Native;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,6 +23,7 @@ public class ClickFriend extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onKey(KeyEvent e) {
         if (e.isKeyDown(friendBind.getKey()) && mc.crosshairTarget instanceof EntityHitResult result && result.getEntity() instanceof PlayerEntity player) {
             if (FriendUtils.isFriend(player)) FriendUtils.removeFriend(player);

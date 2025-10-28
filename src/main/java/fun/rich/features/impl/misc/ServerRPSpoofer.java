@@ -34,7 +34,7 @@ public class ServerRPSpoofer extends Module {
     }
     
     @EventHandler
-
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onTick(TickEvent e) {
         ClientPlayNetworkHandler networkHandler = mc.getNetworkHandler();
         if (networkHandler != null) {

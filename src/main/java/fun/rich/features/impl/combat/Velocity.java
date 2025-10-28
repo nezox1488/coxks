@@ -43,7 +43,6 @@ public class Velocity extends Module {
     }
 
     @EventHandler
-
     public void onPacket(PacketEvent e) {
         if (!state) return;
         if (e.getType() != PacketEvent.Type.RECEIVE) return;

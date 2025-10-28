@@ -1,5 +1,6 @@
 package fun.rich.features.impl.misc;
 
+import antidaunleak.api.annotation.Native;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
@@ -32,6 +33,7 @@ public class AutoTpAccept extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onPacket(PacketEvent e) {
         if (e.getPacket() instanceof GameMessageS2CPacket m) {
             String message = m.content().getString();

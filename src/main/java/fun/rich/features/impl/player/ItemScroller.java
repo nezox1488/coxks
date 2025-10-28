@@ -1,5 +1,6 @@
 package fun.rich.features.impl.player;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import fun.rich.utils.interactions.inv.InventoryTask;
 import lombok.AccessLevel;
@@ -27,6 +28,7 @@ public class ItemScroller extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onHandledScreen(HandledScreenEvent e) {
         Slot hoverSlot = e.getSlotHover();
         SlotActionType actionType = PlayerInteractionHelper.isKey(mc.options.dropKey) ? SlotActionType.THROW : PlayerInteractionHelper.isKey(mc.options.attackKey) ? SlotActionType.QUICK_MOVE : null;

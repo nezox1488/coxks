@@ -1,5 +1,6 @@
 package fun.rich.features.impl.misc;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.events.keyboard.KeyEvent;
 import fun.rich.events.player.InputEvent;
 import fun.rich.events.player.TickEvent;
@@ -87,6 +88,7 @@ public class ElytraHelper extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent e) {
         script.update();
 

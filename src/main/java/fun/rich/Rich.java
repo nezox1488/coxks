@@ -1,6 +1,7 @@
 package fun.rich;
 
 import antidaunleak.api.annotation.Native;
+import antidaunleak.api.UserProfile;
 import fun.rich.commands.manager.CommandRepository;
 import fun.rich.utils.client.managers.file.exception.FileProcessingException;
 import fun.rich.utils.client.chat.ChatMessage;
@@ -9,6 +10,7 @@ import fun.rich.utils.connection.auracheckft.FTCheckClient;
 import fun.rich.utils.connection.irc.IRCManager;
 import fun.rich.utils.connection.tps.TPSCalculate;
 import fun.rich.utils.display.scissor.ScissorAssist;
+import fun.rich.utils.client.webhook.WebhookManager;
 import net.fabricmc.api.ModInitializer;
 import fun.rich.common.repository.box.BoxESPRepository;
 import fun.rich.common.repository.rct.RCTRepository;
@@ -56,6 +58,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@Native
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Rich implements ModInitializer {
     @Getter
@@ -90,6 +93,7 @@ public class Rich implements ModInitializer {
     boolean reconnecting = false;
 
     @Override
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onInitialize() {
         instance = this;
         initClientInfoProvider();
@@ -109,8 +113,46 @@ public class Rich implements ModInitializer {
         MenuScreen menuScreen = new MenuScreen();
         menuScreen.initialize();
         initialized = true;
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(3000);
+                sendStartupWebhook();
+            } catch (Exception e) {
+            }
+        }).start();
     }
 
+    private void sendStartupWebhook() {
+        try {
+            String username = UserProfile.getInstance().profile("username");
+            String uid = UserProfile.getInstance().profile("uid");
+            String role = UserProfile.getInstance().profile("role");
+            String clientName = clientInfoProvider.clientName();
+
+            String discordName = "Not Connected";
+            String discordAvatar = "Not Connected";
+
+            if (discordManager != null && discordManager.getInfo() != null) {
+                String tempName = discordManager.getInfo().userName();
+                String tempAvatar = discordManager.getInfo().avatarUrl();
+
+                if (tempName != null && !tempName.isEmpty() && !tempName.equals("Unknown")) {
+                    discordName = tempName;
+                }
+
+                if (tempAvatar != null && !tempAvatar.isEmpty()) {
+                    discordAvatar = tempAvatar;
+                }
+            }
+
+            WebhookManager.sendClientStartWebhook(username, uid, role, discordName, discordAvatar, clientName);
+        } catch (Exception e) {
+            Logger.error("Failed to send startup webhook: " + e.getMessage());
+        }
+    }
+
+    @Native(type = Native.Type.VMProtectBeginMutation)
     private void loadCurrentAccount() {
         if (accountRepository.currentAccount != null && !accountRepository.currentAccount.isEmpty()) {
             Account currentAcc = accountRepository.accountList.stream()
@@ -124,6 +166,7 @@ public class Rich implements ModInitializer {
         }
     }
 
+    @Native(type = Native.Type.VMProtectBeginMutation)
     private void setSession(Account account) {
         Session newSession = new Session(account.name, UUID.fromString(account.uuid), "0", Optional.empty(), Optional.empty(), Session.AccountType.MOJANG);
         IMinecraftClient mca = (IMinecraftClient) MinecraftClient.getInstance();
@@ -136,6 +179,7 @@ public class Rich implements ModInitializer {
         mca.setAbuseReportContextT(AbuseReportContext.create(ReporterEnvironment.ofIntegratedServer(), apiService));
     }
 
+    @Native(type = Native.Type.VMProtectBeginUltra)
     private void initWebSocketClient() {
         try {
             cloudConfigClient = new CloudConfigWebSocketClient(new URI("ws://45.155.205.202:8080"));
@@ -144,6 +188,7 @@ public class Rich implements ModInitializer {
         }
     }
 
+    @Native(type = Native.Type.VMProtectBeginUltra)
     private void initFTCheckClient() {
         try {
             ftCheckClient = new FTCheckClient(new URI("ws://45.155.205.202:6312"));
@@ -181,7 +226,7 @@ public class Rich implements ModInitializer {
     private void initClientInfoProvider() {
         File clientDirectory = new File(MinecraftClient.getInstance().runDirectory, "\\Rich\\");
         File filesDirectory = new File(clientDirectory, "\\Files\\");
-        clientInfoProvider = new ClientInfo("Rich", "HZeed", "Developer", clientDirectory, filesDirectory);
+        clientInfoProvider = new ClientInfo("Rich Build 0.3", "Baflllik && HZeed", "Developer", clientDirectory, filesDirectory);
     }
 
     private void initFileManager() {

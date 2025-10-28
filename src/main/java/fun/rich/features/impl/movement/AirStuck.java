@@ -21,7 +21,7 @@ public class AirStuck extends Module {
     }
 
     @EventHandler
-
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onPacket(PacketEvent e) {
         if (mc.player == null || mc.world == null) return;
 

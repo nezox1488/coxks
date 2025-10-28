@@ -35,7 +35,7 @@ public class AutoUse extends Module {
     }
 
     @EventHandler
-
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent e) {
         for (String string : multiSetting.getSelected())
             switch (string) {

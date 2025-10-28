@@ -104,6 +104,7 @@ public class AutoTotem extends Module {
         }
     }
 
+    @Native(type = Native.Type.VMProtectBeginUltra)
     private void tryEquipTotem() {
         if (phase != Phase.READY) return;
         if (isTotemInOffhand()) return;
@@ -166,6 +167,7 @@ public class AutoTotem extends Module {
         resetState();
     }
 
+    @Native(type = Native.Type.VMProtectBeginMutation)
     private void startLegitEquip() {
         wasForwardPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.forwardKey.getDefaultKey().getCode());
         wasBackPressed = InputUtil.isKeyPressed(MC.getWindow().getHandle(), MC.options.backKey.getDefaultKey().getCode());

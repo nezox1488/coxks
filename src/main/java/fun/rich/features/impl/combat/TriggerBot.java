@@ -1,5 +1,6 @@
 package fun.rich.features.impl.combat;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.events.player.RotationUpdateEvent;
 import fun.rich.events.player.TickEvent;
 import fun.rich.events.packet.PacketEvent;
@@ -70,6 +71,7 @@ public class TriggerBot extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public void onRotationUpdate(RotationUpdateEvent e) {
         if (PlayerInteractionHelper.nullCheck()) return;
         switch (e.getType()) {

@@ -104,7 +104,7 @@ public class MainMenu extends Screen implements QuickImports {
 
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Username ▸ " + userProfile.profile("username"), 35, height - 21.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Uid ▸ " + userProfile.profile("uid"), 35, height - 14.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
-            String text = "Build ▸ 0.2 alpha";
+            String text = "Build ▸ 0.3 alpha";
             float textWidth = Fonts.getSize(12, Fonts.Type.DEFAULT).getStringWidth(text);
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), text, context.getScaledWindowWidth() - textWidth - 3, context.getScaledWindowHeight() - 5.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
         }

@@ -326,6 +326,7 @@ public class Aura extends Module {
         return targetSelector.getCurrentTarget();
     }
 
+    @Native(type = Native.Type.VMProtectBeginMutation)
     private void rotateToTarget(StrikerConstructor.AttackPerpetratorConfigurable config) {
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         TurnsConnection controller = TurnsConnection.INSTANCE;
@@ -431,7 +432,7 @@ public class Aura extends Module {
         );
     }
 
-
+    @Native(type = Native.Type.VMProtectBeginMutation)
     public TurnsConfig getRotationConfig() {
         boolean visibleCorrection = !correctionType.isSelected("Not visible");
         boolean freeCorrection = !aimMode.isSelected("Legit") && correctionType.isSelected("Free");

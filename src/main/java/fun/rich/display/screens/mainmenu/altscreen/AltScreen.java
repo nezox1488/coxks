@@ -342,7 +342,7 @@ public class AltScreen implements QuickImports {
         float textFieldX = panelX + 5;
         float textFieldY = panelY + 177;
 
-        if (button == 0 && isInBounds(mouseX, mouseY, textFieldX, textFieldY, panelWidth - 30, 20)) {
+        if (button == 0 && isInBounds(mouseX, mouseY, textFieldX, textFieldY + 8, panelWidth - 30, 20)) {
             handleTextFieldClick(mouseX);
             return true;
         } else {
@@ -379,6 +379,11 @@ public class AltScreen implements QuickImports {
 
     private void addRandomAccount() {
         String username = generateRandomUsername();
+
+        if (accountExists(username)) {
+            return;
+        }
+
         String offlineUuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8)).toString();
         Account newAccount = new Account(username, false, false, null, offlineUuid, "0");
         accountRepository.accountList.add(newAccount);
@@ -393,6 +398,11 @@ public class AltScreen implements QuickImports {
         cursorPos = 0;
         clearSelection();
         saveAccounts();
+    }
+
+    private boolean accountExists(String username) {
+        return accountRepository.accountList.stream()
+                .anyMatch(account -> account.name.equalsIgnoreCase(username));
     }
 
     private String generateRandomUsername() {
@@ -600,6 +610,14 @@ public class AltScreen implements QuickImports {
                     if (typedText.length() >= MIN_LENGTH && typedText.length() <= MAX_LENGTH) {
                         long currentTime = System.currentTimeMillis();
                         if (currentTime - lastActionTime >= ACTION_DELAY) {
+                            if (accountExists(typedText)) {
+                                typedText = "";
+                                cursorPos = 0;
+                                typing = false;
+                                clearSelection();
+                                return true;
+                            }
+
                             lastActionTime = currentTime;
                             String offlineUuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + typedText).getBytes(StandardCharsets.UTF_8)).toString();
                             Account newAccount = new Account(typedText, false, false, null, offlineUuid, "0");

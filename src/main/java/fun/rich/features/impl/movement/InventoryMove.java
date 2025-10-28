@@ -1,5 +1,6 @@
 package fun.rich.features.impl.movement;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import fun.rich.utils.interactions.inv.InventoryFlowManager;
@@ -65,6 +66,7 @@ public class InventoryMove extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent e) {
         if (mode.isSelected("Legit")) {
             processLegitMovement();

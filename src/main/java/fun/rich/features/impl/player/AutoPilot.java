@@ -41,7 +41,7 @@ public class AutoPilot extends Module {
     }
 
     @EventHandler
-
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent event) {
         if (mc.player == null || mc.world == null || mc.getNetworkHandler() == null) {
             target = null;
@@ -96,7 +96,7 @@ public class AutoPilot extends Module {
                 stack.getItem().toString().contains("_spawn_egg");
     }
 
-    public void onDisable() {
+    public void deactivate() {
         target = null;
         if (mc.player != null) {
             mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(

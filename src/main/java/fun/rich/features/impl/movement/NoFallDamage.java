@@ -1,5 +1,6 @@
 package fun.rich.features.impl.movement;
 
+import antidaunleak.api.annotation.Native;
 import fun.rich.features.module.setting.implement.SelectSetting;
 import fun.rich.events.packet.PacketEvent;
 import fun.rich.utils.math.projection.Projection;
@@ -24,6 +25,7 @@ public class NoFallDamage extends Module {
     }
 
     @EventHandler
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onPacket(PacketEvent e) {
         if (mc.player == null || mc.world == null) return;
 

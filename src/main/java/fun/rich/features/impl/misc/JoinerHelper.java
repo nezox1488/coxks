@@ -44,7 +44,7 @@ public class JoinerHelper extends Module {
     }
 
     @EventHandler
-
+    @Native(type = Native.Type.VMProtectBeginUltra)
     public void onTick(TickEvent event) {
         if (!state) return;
 

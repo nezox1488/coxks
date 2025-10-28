@@ -91,6 +91,7 @@ public class ModuleRepository {
                 new NameProtect(),
                 new SelfDestruct(),
                 new SeeInvisible(),
+                new TargetPearl(),
                 new AutoArmor(),
                 new AutoUse(),
                 new NoInteract(),

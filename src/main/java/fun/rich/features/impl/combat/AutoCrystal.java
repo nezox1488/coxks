@@ -60,7 +60,6 @@ public class AutoCrystal extends Module {
     }
 
     @EventHandler
-
     public void onPacket(PacketEvent e) {
         if (e.getPacket() instanceof PlayerInteractBlockC2SPacket interact && interact.getSequence() != 0 && script.isFinished() && InventoryFlowManager.script.isFinished())
             script.addTickStep(0, () -> {

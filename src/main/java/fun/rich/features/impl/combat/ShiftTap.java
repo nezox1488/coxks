@@ -50,7 +50,6 @@ public class ShiftTap extends Module {
     }
 
     @EventHandler
-
     public void onTick(TickEvent event) {
         if ( mc.player == null || mc.player.isSpectator()) {
             stopShiftTap();
