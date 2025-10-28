@@ -31,7 +31,6 @@ public class EntityESPFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void saveToFile(File path) throws FileSaveException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File file = new File(path, getName() + ".json");
@@ -46,7 +45,6 @@ public class EntityESPFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void loadFromFile(File path) throws FileLoadException {
         Gson gson = new Gson();
         File file = new File(path, getName() + ".json");

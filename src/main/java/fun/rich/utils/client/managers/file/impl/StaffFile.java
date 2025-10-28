@@ -23,7 +23,6 @@ public class StaffFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void loadFromFile(File directory) throws FileLoadException {
         File file = new File(directory, getName() + ".json");
         if (!file.exists()) return;
@@ -41,7 +40,6 @@ public class StaffFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void saveToFile(File directory) throws FileSaveException {
         File file = new File(directory, getName() + ".json");
         try {

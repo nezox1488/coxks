@@ -23,7 +23,6 @@ public class AutoBuyConfigFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void loadFromFile(File path) throws FileLoadException {
         File autoBuyDir = new File(path.getParentFile(), "AutoBuy");
         if (!autoBuyDir.exists()) {
@@ -59,7 +58,6 @@ public class AutoBuyConfigFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void saveToFile(File path) throws FileSaveException {
         File autoBuyDir = new File(path.getParentFile(), "AutoBuy");
         if (!autoBuyDir.exists()) {

@@ -24,13 +24,11 @@ public class ProxyFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void saveToFile(File path) throws FileSaveException {
         Config.saveConfig();
     }
 
     @Override
-    @Native
     public void loadFromFile(File path) throws FileLoadException {
         Config.loadConfig();
     }

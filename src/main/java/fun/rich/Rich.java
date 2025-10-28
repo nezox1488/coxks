@@ -90,7 +90,6 @@ public class Rich implements ModInitializer {
     boolean reconnecting = false;
 
     @Override
-    @Native
     public void onInitialize() {
         instance = this;
         initClientInfoProvider();
@@ -112,7 +111,6 @@ public class Rich implements ModInitializer {
         initialized = true;
     }
 
-    @Native
     private void loadCurrentAccount() {
         if (accountRepository.currentAccount != null && !accountRepository.currentAccount.isEmpty()) {
             Account currentAcc = accountRepository.accountList.stream()
@@ -126,7 +124,6 @@ public class Rich implements ModInitializer {
         }
     }
 
-    @Native
     private void setSession(Account account) {
         Session newSession = new Session(account.name, UUID.fromString(account.uuid), "0", Optional.empty(), Optional.empty(), Session.AccountType.MOJANG);
         IMinecraftClient mca = (IMinecraftClient) MinecraftClient.getInstance();
@@ -139,7 +136,6 @@ public class Rich implements ModInitializer {
         mca.setAbuseReportContextT(AbuseReportContext.create(ReporterEnvironment.ofIntegratedServer(), apiService));
     }
 
-    @Native
     private void initWebSocketClient() {
         try {
             cloudConfigClient = new CloudConfigWebSocketClient(new URI("ws://45.155.205.202:8080"));
@@ -148,7 +144,6 @@ public class Rich implements ModInitializer {
         }
     }
 
-    @Native
     private void initFTCheckClient() {
         try {
             ftCheckClient = new FTCheckClient(new URI("ws://45.155.205.202:6312"));
@@ -157,13 +152,11 @@ public class Rich implements ModInitializer {
         }
     }
 
-    @Native
     private void initDraggable() {
         draggableRepository = new DraggableRepository();
         draggableRepository.setup();
     }
 
-    @Native
     private void initModules() {
         moduleRepository = new ModuleRepository();
         moduleRepository.setup();
@@ -171,13 +164,11 @@ public class Rich implements ModInitializer {
         moduleSwitcher = new ModuleSwitcher(moduleRepository.modules(), eventManager);
     }
 
-    @Native
     private void initCommands() {
         commandRepository = new CommandRepository();
         commandDispatcher = new CommandDispatcher(eventManager);
     }
 
-    @Native
     private void initDiscordRPC() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("linux")) {
@@ -187,14 +178,12 @@ public class Rich implements ModInitializer {
         discordManager.init();
     }
 
-    @Native
     private void initClientInfoProvider() {
         File clientDirectory = new File(MinecraftClient.getInstance().runDirectory, "\\Rich\\");
         File filesDirectory = new File(clientDirectory, "\\Files\\");
         clientInfoProvider = new ClientInfo("Rich", "HZeed", "Developer", clientDirectory, filesDirectory);
     }
 
-    @Native
     private void initFileManager() {
         DirectoryCreator directoryCreator = new DirectoryCreator();
         directoryCreator.createDirectories(clientInfoProvider.clientDir(), clientInfoProvider.filesDir());
@@ -222,14 +211,12 @@ public class Rich implements ModInitializer {
         }
     }
 
-    @Native
     private void initListeners() {
         listenerRepository = new ListenerRepository();
         listenerRepository.setup();
         tpsCalculate = new TPSCalculate();
     }
 
-    @Native
     private void startReconnectTask() {
         reconnectScheduler = Executors.newSingleThreadScheduledExecutor();
         reconnectScheduler.scheduleAtFixedRate(() -> {

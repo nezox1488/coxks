@@ -15,7 +15,6 @@ import java.util.List;
 public class FileRepository {
     List<ClientFile> clientFiles = new ArrayList<>();
 
-    @Native
     public void setup(Rich main) {
         register(
                 new ModuleFile(main.getModuleRepository(), main.getDraggableRepository()),

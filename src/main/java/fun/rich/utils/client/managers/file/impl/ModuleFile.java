@@ -36,19 +36,16 @@ public class ModuleFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void saveToFile(File path) throws FileSaveException {
         saveToFile(path, getName() + ".json");
     }
 
     @Override
-    @Native
     public void loadFromFile(File path) throws FileLoadException {
         loadFromFile(path, getName() + ".json");
     }
 
     @Override
-    @Native
     public void saveToFile(File path, String fileName) throws FileSaveException {
         JsonObject functionObject = createJsonObjectFromModules();
         File file = new File(path, fileName);
@@ -57,7 +54,6 @@ public class ModuleFile extends ClientFile {
     }
 
     @Override
-    @Native
     public void loadFromFile(File path, String fileName) throws FileLoadException {
         File file = new File(path, fileName);
         JsonObject functionObject = readJsonFromFile(file);
