@@ -45,8 +45,8 @@ public class LGAngle extends RotateConstructor {
         }
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (15 * Math.sin(System.currentTimeMillis() / 17D));
-        float jitterPitch = canAttack ? 0 : (float) (12 * Math.sin(System.currentTimeMillis() / 14D));
+        float jitterYaw = canAttack ? 0 : (float) (15 * Math.sin(System.currentTimeMillis() / 40D));
+        float jitterPitch = canAttack ? 0 : (float) (12 * Math.sin(System.currentTimeMillis() / 17D));
 
         if (!aura.isState() || aura.getTarget() == null && attackHandler.getAttackTimer().finished(500)) { jitterYaw = 0; jitterPitch = 0; }
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
