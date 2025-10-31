@@ -58,7 +58,6 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@Native
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Rich implements ModInitializer {
     @Getter
