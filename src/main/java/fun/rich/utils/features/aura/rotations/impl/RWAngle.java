@@ -40,8 +40,8 @@ public class RWAngle extends RotateConstructor {
         float speed = canAttack ? preAttackSpeed : postAttackSpeed;
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (randomLerp(1, 9) * Math.sin(System.currentTimeMillis() / 65D));
-        float jitterPitch = canAttack ? 0 : (float) (randomLerp(1, 4) * Math.sin(System.currentTimeMillis() / 75D));
+        float jitterYaw = canAttack ? 0 : (float) (-6 * Math.cos(System.currentTimeMillis() / 90D));
+        float jitterPitch = canAttack ? 0 : (float) (6 * Math.sin(System.currentTimeMillis() / 90D));
 
         if (!aura.isState() || entity == null) {
             speed = 1F;
@@ -56,7 +56,7 @@ public class RWAngle extends RotateConstructor {
         moveAngle.setPitch(MathHelper.lerp(randomLerp(speed, speed + 0.2F), currentAngle.getPitch(), currentAngle.getPitch() + movePitch) + jitterPitch);
 
         if (count > 0 && count % 50 == 0 && !attackTimer.finished(200)) {
-            moveAngle.setPitch(MathHelper.lerp(randomLerp(speed - 0.5F, speed + 0.3F), currentAngle.getPitch(), currentAngle.getPitch() - 90) + jitterPitch);
+            moveAngle.setPitch(MathHelper.lerp(0.55F, currentAngle.getPitch(), currentAngle.getPitch() - 90) + jitterPitch);
         }
 
         return moveAngle;

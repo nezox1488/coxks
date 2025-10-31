@@ -1,8 +1,8 @@
 package fun.rich.utils.client.managers.api.command.exception;
 
-public abstract class CommandException extends Exception implements ICommandException {
+public class CommandException extends Exception implements ICommandException {
 
-    protected CommandException(String reason) {
+    public CommandException(String reason) {
         super(reason);
     }
 

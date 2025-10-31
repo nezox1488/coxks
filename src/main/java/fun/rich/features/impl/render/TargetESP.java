@@ -163,7 +163,7 @@ public class TargetESP extends Module {
             float bloomSize = size * 13.0f;
             float pitch = camera.getPitch();
             float yaw = camera.getYaw();
-            int segments = 8;
+            int segments = 6;
             for (int i = 0; i < segments; i++) {
                 ms.push();
                 float angle = (360.0f / segments) * i;

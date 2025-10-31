@@ -1,5 +1,6 @@
 package fun.rich.mixins.player.input;
 
+import fun.rich.commands.defaults.BindCommand;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
@@ -24,7 +25,7 @@ public class KeyboardMixin {
     private void onKey(long window, int key, int scanCode, int action, int modifiers, CallbackInfo ci) {
 
         if (key != GLFW.GLFW_KEY_UNKNOWN && window == client.getWindow().getHandle()) {
-            if (action == 0 && key == GLFW.GLFW_KEY_RIGHT_SHIFT && client.currentScreen == null) {
+            if (action == 0 && key == BindCommand.ClickGuiManager.getClickGuiKey() && client.currentScreen == null) {
                 MenuScreen.INSTANCE.openGui();
             }
 

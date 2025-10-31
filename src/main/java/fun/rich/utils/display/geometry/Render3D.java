@@ -390,21 +390,20 @@ public class Render3D implements QuickImports {
         float sqrt = MathHelper.sqrt(normal.lengthSquared());
         return normal.div(sqrt);
     }
-
+    private float prevCubeSize = 0.0f;
     public void drawCube(LivingEntity lastTarget, float anim, float red, String png) {
-        float size = red - anim - 0.17F;
-        if (png != null && png == "2") {
-            size = red - anim - 0.05F;
+        float baseSize = red - anim - 0.17F;
+        float targetSize = baseSize;
+
+        if (png != null) {
+            if ("2".equals(png)) targetSize = red - anim - 0.05F;
+            else if ("4".equals(png)) targetSize = red - anim + 0.05F;
+            else if ("5".equals(png)) targetSize = red - anim + 0.07F;
         }
-        if (png != null && png == "4") {
-            size = red - anim + 0.05F;
-        }
-        if (png != null && png == "4") {
-            size = red - anim + 0.05F;
-        }
-        if (png != null && png == "5") {
-            size = red - anim + 0.07F;
-        }
+
+        float size = Calculate.interpolate(prevCubeSize, targetSize, 0.2f);
+        prevCubeSize = size;
+
         Camera camera = mc.getEntityRenderDispatcher().camera;
         Vec3d vec = Calculate.interpolate(lastTarget).subtract(camera.getPos());
         MatrixStack matrix = new MatrixStack();
@@ -428,6 +427,10 @@ public class Render3D implements QuickImports {
         Vec3d target = Calculate.interpolate(lastTarget);
         boolean canSee = Objects.requireNonNull(mc.player).canSee(lastTarget);
 
+        // Плавное отдаление при ударе
+        float hitEffect = Math.min(red * 2f, 1f);
+        float distanceMultiplier = 1.0f + (float)Math.sin(hitEffect * Math.PI) * 0.18f;
+
         GL11.glEnable(GL11.GL_POLYGON_SMOOTH);
         if (canSee) {
             RenderSystem.enableDepthTest();
@@ -438,13 +441,14 @@ public class Render3D implements QuickImports {
 
         RenderSystem.enableBlend();
         RenderSystem.disableCull();
-        RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_CONSTANT_ALPHA);
+        RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE);
         RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
         BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
 
         int size = 64;
+
         for (int i = 0; i <= size; i++) {
-            float width = lastTarget.getWidth();
+            float width = lastTarget.getWidth() * distanceMultiplier;
             float height = lastTarget.getHeight();
             double yAnim = Calculate.absSinAnimation(cs) * height;
             double yAnim2 = Calculate.absSinAnimation(cs - 0.45) * height;
@@ -480,36 +484,69 @@ public class Render3D implements QuickImports {
     }
     public void drawGhosts(LivingEntity lastTarget, float anim, float red, float speed) {
         Camera camera = mc.getEntityRenderDispatcher().camera;
-        Vec3d vec = Calculate.interpolate(lastTarget).subtract(camera.getPos());
+        Vec3d targetPos = Calculate.interpolate(lastTarget).subtract(camera.getPos());
         boolean canSee = mc.player.canSee(lastTarget);
         double iAge = Calculate.interpolate(mc.player.age - 1, mc.player.age);
         float halfHeight = lastTarget.getHeight() / 2 + 0.2F;
-        float width = lastTarget.getWidth() + 0.2f;
+        float baseWidth = lastTarget.getWidth() + 0.2f;
         float minY = 0.2f;
         float maxY = lastTarget.getHeight() - 0.2F;
+
+        float hitEffect = Math.min(red * 2f, 2f);
+        float acceleration = (float) Math.sin(hitEffect * Math.PI) * 0.18f;
+        float bany = (float) Math.sin(hitEffect * Math.PI) * -0.04f;
+
+
         for (int j = 0; j < 4; j++) {
-            for (int i = 0, length = (int) 10f; i <= length; i++) {
-                double radians = Math.toRadians(((i / 2F + iAge * speed * 2.0f) * length + (j * 90)) % (length * 180));
-                double sinQuad = Math.sin(Math.toRadians(iAge * 1.2 + i * (j + halfHeight)) * 1.1) / 2;
+            for (int i = 0, length = (int) 10.3f; i <= length; i++) {
+                double baseAngle = ((i / 2F + iAge * speed * 2.0f) * length + (j * 90)) % (length * 180);
+                double radians = Math.toRadians(baseAngle);
+
+                float heightOffset = 0;
+                float radiusOffset = 0;
+
+                switch(j) {
+                    case 0: // Нормальная
+                        heightOffset = 0f;
+                        radiusOffset = 1.04f;
+                        break;
+                    case 1: // Нижняя
+                        heightOffset = 0f;
+                        radiusOffset = 1.04f;
+                        break;
+                    case 2: // Верхняя
+                        heightOffset = 0f;
+                        radiusOffset = 1.04f;
+                        break;
+                    case 3: // Средняя
+                        heightOffset = 0f;
+                        radiusOffset = 1.04f;
+                        break;
+                }
+
+                float distanceMultiplier = 1.0f + acceleration;
+
+                double sinQuad = Math.sin(Math.toRadians(iAge * 0.7 + i * (j + halfHeight)) * 1.1) / 2;
                 double adjustedSin = (j % 2 == 0) ? sinQuad : -sinQuad;
-                double yOffset = minY + (adjustedSin + 0.5) * (maxY - minY);
+                double yOffset = minY + (adjustedSin + 0.5) * (maxY - minY) + heightOffset;
                 float offset = ((float) (i + length) / (length + length));
+
                 MatrixStack matrices = new MatrixStack();
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
-                matrices.translate(vec.x + Math.cos(radians) * width, vec.y + yOffset, vec.z + Math.sin(radians) * width);
+
+                double finalWidth = baseWidth * distanceMultiplier * radiusOffset;
+                matrices.translate(targetPos.x + Math.cos(radians) * finalWidth, targetPos.y + yOffset, targetPos.z + Math.sin(radians) * finalWidth);
+
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
                 MatrixStack.Entry entry = matrices.peek().copy();
                 int color = ColorAssist.multRedAndAlpha(TargetESP.getInstance().colorSetting.getColor(), 1 + red * 10, offset * anim);
-                float scale = 0.5f * offset * (0.7f + speed * 0.05f);
+                float scale = 0.6f * offset * (0.6f + speed * 0.1f) + bany;
                 Render3D.drawTexture(entry, Identifier.of("textures/features/particles/bloom.png"), -scale / 2, -scale / 2, scale, scale, new Vector4i(color), canSee);
             }
         }
     }
-
-
-
 
     private float espValue = 1f, espSpeed = 1f, prevEspValue, circleStep;
     private boolean flipSpeed;

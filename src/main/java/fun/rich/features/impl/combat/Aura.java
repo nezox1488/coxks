@@ -366,6 +366,7 @@ public class Aura extends Module {
             case "ReallyWorld", "SpookyTime", "CakeWorld" -> {
                 controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
             }
+
         };
 
         if (shouldRotate && !aimMode.isSelected("TriggerBot")) {
