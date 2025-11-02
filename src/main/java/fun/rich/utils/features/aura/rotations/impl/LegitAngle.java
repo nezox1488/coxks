@@ -29,7 +29,7 @@ public class LegitAngle extends RotateConstructor {
         Aura aura = Aura.getInstance();
         StopWatch attackTimer = attackHandler.getAttackTimer();
         if (entity !=null) {
-            Vec3d aimPoint = Vector.brain(entity, 1, 4);
+            Vec3d aimPoint = Vector.hitbox(entity, 1, 1.2f, 1, 4);
             targetAngle = MathAngle.calculateAngle(aimPoint);
         }
         Turns angleDelta = MathAngle.calculateDelta(currentAngle, targetAngle);
@@ -37,17 +37,14 @@ public class LegitAngle extends RotateConstructor {
         float rotationDifference = (float) Math.hypot(Math.abs(yawDelta), Math.abs(pitchDelta));
         boolean canAttack = entity != null && attackHandler.canAttack(aura.getConfig(), 0);
 
-        if (!attackTimer.finished(300) && !isPullingBack) {
-            isPullingBack = true;
-            pullBackStartTime = System.currentTimeMillis();
-        }
-
         float preAttackSpeed = 0.75F;
-        float speed = !attackTimer.finished(450 ) ? 0.05F : 0.75F;
+        float speed = !attackTimer.finished(250) ? 0.1F : 0.7F;
+        if (!attackTimer.finished(350)) speed = 0.15F;
+        if (!attackTimer.finished(500)) speed = 0.25F;
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * (canAttack ? 360 : 100));
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (12 * Math.sin(System.currentTimeMillis() / 45D));
-        float jitterPitch = canAttack ? 0 : (float) (3 * Math.sin(System.currentTimeMillis() / 55D));
+        float jitterYaw = canAttack ? 0 : (float) (3 * Math.sin(System.currentTimeMillis() / 85D));
+        float jitterPitch = canAttack ? 0 : (float) (2 * Math.cos(System.currentTimeMillis() / 85D));
 
         if (!aura.isState() || entity == null) {
             jitterYaw = 0;

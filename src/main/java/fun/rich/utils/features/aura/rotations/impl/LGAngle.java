@@ -7,6 +7,7 @@ import fun.rich.utils.features.aura.rotations.constructor.RotateConstructor;
 import fun.rich.utils.features.aura.striking.StrikeManager;
 import fun.rich.utils.features.aura.utils.MathAngle;
 import fun.rich.utils.features.aura.warp.Turns;
+import fun.rich.utils.math.calc.Calculate;
 import fun.rich.utils.math.time.StopWatch;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
@@ -36,7 +37,7 @@ public class LGAngle extends RotateConstructor {
             distanceToTarget = (float) mc.player.distanceTo(entity);
         }
 
-        float baseSpeed = canAttack ? 1F : 0.6F;
+        float baseSpeed = canAttack ? 0.93F : 0.56F;
 
         float speed = baseSpeed;
         if (distanceToTarget > 0 && distanceToTarget < 0.66F) {
@@ -45,10 +46,14 @@ public class LGAngle extends RotateConstructor {
         }
         float lineYaw = (Math.abs(yawDelta / rotationDifference) * 180);
         float linePitch = (Math.abs(pitchDelta / rotationDifference) * 180);
-        float jitterYaw = canAttack ? 0 : (float) (15 * Math.sin(System.currentTimeMillis() / 40D));
-        float jitterPitch = canAttack ? 0 : (float) (12 * Math.sin(System.currentTimeMillis() / 17D));
+        float jitterYaw = canAttack ? 0 : (float) (randomLerp(20, 26) * Math.sin(System.currentTimeMillis() / 25D));
+        float jitterPitch = canAttack ? 0 : (float) (randomLerp(8, 23) * Math.sin(System.currentTimeMillis() / 27D));
 
-        if (!aura.isState() || aura.getTarget() == null && attackHandler.getAttackTimer().finished(500)) { jitterYaw = 0; jitterPitch = 0; }
+        if ((!aura.isState() || aura.getTarget() == null) && attackHandler.getAttackTimer().finished(1000)) {
+            baseSpeed = 0.35F;
+            jitterYaw = 0;
+            jitterPitch = 0;
+        }
         float moveYaw = MathHelper.clamp(yawDelta, -lineYaw, lineYaw);
         float movePitch = MathHelper.clamp(pitchDelta, -linePitch, linePitch);
         Turns moveAngle = new Turns(currentAngle.getYaw(), currentAngle.getPitch());
@@ -68,6 +73,6 @@ public class LGAngle extends RotateConstructor {
 
     @Override
     public Vec3d randomValue() {
-        return new Vec3d(0, 0, 0);
+        return new Vec3d(0.01, 0.07, 0.02);
     }
 }

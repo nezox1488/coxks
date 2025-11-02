@@ -199,7 +199,7 @@ public class Aura extends Module {
 
         @EventHandler
         public void drawEvent(DrawEvent e){
-            if (mc.player == null || !aimMode.isSelected("Legit Snap")) return;
+            if (mc.player == null || !aimMode.isSelected("Legit Snap") || !isState()) return;
 
             if (mc.options.getPerspective().isFirstPerson()) {
                 MatrixStack matrix = e.getDrawContext().getMatrices();
@@ -358,7 +358,7 @@ public class Aura extends Module {
             }
 
             case "Legit Snap" -> {
-                if (attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(100)) {
+                if (attackHandler.canAttack(config, 1) || !attackHandler.getAttackTimer().finished(40)) {
                     controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
                 }
             }
