@@ -11,12 +11,6 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * UpdateList — панель обновлений на Main Menu в стиле размытой капли.
- * Позиция настраивается (panelX, panelY).
- * Иконки: зелёный круг = добавлено, красный = удалено, жёлтый = изменено.
- * Текстуры: конвертируй SVG в PNG и положи в assets/minecraft/textures/UpdateList/
- */
 public class UpdateList implements QuickImports {
 
     public enum IconType { ADDED, REMOVED, CHANGED }
@@ -35,14 +29,10 @@ public class UpdateList implements QuickImports {
     private float panelX;
     private float panelY;
     
-    /** Апдейт инфо — хедер с "RoxsyClient 0.7 | Update 19.02.2026" */
-    private final float headerWidth = 160;
-    private final float headerHeight = 22;
-    private float headerOffsetX = 0f;  // Смещение хедера по X (можно сдвигать влево/вправо)
-    
-    /** АпдейтЛист — список обновлений с зелеными кругами и текстом */
+    private final float headerWidth = 240;
+    private final float headerHeight = 28;
     private final float listWidth = 240;
-    private final float listHeight = 95;
+    private final float listHeight = 118;
     private float scroll = 0f;
     private float smoothedScroll = 0f;
 
@@ -53,8 +43,9 @@ public class UpdateList implements QuickImports {
     }
 
     private void initUpdates() {
-        updates.add(new UpdateEntry(IconType.ADDED, "Добавлена функция KTLeave позволяет вам ливать в режиме пвп"));
-        updates.add(new UpdateEntry(IconType.REMOVED, "Был удален модуль Xray так как больше не работает на серверах"));
+        updates.add(new UpdateEntry(IconType.ADDED, "KTLeave: быстрый выход из PvP без лишних действий."));
+        updates.add(new UpdateEntry(IconType.CHANGED, "Переработан Main Menu: список апдейтов стал аккуратнее и читаемее."));
+        updates.add(new UpdateEntry(IconType.REMOVED, "XRay удалён: модуль больше не стабилен на серверах."));
     }
 
     public void updatePosition(float x, float y) {
@@ -64,44 +55,43 @@ public class UpdateList implements QuickImports {
 
     public void render(DrawContext context, int alpha) {
         float gap = 6f;
-        // Апдейт инфо — позиция с возможностью смещения
-        float headerX = panelX + (listWidth - headerWidth) / 2f + headerOffsetX;
+        float headerX = panelX + (listWidth - headerWidth) / 2f;
         float headerY = panelY;
-        // АпдейтЛист — позиция списка обновлений
         float listX = panelX;
         float listY = panelY + headerHeight + gap;
 
-        // Прозрачность как капля — фон мейнменю виден через панели
-        int blurAlpha = (int) (30 * (alpha / 255.0));   // Blur: сильная прозрачность
-        int rectAlpha = (int) (18 * (alpha / 255.0));   // Прямоугольник: очень тонкий
-        Color blurColor = new Color(35, 40, 50, blurAlpha);
-        Color rectColor = new Color(30, 35, 45, rectAlpha);
-        Color outlineColor = new Color(100, 180, 255, (int) (90 * (alpha / 255.0)));
+        int blurAlpha = (int) (46 * (alpha / 255.0));
+        int rectAlpha = (int) (34 * (alpha / 255.0));
+        Color blurColor = new Color(20, 26, 34, blurAlpha);
+        Color rectColor = new Color(22, 28, 38, rectAlpha);
+        Color outlineColor = new Color(118, 196, 255, (int) (145 * (alpha / 255.0)));
         Color textColor = new Color(255, 255, 255, alpha);
+        Color mutedText = new Color(182, 194, 210, alpha);
 
-        // Апдейт инфо — хедер с названием и датой
         blur.render(ShapeProperties.create(context.getMatrices(), headerX, headerY, headerWidth, headerHeight)
-                .round(10).quality(96).color(blurColor.getRGB()).build());
+                .round(9).quality(96).color(blurColor.getRGB()).build());
         rectangle.render(ShapeProperties.create(context.getMatrices(), headerX, headerY, headerWidth, headerHeight)
-                .round(10).thickness(0).outlineColor(outlineColor.getRGB())
+                .round(9).thickness(1.2f).outlineColor(outlineColor.getRGB())
                 .color(rectColor.getRGB(), rectColor.getRGB(), rectColor.getRGB(), rectColor.getRGB()).build());
 
-        // Текст хедера (компактный)
-        String header = "RoxsyClient 0.7 | Update 19.02.2026";
-        Fonts.getSize(11, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), header,
-                headerX + headerWidth / 2f, headerY + headerHeight / 2f - 3.5f, textColor.getRGB());
+        String title = "RoxsyClient 0.7";
+        String subtitle = "Update List · 19.02.2026";
 
-        // АпдейтЛист — список обновлений (рисуем только если есть элементы)
+        Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), title,
+                headerX + 10, headerY + 7, textColor.getRGB());
+        Fonts.getSize(10, Fonts.Type.DEFAULT).drawString(context.getMatrices(), subtitle,
+                headerX + headerWidth - Fonts.getSize(10, Fonts.Type.DEFAULT).getWidth(subtitle) - 10,
+                headerY + 8, mutedText.getRGB());
+
         if (!updates.isEmpty()) {
             blur.render(ShapeProperties.create(context.getMatrices(), listX, listY, listWidth, listHeight)
-                    .round(11).quality(96).color(blurColor.getRGB()).build());
+                    .round(12).quality(96).color(blurColor.getRGB()).build());
             rectangle.render(ShapeProperties.create(context.getMatrices(), listX, listY, listWidth, listHeight)
-                    .round(11).thickness(1.5f).outlineColor(outlineColor.getRGB())
+                    .round(12).thickness(1.3f).outlineColor(outlineColor.getRGB())
                     .color(rectColor.getRGB(), rectColor.getRGB(), rectColor.getRGB(), rectColor.getRGB()).build());
 
-            // Верхняя подсветка списка
-            rectangle.render(ShapeProperties.create(context.getMatrices(), listX, listY, listWidth, 1)
-                    .round(5).color(new Color(100, 180, 255, (int) (70 * (alpha / 255.0))).getRGB()).build());
+            rectangle.render(ShapeProperties.create(context.getMatrices(), listX + 8, listY + 8, listWidth - 16, 1)
+                    .round(1).color(new Color(132, 210, 255, (int) (95 * (alpha / 255.0))).getRGB()).build());
 
             renderList(context, listX, listY, textColor, alpha);
         }
@@ -111,9 +101,9 @@ public class UpdateList implements QuickImports {
         }
     }
 
-    private static final float ENTRY_SPACING = 26f;
-    private static final float ICON_SIZE = 8f;
-    private static final float TEXT_OFFSET = 18f;
+    private static final float ENTRY_SPACING = 30f;
+    private static final float ICON_SIZE = 10f;
+    private static final float TEXT_OFFSET = 20f;
 
     private void renderList(DrawContext context, float listX, float listY, Color textColor, int alpha) {
         float padding = 10;
@@ -125,18 +115,21 @@ public class UpdateList implements QuickImports {
             UpdateEntry entry = updates.get(i);
             float entryY = listY + padding + i * ENTRY_SPACING - smoothedScroll;
 
-            if (entryY + 22 >= listY + padding && entryY <= listY + listHeight - padding) {
+            if (entryY + 24 >= listY + padding && entryY <= listY + listHeight - padding) {
                 int iconColor = getIconColor(entry.iconType, alpha);
                 float iconX = listX + padding;
                 float iconY = entryY + 6;
 
-                // Кружок: рисуем через rectangle (круг через round = половина размера) — всегда виден
+                rectangle.render(ShapeProperties.create(context.getMatrices(), iconX - 3, entryY + 3, listWidth - 20, 22)
+                        .round(6)
+                        .color(new Color(255, 255, 255, (int) (14 * (alpha / 255.0))).getRGB()).build());
+
                 rectangle.render(ShapeProperties.create(context.getMatrices(), iconX, iconY, ICON_SIZE, ICON_SIZE)
                         .round(ICON_SIZE / 2f)
                         .color(iconColor, iconColor, iconColor, iconColor).build());
 
-                Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(context.getMatrices(), wrapText(entry.text, 32),
-                        iconX + TEXT_OFFSET, entryY + 4, ColorAssist.setAlpha(textColor.getRGB(), alpha));
+                Fonts.getSize(11, Fonts.Type.DEFAULT).drawString(context.getMatrices(), wrapText(entry.text, 37),
+                        iconX + TEXT_OFFSET, entryY + 7, ColorAssist.setAlpha(textColor.getRGB(), alpha));
             }
         }
 
@@ -155,7 +148,7 @@ public class UpdateList implements QuickImports {
         if (text.length() <= maxChars) return text;
         int space = text.lastIndexOf(' ', maxChars);
         if (space <= 0) return text.substring(0, Math.min(maxChars, text.length())) + "...";
-        return text.substring(0, space);
+        return text.substring(0, space) + "…";
     }
 
     private void renderScrollbar(DrawContext context, float listX, float listY, int alpha) {
@@ -180,7 +173,8 @@ public class UpdateList implements QuickImports {
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double vertical) {
-        if (isIn(mouseX, mouseY, panelX, panelY, listWidth, listHeight)) {
+        float listY = panelY + headerHeight + 6f;
+        if (isIn(mouseX, mouseY, panelX, listY, listWidth, listHeight)) {
             float contentH = updates.size() * ENTRY_SPACING;
             float maxScroll = Math.max(0, contentH - (listHeight - 24));
             scroll -= (float) vertical * 24;
