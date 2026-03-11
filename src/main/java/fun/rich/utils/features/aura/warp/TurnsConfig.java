@@ -13,7 +13,7 @@ public class TurnsConfig {
     public static TurnsConfig DEFAULT = new TurnsConfig(new LinearConstructor(), true, true);
     public static boolean moveCorrection, freeCorrection;
     RotateConstructor angleSmooth;
-    int resetThreshold = 1;
+    float resetThreshold;
 
     public TurnsConfig(boolean moveCorrection, boolean freeCorrection) {
         this(new LinearConstructor(), moveCorrection, freeCorrection);
@@ -24,9 +24,15 @@ public class TurnsConfig {
     }
 
     public TurnsConfig(RotateConstructor angleSmooth, boolean moveCorrection, boolean freeCorrection) {
+        this(angleSmooth, moveCorrection, freeCorrection, 1f);
+    }
+
+    /** Target mode: не сбрасывает таргет, чётко следит за позицией (resetThreshold=0) */
+    public TurnsConfig(RotateConstructor angleSmooth, boolean moveCorrection, boolean freeCorrection, float resetThreshold) {
         this.angleSmooth = angleSmooth;
         this.moveCorrection = moveCorrection;
         this.freeCorrection = freeCorrection;
+        this.resetThreshold = resetThreshold;
     }
 
     public TurnsConstructor createRotationPlan(Turns angle, Vec3d vec, Entity entity, int reset) {

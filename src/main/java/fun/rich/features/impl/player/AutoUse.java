@@ -1,6 +1,8 @@
 package fun.rich.features.impl.player;
-
-import antidaunleak.api.annotation.Native;
+/**
+ * @author Sitoku
+ * @since 3/3/2026
+ */
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import fun.rich.utils.interactions.inv.InventoryFlowManager;
 import fun.rich.utils.interactions.inv.InventoryTask;
@@ -22,10 +24,10 @@ import fun.rich.events.player.TickEvent;
 public class AutoUse extends Module {
     Script script = new Script();
 
-    MultiSelectSetting multiSetting = new MultiSelectSetting("Режим", "Выберите, что будет использоваться").value("Eat", "Invisibility");
+    MultiSelectSetting multiSetting = new MultiSelectSetting("Авто использование", "Выберите, что будет использоваться").value("Еды", "Невидимости");
 
     public AutoUse() {
-        super("AutoUse", "Auto Use", ModuleCategory.PLAYER);
+        super("AutoUse", "AutoUse", ModuleCategory.PLAYER);
         setup(multiSetting);
     }
 
@@ -35,17 +37,17 @@ public class AutoUse extends Module {
     }
 
     @EventHandler
-    @Native(type = Native.Type.VMProtectBeginUltra)
+
     public void onTick(TickEvent e) {
         for (String string : multiSetting.getSelected())
             switch (string) {
-                case "Eat" -> {
+                case "Еды" -> {
                     Slot slot = InventoryTask.getFoodMaxSaturationSlot();
                     if (slot != null && mc.player.getHungerManager().isNotFull() && swapAndEat(slot)) {
                         return;
                     }
                 }
-                case "Invisibility" -> {
+                case "Невидимости" -> {
                     Slot slot = InventoryTask.getPotion(StatusEffects.INVISIBILITY);
                     if (slot != null && !PlayerInteractionHelper.isPotionActive(StatusEffects.INVISIBILITY) && swapAndEat(slot)) {
                         return;

@@ -48,7 +48,7 @@ public class WayFile extends ClientFile {
         try (FileReader reader = new FileReader(file)) {
             Way[] ways = gson.fromJson(reader, Way[].class);
             wayRepository.wayList.clear();
-            wayRepository.wayList.addAll(Arrays.asList(ways));
+            if (ways != null) wayRepository.wayList.addAll(Arrays.asList(ways));
         } catch (IOException e) {
             throw new FileLoadException(String.format("Failed to load %s from file", getName()), e);
         } catch (JsonSyntaxException e) {

@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import fun.rich.features.impl.render.Theme;
 import fun.rich.features.module.ModuleCategory;
 import fun.rich.utils.client.managers.file.exception.FileLoadException;
 import fun.rich.utils.client.managers.file.exception.FileSaveException;
@@ -72,19 +73,17 @@ public class BackgroundComponent extends AbstractComponent {
         DiscordManager discord = Rich.getInstance().getDiscordManager();
         Rich.getInstance().getScissorManager().push(matrix.peek().getPositionMatrix(), 0, 0, window.getScaledWidth(), window.getScaledHeight());
 
-        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(8).quality(64)
-                .color(new Color(0, 0, 0, 200).getRGB())
+        int guiBg = Theme.getInstance().guiBgColor.getColor();
+        int guiBlur = ColorAssist.setAlpha(guiBg, Math.min(255, (guiBg >> 24) + 55));
+        blur.render(ShapeProperties.create(matrix, x, y, width, height).round(14).quality(64)
+                .color(guiBlur)
                 .build());
 
-        rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(8)
+        rectangle.render(ShapeProperties.create(matrix, x, y, width, height).round(14)
                 .softness(22)
-                        .thickness(0.1f)
-                        .outlineColor(new Color(18, 19, 20, 225).getRGB())
-                .color(
-                new Color(18, 19, 20, 175).getRGB(),
-                new Color(0, 2, 5, 175).getRGB(),
-                new Color(0, 2, 5, 175).getRGB(),
-                new Color(18, 19, 20, 175).getRGB())
+                .thickness(0.1f)
+                .outlineColor(ColorAssist.setAlpha(guiBg, 225))
+                .color(guiBg, guiBg, guiBg, guiBg)
                 .build());
 
         List<Map<String, Object>> displayedConfigs = new ArrayList<>();
@@ -372,63 +371,46 @@ public class BackgroundComponent extends AbstractComponent {
         } else {
             loadedConfigs = false;
         }
-        rectangle.render(ShapeProperties.create(context.getMatrices(), x + 42.5f, y, 0.5F, height)
-                .color(new Color(55, 55, 70, 15).getRGB(), new Color(55, 55, 70, 50).getRGB(), new Color(55, 55, 70, 15).getRGB(), new Color(55, 55, 70, 250).getRGB()).build());
 
-        rectangle.render(ShapeProperties.create(context.getMatrices(), x + 43F, y + 28, width - 43F, 0.5F)
+        rectangle.render(ShapeProperties.create(context.getMatrices(), x + 15F, y + 28, width - 15F, 0.5F)
                 .color(new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB(), new Color(55, 55, 70, 250).getRGB(), new Color(55, 55, 70, 15).getRGB()).build());
-
-        blur.render(ShapeProperties.create(matrix, x + 10.5f, y + 10f, 20, 20).round(5).quality(64)
-                .color(new Color(0, 0, 0, 200).getRGB())
-                .build());
-
-        rectangle.render(ShapeProperties.create(matrix, x + 10.5f, y + 10f, 20, 20).round(5)
-                .softness(22)
-                .thickness(0.1f)
-                .outlineColor(new Color(18, 19, 20, 225).getRGB())
-                .color(
-                        new Color(18, 19, 20, 175).getRGB(),
-                        new Color(0, 2, 5, 175).getRGB(),
-                        new Color(0, 2, 5, 175).getRGB(),
-                        new Color(18, 19, 20, 175).getRGB())
-                .build());
-
-
-        Fonts.getSize(26, Fonts.Type.ICONS).drawString(matrix, "A ", x + 14f, y + 15F, new Color(225, 225, 255, 255).getRGB());
 
         String icon;
         switch (MenuScreen.INSTANCE.getCategory()) {
             case COMBAT -> {
                 icon = "A";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 55f, y + 14.5f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 20f, y + 14.5f, new Color(225, 225, 255, 255).getRGB());
             }
             case MOVEMENT -> {
                 icon = "B";
-                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 19f, y + 14f, new Color(225, 225, 255, 255).getRGB());
             }
             case RENDER -> {
                 icon = "C";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 19f, y + 14f, new Color(225, 225, 255, 255).getRGB());
             }
             case PLAYER -> {
                 icon = "D";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 19f, y + 14f, new Color(225, 225, 255, 255).getRGB());
             }
             case MISC -> {
                 icon = "E";
-                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(18, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 19f, y + 14f, new Color(225, 225, 255, 255).getRGB());
             }
             case CONFIGS -> {
                 icon = "F";
-                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 14f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(17, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 19f, y + 14f, new Color(225, 225, 255, 255).getRGB());
             }
             case AUTOBUY -> {
                 icon = "H";
-                Fonts.getSize(33, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 54f, y + 9f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(33, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 19f, y + 9f, new Color(225, 225, 255, 255).getRGB());
+            }
+            case THEME -> {
+                Fonts.getSize(21, Fonts.Type.THEME_ICON).drawString(matrix, "G", x + 18f, y + 13.5f, new Color(225, 225, 255, 255).getRGB());
             }
             default -> {
                 icon = MenuScreen.INSTANCE.getCategory().getReadableName().substring(0, 1);
-                Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 50f, y + 13.5f, new Color(225, 225, 255, 255).getRGB());
+                Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawString(matrix, icon, x + 18f, y + 13.5f, new Color(225, 225, 255, 255).getRGB());
             }
         }
 
@@ -449,9 +431,9 @@ public class BackgroundComponent extends AbstractComponent {
         }
 
         if (MenuScreen.INSTANCE.getCategory() == ModuleCategory.CONFIGS) {
-            Fonts.getSize(15, Fonts.Type.DEFAULT).drawString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName() + " | Beta", x + 63, y + 13.5f, new Color(245, 245, 255, 255).getRGB());
+            Fonts.getSize(15, Fonts.Type.DEFAULT).drawString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName() + " | Beta", x + 35, y + 13.5f, new Color(245, 245, 255, 255).getRGB());
         } else {
-            Fonts.getSize(15, Fonts.Type.DEFAULT).drawString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName(), x + 63, y + 13.5f, new Color(245, 245, 255, 255).getRGB());
+            Fonts.getSize(15, Fonts.Type.DEFAULT).drawString(matrix, point + MenuScreen.INSTANCE.getCategory().getReadableName(), x + 35, y + 13.5f, new Color(245, 245, 255, 255).getRGB());
 
         }
         Rich.getInstance().getScissorManager().pop();

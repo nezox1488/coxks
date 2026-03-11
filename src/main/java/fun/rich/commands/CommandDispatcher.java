@@ -31,7 +31,12 @@ import fun.rich.events.chat.TabCompleteEvent;
 import fun.rich.utils.display.interfaces.QuickLogger;
 import fun.rich.commands.argument.ArgConsumer;
 import fun.rich.commands.argument.CommandArguments;
+import fun.rich.commands.defaults.LegitMoveCommand;
 import fun.rich.commands.manager.CommandRepository;
+import net.minecraft.util.Formatting;
+import baritone.api.BaritoneAPI;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -46,17 +51,39 @@ public class CommandDispatcher implements QuickLogger {
         eventManager.register(this);
     }
 
+    /** Префикс # для команд (например #legitmove). */
+    public static final String HASH_PREFIX = "#";
+
     @EventHandler
     public void onChat(ChatEvent event) {
         String msg = event.getMessage();
 
         boolean forceRun = msg.startsWith(FORCE_COMMAND_PREFIX);
-        if ((msg.startsWith(prefix)) || forceRun) {
+        if (msg.startsWith(prefix) || forceRun) {
+            // Команды клиента: только . или force-префикс
             event.cancel();
-            String commandStr = msg.substring(forceRun ? FORCE_COMMAND_PREFIX.length() : prefix.length());
-            if (!runCommand(commandStr) && !commandStr.trim().isEmpty()) {
+            int skip = forceRun ? FORCE_COMMAND_PREFIX.length() : prefix.length();
+            String commandStr = msg.substring(skip).trim();
+            if (!runCommand(commandStr) && !commandStr.isEmpty()) {
                 new CommandNotFoundException(CommandRepository.expand(commandStr).getLeft()).handle(null, null);
             }
+            return;
+        }
+        if (msg.startsWith(HASH_PREFIX)) {
+            // # — префикс Baritone. Перехватываем только #legitmove / #legit, остальное уходит в Baritone
+            String commandStr = msg.substring(HASH_PREFIX.length()).trim();
+            String first = commandStr.isEmpty() ? "" : commandStr.split("\\s+", 2)[0];
+            if (first.equalsIgnoreCase("legitmove") || first.equalsIgnoreCase("legit")) {
+                event.cancel();
+                if (LegitMoveCommand.isLegitModeActive()) {
+                    logDirect(Formatting.GRAY + "Baritone: легитный режим уже включён. Повторная отправка не отключает.", Formatting.GRAY);
+                } else {
+                    LegitMoveCommand.setLegitModeActive(true);
+                    LegitMoveCommand.applyLegitBaritoneSettings();
+                    logDirect(Formatting.GREEN + "Baritone: включён легитный режим движения.", Formatting.GRAY);
+                }
+            }
+            // иначе не отменяем — Baritone сам обработает #help, #goto и т.д.
         }
     }
 
@@ -103,15 +130,19 @@ public class CommandDispatcher implements QuickLogger {
     @EventHandler
     public void onTabComplete(TabCompleteEvent event) {
         String eventPrefix = event.prefix;
+
+        // Для Baritone-префикса (#...) вообще не лезем — пусть Baritone сам даёт подсказки
         if (!eventPrefix.startsWith(prefix)) {
             return;
         }
 
-        String msg = eventPrefix.substring(prefix.length());
+        // Подсказки только для клиентских команд с точкой
+        String msg = eventPrefix.substring(prefix.length()).trim();
         List<ICommandArgument> args = CommandArguments.from(msg, true);
         Stream<String> stream = tabComplete(msg);
+        final String p = prefix;
         if (args.size() == 1) {
-            stream = stream.map(x -> prefix + x);
+            stream = stream.map(x -> p + x);
         }
         event.completions = stream.toArray(String[]::new);
     }

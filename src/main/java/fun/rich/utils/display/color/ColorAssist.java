@@ -551,11 +551,29 @@ public class ColorAssist {
 
 
     public int getClientColor() {
+        if (Hud.getInstance() == null) return new Color(255, 101, 57, 255).getRGB();
+        try {
+            var theme = fun.rich.features.impl.render.Theme.getInstance();
+            if (theme != null) return theme.clientColor.getColor();
+        } catch (Exception ignored) {}
         return Hud.getInstance().colorSetting.getColor();
     }
 
+    public int getClientColor2() {
+        if (Hud.getInstance() == null) return new Color(120, 120, 120, 255).getRGB();
+        try {
+            var theme = fun.rich.features.impl.render.Theme.getInstance();
+            if (theme != null) return theme.clientColor2.getColor();
+        } catch (Exception ignored) {}
+        return Hud.getInstance().colorSetting2.getColor();
+    }
+
+    public int getClientColor2(float alpha) {
+        return multAlpha(getClientColor2(), alpha);
+    }
+
     public int getClientColor(float alpha) {
-        return multAlpha(getClientColor(),alpha);
+        return multAlpha(getClientColor(), alpha);
     }
 
     public int getFriendColor() {

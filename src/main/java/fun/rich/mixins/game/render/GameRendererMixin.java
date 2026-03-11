@@ -33,6 +33,7 @@ import fun.rich.utils.features.aura.utils.RaycastAngle;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
 import fun.rich.features.impl.misc.FreeCam;
 import fun.rich.features.impl.render.NoRender;
+import fun.rich.features.impl.render.Optimization;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -104,6 +105,7 @@ public abstract class GameRendererMixin {
 
     @Inject(method = "renderWorld", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;renderHand:Z", opcode = Opcodes.GETFIELD, ordinal = 0))
     public void hookWorldRender(RenderTickCounter tickCounter, CallbackInfo ci, @Local(ordinal = 2) Matrix4f matrix4f) {
+        Optimization.updateSmoothRenderDelta(tickCounter.getTickDelta(false));
         MatrixStack matrixStack = new MatrixStack();
         matrixStack.multiplyPositionMatrix(matrix4f);
         matrixStack.translate(client.getEntityRenderDispatcher().camera.getPos().negate());

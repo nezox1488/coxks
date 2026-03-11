@@ -14,8 +14,8 @@ public class NoRender extends Module {
     }
 
     public MultiSelectSetting modeSetting = new MultiSelectSetting("Элементы", "Выберите элементы для игнорирования")
-            .value("Fire", "Bad Effects", "Block Overlay", "Darkness", "Damage")
-            .selected("Fire", "Bad Effects", "Block Overlay", "Darkness", "Damage");
+            .value("Fire", "Bad Effects", "Block Overlay", "Darkness", "Damage", "Glow")
+            .selected("Fire", "Bad Effects", "Block Overlay", "Darkness", "Damage", "Glow");
 
     public NoRender() {
         super("NoRender", "No Render", ModuleCategory.RENDER);

@@ -7,20 +7,27 @@ import fun.rich.utils.display.atlasfont.msdf.MsdfFont;
 import fun.rich.utils.display.font.Fonts;
 import fun.rich.utils.display.shape.ShapeProperties;
 import fun.rich.utils.display.systemrender.builders.Builder;
-import fun.rich.Rich;
+import fun.rich.features.impl.render.Theme;
 import fun.rich.utils.display.color.ColorAssist;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
+
 import java.awt.Color;
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import static fun.rich.utils.display.font.Fonts.Type.BOLD;
+
+
 public class Watermark extends AbstractDraggable {
-    private int fpsCount = 0;
+
     private static final Supplier<MsdfFont> ICONS_FONT = Suppliers.memoize(() -> MsdfFont.builder().atlas("icons").data("icons").build());
     private static final Supplier<MsdfFont> ICONS_FONT_1 = Suppliers.memoize(() -> MsdfFont.builder().atlas("clienticon1").data("clienticon1").build());
-    private static final Supplier<MsdfFont> BOLD_FONT = Suppliers.memoize(() -> MsdfFont.builder().atlas("medium").data("medium").build());
-    private static final Supplier<MsdfFont> ICONS = Suppliers.memoize(() -> MsdfFont.builder().atlas("medium").data("medium").build());
+
+    private int fpsCount = 0;
+
+    private static final float GAP_AFTER_FPS = 3f;
 
     public Watermark() {
         super("Watermark", 10, 10, 92, 16, true);
@@ -32,98 +39,88 @@ public class Watermark extends AbstractDraggable {
     }
 
     @Override
-    public void drawDraggable(DrawContext e) {
-        MatrixStack matrix = e.getMatrices();
+    public void drawDraggable(DrawContext context) {
+        MatrixStack matrix = context.getMatrices();
         Matrix4f matrix4f = matrix.peek().getPositionMatrix();
-        String offset = "";
-        String name = Rich.getInstance().getClientInfoProvider().clientName() + offset;
-        String icon = "A ";
-        String point = " • ";
+
+        setHeight(10);
+
+        final float logoSize = 8f;
+        String logoIcon = "A ";
+        var fr = Fonts.getSize(11, BOLD);
         String username = UserProfile.getInstance().profile("username");
-        String fps = String.valueOf(fpsCount);
+        if (username == null) username = "";
         String serverIp = mc.getCurrentServerEntry() != null ? mc.getCurrentServerEntry().address : "Singleplayer";
-        String title = UserProfile.getInstance().profile("role");;
+        String ms = getPingMs() + " ms";
+        String fps = fpsCount + " fps";
 
-        float iconWidth = ICONS_FONT.get().getWidth(icon, 13);
-        float titleWidth = Fonts.getSize(12, Fonts.Type.DEFAULT).getStringWidth(title);
-        float fpsWidth = Fonts.getSize(12, Fonts.Type.BOLD).getStringWidth(fps);
-        float serverIpWidth = Fonts.getSize(12, Fonts.Type.BOLD).getStringWidth(serverIp);
-        float icon2Width = ICONS_FONT_1.get().getWidth("D", 11);
-        float pointWidth = Fonts.getSize(12, Fonts.Type.BOLD).getStringWidth(point);
-        float totalWidth = iconWidth + titleWidth + fpsWidth + serverIpWidth + icon2Width + (pointWidth * 3) + 22;
+        float logoW = ICONS_FONT.get().getWidth(logoIcon, logoSize);
+        float usernameW = fr.getStringWidth(username);
+        float fpsW = fr.getStringWidth(fps);
+        float serverW = fr.getStringWidth(serverIp);
+        float msW = fr.getStringWidth(ms);
+        float icon2W = ICONS_FONT_1.get().getWidth("D", 11);
+        int totalW = (int) (logoW + 6 + usernameW + 4 + 5 + fpsW + 2 + GAP_AFTER_FPS + 4 + msW + 4 + 5 + serverW + 2 + icon2W + 6);
+        setWidth(totalW);
 
-        setWidth((int) totalWidth + 14);
+        Theme theme = Theme.getInstance();
+        int wBgColor = theme.watermarkBgColor.getColor();
+        int wAlpha = (int) theme.watermarkBgAlpha.getValue();
+        int fillColor = ColorAssist.setAlpha(wBgColor, wAlpha);
+        int outlineColor = 0xFF2D2E41;
+        float round = 6f;
+        float thickness = 2f;
 
-        blur.render(ShapeProperties.create(matrix, getX(), getY(), totalWidth + 14, getHeight() + 4)
-                .round(5f).quality(12)
-                .color(new Color(0, 0, 0, 150).getRGB())
-                .build());
+        if (theme.watermarkBlur.isValue()) {
+            blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight())
+                    .round(round).quality(12).color(fillColor).build());
+        }
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), totalWidth + 14, getHeight() + 4)
-                .round(5f)
-                .thickness(0.1f)
-                .outlineColor(new Color(18, 19, 20, 35).getRGB())
-                .color(
-                        new Color(18, 19, 20, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(18, 19, 20, 75).getRGB())
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight())
+                .round(round)
+                .softness(1)
+                .thickness(thickness)
+                .outlineColor(outlineColor)
+                .color(fillColor)
                 .build());
 
         Builder.text()
                 .font(ICONS_FONT.get())
-                .text(icon)
-                .size(13)
+                .text(logoIcon)
+                .size(logoSize)
                 .color(new Color(225, 225, 255, 255).getRGB())
                 .build()
-                .render(matrix4f, getX() + 5f, getY() + 1);
+                .render(matrix4f, getX() + 3, getY() + 0f);
 
-        float currentX = getX() + iconWidth + 7;
+        float cx = getX() + logoW + 6;
 
-        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 6.5f, 0.5F, getHeight() - 8)
-                .round(0)
-                .color(ColorAssist.getText(0.5F))
-                .build());
+        fr.drawGradientString(matrix, username, cx, getY() + 4.5, 0xFF8187FF, 0xFF4D5199);
+        cx += usernameW + 4;
+        rectangle.render(ShapeProperties.create(matrix, cx, getY() + 6.5f, 0.5f, getHeight() - 8).round(0).color(ColorAssist.getText(0.5F)).build());
+        cx += 5;
 
-        currentX += 4;
+        fr.drawString(matrix, fps, cx, getY() + 4.5, -1);
+        cx += fpsW + 2;
+        Builder.text().font(ICONS_FONT_1.get()).text("w").size(9).color(new Color(225, 225, 255, 255).getRGB()).build().render(matrix4f, cx, getY() + 0.5f);
+        cx += GAP_AFTER_FPS;
+        rectangle.render(ShapeProperties.create(matrix, cx, getY() + 6.5f, 0.5f, getHeight() - 8).round(0).color(ColorAssist.getText(0.5F)).build());
+        cx += 4;
 
+        fr.drawString(matrix, ms, cx, getY() + 4.5, -1);
+        cx += msW + 4;
+        rectangle.render(ShapeProperties.create(matrix, cx, getY() + 6.5f, 0.5f, getHeight() - 8).round(0).color(ColorAssist.getText(0.5F)).build());
+        cx += 5;
 
-        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, title, currentX + 2.5f, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
+        fr.drawString(matrix, serverIp, cx, getY() + 4.5, -1);
+        cx += serverW + 2;
+        // Иконка после IP сервера — поднята выше (getY() - 0.5), чтобы была в одну линию с текстом
+        Builder.text().font(ICONS_FONT_1.get()).text("D").size(8).color(new Color(225, 225, 255, 255).getRGB()).build().render(matrix4f, cx, getY() - 0.5f);
+    }
 
-        currentX += titleWidth + 9;
-
-        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 6.5f, 0.5F, getHeight() - 8)
-                .round(0f)
-                .color(ColorAssist.getText(0.5F))
-                .build());
-
-        currentX += 5;
-
-        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, fps, currentX, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
-
-        currentX += fpsWidth + 2;
-
-        Fonts.getSize(17, Fonts.Type.ICONSTYPENEW).drawString(matrix, "w", currentX, getY() + 9f, new Color(225, 225, 255, 255).getRGB());
-
-        currentX += 10;
-
-        rectangle.render(ShapeProperties.create(matrix, currentX, getY() + 6.5f, 0.5F, getHeight() - 8)
-                .round(0)
-                .color(ColorAssist.getText(0.5F))
-                .build());
-
-        currentX += 5;
-
-        Fonts.getSize(13, Fonts.Type.DEFAULT).drawString(matrix, serverIp, currentX, getY() + 9f, new Color(255, 255, 255, 255).getRGB());
-
-        currentX += serverIpWidth;
-
-        Builder.text()
-                .font(ICONS_FONT_1.get())
-                .text("D")
-                .size(11)
-                .color(new Color(225, 225, 255, 255).getRGB())
-                .build()
-                .render(matrix4f, currentX + 2.5f, getY() + 2f);
+    private int getPingMs() {
+        if (mc.getNetworkHandler() == null || mc.player == null) return 0;
+        return Optional.ofNullable(mc.getNetworkHandler().getPlayerListEntry(mc.player.getGameProfile().getId()))
+                .map(e -> e.getLatency())
+                .orElse(0);
     }
 }

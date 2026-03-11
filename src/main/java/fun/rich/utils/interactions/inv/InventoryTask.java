@@ -1,7 +1,15 @@
 package fun.rich.utils.interactions.inv;
 
+import fun.rich.display.hud.Notifications;
+import fun.rich.features.impl.movement.GuiMove;
+import fun.rich.utils.client.packet.network.Network;
+import fun.rich.utils.display.interfaces.QuickImports;
+import fun.rich.utils.features.aura.utils.MathAngle;
 import fun.rich.utils.features.aura.warp.Turns;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
+import fun.rich.utils.interactions.item.ItemTask;
+import fun.rich.utils.math.calc.Calculate;
+import fun.rich.utils.math.script.Script;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
@@ -27,6 +35,7 @@ import fun.rich.utils.interactions.item.ItemTask;
 import fun.rich.utils.math.calc.Calculate;
 import fun.rich.display.hud.Notifications;
 import fun.rich.utils.features.aura.utils.MathAngle;
+import fun.rich.utils.math.script.Script;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +44,8 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static fun.rich.main.client.Api.mc;
 
 public class InventoryTask implements QuickImports {
     public static void moveItem(Slot from, int to) {
@@ -73,6 +84,9 @@ public class InventoryTask implements QuickImports {
     }
 
     public static void swapHand(Slot slot, Hand hand, boolean task, boolean updateInventory) {
+        if (!GuiMove.mode.isSelected("Обычный")) {
+
+        }
         if (slot == null || slot.id == -1 || (hand.equals(Hand.OFF_HAND) && !(slot.inventory instanceof PlayerInventory || slot.inventory instanceof EnderChestInventory))) return;
         int button = hand.equals(Hand.MAIN_HAND) ? mc.player.getInventory().selectedSlot : 40;
         if (task) InventoryFlowManager.addTask(() -> swap(slot, button, updateInventory));
@@ -81,7 +95,8 @@ public class InventoryTask implements QuickImports {
 
     public static void swap(Slot slot, int button, boolean updateInventory) {
         clickSlot(slot, button, SlotActionType.SWAP, false);
-        if (updateInventory) InventoryTask.updateSlots();
+
+        if (updateInventory && GuiMove.mode.isSelected("ФанТайм")) InventoryTask.updateSlots();
     }
 
     public static void swapAndUse(Slot slot, String text, boolean task) {
@@ -89,12 +104,20 @@ public class InventoryTask implements QuickImports {
             Notifications.getInstance().addList(Formatting.RED + text + Formatting.RESET + " - не найден!", 3000);
             return;
         }
+
         if (task) InventoryFlowManager.addTask(() -> swapAndUse(slot, MathAngle.cameraAngle()));
         else swapAndUse(slot, MathAngle.cameraAngle());
     }
 
+    /**
+     * Совместимость со старым кодом: вызов без параметра task.
+     */
     public static void swapAndUse(Item item) {
-        swapAndUse(item, MathAngle.cameraAngle(), false);
+        swapAndUse(item, false);
+    }
+
+    public static void swapAndUse(Item item, boolean task) {
+        swapAndUse(item, MathAngle.cameraAngle(), task);
     }
 
     public static void clickSlot(int id, int button, SlotActionType type) {
@@ -106,6 +129,26 @@ public class InventoryTask implements QuickImports {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
         if (mc.player.getInventory().selectedSlot == slot) return;
         mc.player.getInventory().selectedSlot = slot;
+    }
+
+    public static void swapSlot(Slot targetSlot) {
+        swapSlot(targetSlot, false);
+    }
+
+    public static void swapSlot(Slot targetSlot, boolean task) {
+        if (targetSlot == null || targetSlot.id == -1 || mc.player == null) return;
+
+
+        mc.player.getInventory().selectedSlot = targetSlot.id;
+
+    }
+
+    public static void swapSlot(Item item) {
+        swapSlot(getSlot(item));
+    }
+
+    public static void swapSlot(Item item, boolean task) {
+        swapSlot(getSlot(item), task);
     }
 
     public static void swapAndUse(Item item, String searchName, boolean task) {
@@ -140,10 +183,35 @@ public class InventoryTask implements QuickImports {
         else swapAndUse(slot, angle);
     }
 
+    private static final Script swapAndUseScript = new Script();
+
+    public static void updateSwapAndUseScript() {
+        swapAndUseScript.update();
+    }
+
     public static void swapAndUse(Slot slot, Turns angle) {
-        swapHand(slot, Hand.MAIN_HAND, false);
-        PlayerInteractionHelper.interactItem(Hand.MAIN_HAND);
-        swapHand(slot, Hand.MAIN_HAND, false, true);
+
+        int delay1, delay2;
+        if (GuiMove.mode.isSelected("ХолиВорлд")) {
+
+            delay1 = 2;
+            delay2 = 1;
+        } else if (GuiMove.mode.isSelected("ФанТайм"))  {
+
+            delay1 = 0;
+            delay2 = 1;
+        } else {
+
+            delay1 = 0;
+            delay2 = 0;
+        }
+
+
+
+        swapAndUseScript.cleanup()
+                .addTickStep(0, () -> swapHand(slot, Hand.MAIN_HAND, false))
+                .addTickStep(delay1, () -> PlayerInteractionHelper.interactItem(Hand.MAIN_HAND))
+                .addTickStep(delay2, () -> swapHand(slot, Hand.MAIN_HAND, false, true));
     }
 
     public static void updateSlots() {
@@ -162,12 +230,27 @@ public class InventoryTask implements QuickImports {
     }
 
     public static void clickSlot(int slotId, int buttonId, SlotActionType clickType, boolean silent) {
-        clickSlot(mc.player.currentScreenHandler.syncId, slotId, buttonId, clickType, silent);
+        clickSlot(slotId, buttonId, clickType, silent, false);
+    }
+
+    public static void clickSlot(int slotId, int buttonId, SlotActionType clickType, boolean silent, boolean task) {
+        clickSlot(mc.player.currentScreenHandler.syncId, slotId, buttonId, clickType, silent, task);
+    }
+
+    public static void clickSlot(int windowId, int slotId, int buttonId, SlotActionType clickType, boolean silent, boolean task) {
+        if (task) {
+            InventoryFlowManager.addTask(() -> {
+                mc.interactionManager.clickSlot(windowId, slotId, buttonId, clickType, mc.player);
+                if (silent) mc.player.currentScreenHandler.onSlotClick(slotId, buttonId, clickType, mc.player);
+            });
+        } else {
+            mc.interactionManager.clickSlot(windowId, slotId, buttonId, clickType, mc.player);
+            if (silent) mc.player.currentScreenHandler.onSlotClick(slotId, buttonId, clickType, mc.player);
+        }
     }
 
     public static void clickSlot(int windowId, int slotId, int buttonId, SlotActionType clickType, boolean silent) {
-        mc.interactionManager.clickSlot(windowId, slotId, buttonId, clickType, mc.player);
-        if (silent) mc.player.currentScreenHandler.onSlotClick(slotId, buttonId, clickType, mc.player);
+        clickSlot(windowId, slotId, buttonId, clickType, silent, false);
     }
 
     public static Slot getSlot(Item item) {
@@ -221,6 +304,61 @@ public class InventoryTask implements QuickImports {
 
     public static int getInventoryCount(Item item) {
         return IntStream.range(0, 45).filter(i -> Objects.requireNonNull(mc.player).getInventory().getStack(i).getItem().equals(item)).map(i -> mc.player.getInventory().getStack(i).getCount()).sum();
+    }
+
+    public static int findFreeHotbarSlot() {
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getStack(i).isEmpty()) {
+                return i;
+            }
+        }
+        return 8;
+    }
+
+    public static int findHotbarSlot(Item item) {
+        for (int i = 0; i < 9; i++) {
+            if (mc.player.getInventory().getStack(i).isOf(item)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static int findInventorySlot(net.minecraft.item.Item item) {
+        for (int i = 9; i < 36; i++) {
+            if (mc.player.getInventory().getStack(i).isOf(item)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static void swapSlots(int fromSlot, int toSlot) {
+        if (mc.interactionManager == null || mc.player.currentScreenHandler == null) return;
+
+
+        mc.interactionManager.clickSlot(
+                mc.player.currentScreenHandler.syncId,
+                fromSlot,
+                toSlot,
+                SlotActionType.SWAP,
+                mc.player
+        );
+    }
+
+    public static void useItemFromSlotMOMENTALNO(int slot) {
+        if (mc.player == null || mc.interactionManager == null) return;
+
+        ItemStack stack = mc.player.getInventory().getStack(slot);
+
+        if (!stack.isEmpty() && !mc.player.getItemCooldownManager().isCoolingDown(stack)) {
+            int prevSlot = mc.player.getInventory().selectedSlot;
+
+            mc.player.getInventory().selectedSlot = slot;
+            mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+            mc.player.swingHand(Hand.MAIN_HAND);
+            mc.player.getInventory().selectedSlot = prevSlot;
+        }
     }
 
     public static int getHotbarItems(List<Item> items) {

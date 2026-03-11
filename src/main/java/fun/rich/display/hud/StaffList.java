@@ -25,14 +25,11 @@ import fun.rich.utils.client.Instance;
 import fun.rich.utils.display.geometry.Render2D;
 import fun.rich.features.impl.render.Hud;
 import fun.rich.utils.client.packet.network.Network;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.LivingEntityRenderer;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
-import net.minecraft.entity.LivingEntity;
 import java.util.*;
 import java.awt.*;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class StaffList extends AbstractDraggable {
     public static StaffList getInstance() {
@@ -42,51 +39,29 @@ public class StaffList extends AbstractDraggable {
     public final Map<PlayerListEntry, Animation> list = new HashMap<>();
     private final Set<String> notifiedPlayers = new HashSet<>();
     private final Pattern namePattern = Pattern.compile("^\\w{3,16}$");
-    private long lastColorChange = 0;
-    private int currentColorIndex = 0;
+
     private static final Map<String, String> CHAR_TO_NAME = new HashMap<>();
     private static final Map<String, Integer> PREFIX_COLORS = new HashMap<>();
 
     static {
-        CHAR_TO_NAME.put("ꔀ", "player");
-        CHAR_TO_NAME.put("ꔄ", "hero");
-        CHAR_TO_NAME.put("ꔈ", "titan");
-        CHAR_TO_NAME.put("ꔒ", "avenger");
-        CHAR_TO_NAME.put("ꔖ", "overlord");
-        CHAR_TO_NAME.put("ꔠ", "magister");
-        CHAR_TO_NAME.put("ꔤ", "imperator");
-        CHAR_TO_NAME.put("ꔨ", "dragon");
-        CHAR_TO_NAME.put("ꔲ", "bull");
-        CHAR_TO_NAME.put("ꕒ", "rabbit");
-        CHAR_TO_NAME.put("ꔶ", "tiger");
-        CHAR_TO_NAME.put("ꕄ", "dracula");
-        CHAR_TO_NAME.put("ꕖ", "bunny");
-        CHAR_TO_NAME.put("ꕀ", "hydra");
-        CHAR_TO_NAME.put("ꕈ", "cobra");
-        CHAR_TO_NAME.put("ꔁ", "media");
-        CHAR_TO_NAME.put("ꔅ", "yt");
-        CHAR_TO_NAME.put("ꕠ", "d.helper");
-        CHAR_TO_NAME.put("ꔉ", "helper");
-        CHAR_TO_NAME.put("ꔓ", "ml.moder");
-        CHAR_TO_NAME.put("ꔗ", "moder");
-        CHAR_TO_NAME.put("ꔡ", "moder+");
-        CHAR_TO_NAME.put("ꔥ", "st.moder");
-        CHAR_TO_NAME.put("ꔩ", "gl.moder");
-        CHAR_TO_NAME.put("ꔳ", "ml.admin");
-        CHAR_TO_NAME.put("ꔷ", "admin");
+        CHAR_TO_NAME.put("ꔀ", "player"); CHAR_TO_NAME.put("ꔄ", "hero");
+        CHAR_TO_NAME.put("ꔈ", "titan"); CHAR_TO_NAME.put("ꔒ", "avenger");
+        CHAR_TO_NAME.put("ꔖ", "overlord"); CHAR_TO_NAME.put("ꔠ", "magister");
+        CHAR_TO_NAME.put("ꔤ", "imperator"); CHAR_TO_NAME.put("ꔨ", "dragon");
+        CHAR_TO_NAME.put("ꔲ", "bull"); CHAR_TO_NAME.put("ꕒ", "rabbit");
+        CHAR_TO_NAME.put("ꔶ", "tiger"); CHAR_TO_NAME.put("ꕄ", "dracula");
+        CHAR_TO_NAME.put("ꕖ", "bunny"); CHAR_TO_NAME.put("ꕀ", "hydra");
+        CHAR_TO_NAME.put("ꕈ", "cobra"); CHAR_TO_NAME.put("ꔁ", "media");
+        CHAR_TO_NAME.put("ꔅ", "yt"); CHAR_TO_NAME.put("ꕠ", "d.helper");
+        CHAR_TO_NAME.put("ꔉ", "helper"); CHAR_TO_NAME.put("ꔓ", "ml.moder");
+        CHAR_TO_NAME.put("ꔗ", "moder"); CHAR_TO_NAME.put("ꔡ", "moder+");
+        CHAR_TO_NAME.put("ꔥ", "st.moder"); CHAR_TO_NAME.put("ꔩ", "gl.moder");
+        CHAR_TO_NAME.put("ꔳ", "ml.admin"); CHAR_TO_NAME.put("ꔷ", "admin");
 
-        PREFIX_COLORS.put("media", new Color(255, 0, 0, 255).getRGB());
-        PREFIX_COLORS.put("yt", new Color(255, 0, 0, 255).getRGB());
-        PREFIX_COLORS.put("d.helper", new Color(255, 255, 0, 255).getRGB());
-        PREFIX_COLORS.put("helper", new Color(255, 255, 0, 255).getRGB());
-        PREFIX_COLORS.put("ml.moder", new Color(0, 255, 255, 255).getRGB());
-        PREFIX_COLORS.put("moder", new Color(0, 0, 255, 255).getRGB());
-        PREFIX_COLORS.put("moder+", new Color(0, 0, 255, 255).getRGB());
-        PREFIX_COLORS.put("st.moder", new Color(128, 0, 128, 255).getRGB());
-        PREFIX_COLORS.put("gl.moder", new Color(128, 0, 128, 255).getRGB());
-        PREFIX_COLORS.put("ml.admin", new Color(0, 255, 255, 255).getRGB());
-        PREFIX_COLORS.put("admin", new Color(255, 0, 0, 255).getRGB());
-        PREFIX_COLORS.put("Vanish", new Color(255, 0, 0, 255).getRGB());
+        PREFIX_COLORS.put("helper", new Color(255, 255, 0).getRGB());
+        PREFIX_COLORS.put("moder", new Color(0, 0, 255).getRGB());
+        PREFIX_COLORS.put("admin", new Color(255, 0, 0).getRGB());
+        PREFIX_COLORS.put("Vanish", new Color(255, 0, 0).getRGB());
     }
 
     public StaffList() {
@@ -100,7 +75,7 @@ public class StaffList extends AbstractDraggable {
 
     @Override
     public void tick() {
-        if (mc.world == null || mc.player == null || mc.getNetworkHandler() == null) {
+        if (mc.world == null || mc.getNetworkHandler() == null) {
             list.clear();
             return;
         }
@@ -109,110 +84,71 @@ public class StaffList extends AbstractDraggable {
         Scoreboard scoreboard = mc.world.getScoreboard();
         Set<String> addedNames = new HashSet<>();
 
-        if (list.isEmpty() && PlayerInteractionHelper.isChat(mc.currentScreen)) {
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastColorChange >= 1000) {
-                currentColorIndex = (currentColorIndex + 1) % PREFIX_COLORS.size();
-                lastColorChange = System.currentTimeMillis();
-            }
-            return;
-        }
-
         for (PlayerListEntry entry : playerList) {
             String name = entry.getProfile().getName();
-            if (addedNames.contains(name) || list.containsKey(entry)) {
-                continue;
-            }
-            String display = entry.getDisplayName() != null ? entry.getDisplayName().getString() : name;
-        }
 
-        for (StaffRepository.Staff staff : StaffRepository.getStaff()) {
-            String staffName = staff.getName();
-            if (addedNames.contains(staffName) || list.keySet().stream().anyMatch(e -> e.getProfile().getName().equals(staffName))) {
-                continue;
-            }
-            playerList.stream()
-                    .filter(p -> p.getProfile().getName().equalsIgnoreCase(staffName))
-                    .findFirst()
-                    .ifPresent(entry -> {
-                        list.put(entry, new Decelerate().setMs(150).setValue(1));
-                        addedNames.add(staffName);
-                    });
-        }
+            Team team = scoreboard.getTeam(name);
+            if (team == null) continue;
 
-        List<Team> teams = new ArrayList<>(scoreboard.getTeams());
-        teams.sort(Comparator.comparing(Team::getName));
-        Collection<PlayerListEntry> online = mc.getNetworkHandler().getPlayerList();
-
-        for (Team team : teams) {
-            Collection<String> members = team.getPlayerList();
-            if (members.size() != 1) {
-                continue;
-            }
-            String name = members.iterator().next();
-            if (!namePattern.matcher(name).matches() || addedNames.contains(name)) {
-                continue;
-            }
-            boolean present = online.stream().anyMatch(e -> e.getProfile() != null && name.equals(e.getProfile().getName()));
-            if (present) {
-                continue;
-            }
-            if (list.keySet().stream().anyMatch(e -> e.getProfile().getName().equals(name))) {
-                continue;
-            }
             String teamPrefix = team.getPrefix().getString();
-            String prefix = CHAR_TO_NAME.entrySet().stream()
-                    .filter(e -> teamPrefix.contains(e.getKey()))
-                    .map(Map.Entry::getValue)
+            String prefixKey = CHAR_TO_NAME.keySet().stream()
+                    .filter(teamPrefix::contains)
                     .findFirst()
-                    .orElse("");
-            MutableText displayName = Text.empty();
-            if (Network.isReallyWorld()) {
-                displayName.append(Text.literal(name).formatted(Formatting.GRAY))
-                        .append(Text.literal(" [").formatted(Formatting.GRAY))
-                        .append(Text.literal(prefix.isEmpty() ? "V" : prefix).formatted(Formatting.RESET))
-                        .append(Text.literal("]").formatted(Formatting.GRAY));
-            } else {
-                displayName.append(Text.literal("[").formatted(Formatting.GRAY))
-                        .append(Text.literal(prefix.isEmpty() ? "V" : prefix).formatted(Formatting.RESET))
-                        .append(Text.literal("] ").formatted(Formatting.GRAY))
-                        .append(Text.literal(name).formatted(Formatting.GRAY));
+                    .orElse(null);
+
+            if (prefixKey != null) {
+                if (!list.containsKey(entry)) {
+                    list.put(entry, new Decelerate().setMs(150).setValue(1));
+                }
+                addedNames.add(name.toLowerCase());
             }
-            GameProfile fakeProfile = new GameProfile(UUID.randomUUID(), name);
-            PlayerListEntry fake = new PlayerListEntry(fakeProfile, mc.isInSingleplayer());
-            fake.setDisplayName(displayName);
-            fake.setListOrder(Integer.MIN_VALUE);
-            list.put(fake, new Decelerate().setMs(150).setValue(1));
-            addedNames.add(name);
-            if (Hud.getInstance().notificationSettings.isSelected("Staff Join") && !notifiedPlayers.contains(name)) {
-                Notifications.getInstance().addList(Text.literal(name + " - Зашел на сервер!"), 5000);
-                notifiedPlayers.add(name);
+        }
+
+        for (Team team : scoreboard.getTeams()) {
+            for (String name : team.getPlayerList()) {
+                if (addedNames.contains(name.toLowerCase())) continue;
+                if (!namePattern.matcher(name).matches()) continue;
+
+                String teamPrefix = team.getPrefix().getString();
+                String prefixKey = CHAR_TO_NAME.keySet().stream()
+                        .filter(teamPrefix::contains)
+                        .findFirst()
+                        .orElse(null);
+
+                if (prefixKey != null) {
+                    String roleName = CHAR_TO_NAME.get(prefixKey);
+
+                    if (list.keySet().stream().noneMatch(e -> e.getProfile().getName().equalsIgnoreCase(name))) {
+                        GameProfile profile = new GameProfile(UUID.randomUUID(), name);
+                        PlayerListEntry fakeEntry = new PlayerListEntry(profile, false);
+
+                        MutableText displayName = Text.empty();
+                        displayName.append(Text.literal("[").formatted(Formatting.GRAY))
+                                .append(Text.literal(roleName).formatted(Formatting.RESET))
+                                .append(Text.literal("] ").formatted(Formatting.GRAY))
+                                .append(Text.literal(name).formatted(Formatting.GRAY));
+                        fakeEntry.setDisplayName(displayName);
+
+                        list.put(fakeEntry, new Decelerate().setMs(150).setValue(1));
+
+                        if (Hud.getInstance().notificationSettings.isSelected("Staff Join") && !notifiedPlayers.contains(name)) {
+                            Notifications.getInstance().addList(Text.literal(name + " [V] зашел!"), 5000);
+                            notifiedPlayers.add(name);
+                        }
+                    }
+                    addedNames.add(name.toLowerCase());
+                }
             }
         }
 
         list.entrySet().removeIf(entry -> {
             String name = entry.getKey().getProfile().getName();
-            boolean isFromRepo = StaffRepository.isStaff(name);
-            boolean inPlayerList = playerList.stream().anyMatch(p -> p.getProfile().getName().equals(name));
-            boolean inTeam = scoreboard.getTeams().stream().flatMap(t -> t.getPlayerList().stream()).anyMatch(name::equals);
-            boolean shouldRemove = false;
-            if (isFromRepo) {
-                if (!inPlayerList) {
-                    shouldRemove = true;
-                }
-            } else {
-                if (inPlayerList || !inTeam) {
-                    shouldRemove = true;
-                }
-            }
-            if (shouldRemove) {
+            if (!addedNames.contains(name.toLowerCase())) {
                 entry.getValue().setDirection(Direction.BACKWARDS);
             }
+
             if (entry.getValue().isFinished(Direction.BACKWARDS)) {
                 notifiedPlayers.remove(name);
-                if (!inPlayerList && Hud.getInstance().notificationSettings.isSelected("Staff Leave")) {
-                    Notifications.getInstance().addList(Text.literal(name + " - Вышел с сервера!"), 5000);
-                }
                 return true;
             }
             return false;
@@ -224,122 +160,45 @@ public class StaffList extends AbstractDraggable {
         MatrixStack matrix = context.getMatrices();
         FontRenderer font = Fonts.getSize(13, Fonts.Type.DEFAULT);
         FontRenderer fontPlayer = Fonts.getSize(13, Fonts.Type.DEFAULT);
-        FontRenderer icon = Fonts.getSize(19, Fonts.Type.ICONS);
-        FontRenderer items = Fonts.getSize(12, Fonts.Type.DEFAULT);
-        long activeStaff = list.entrySet().stream().filter(e -> !e.getValue().isFinished(Direction.BACKWARDS)).count();
-        String staffCountText = String.valueOf(activeStaff);
-        float textWidth = items.getStringWidth(staffCountText);
-        float boxWidth = textWidth + 6;
 
-        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
-                .round(4,0,4,0).quality(12)
-                .color(new Color(0, 0, 0, 150).getRGB())
-                .build());
+        int staffAlpha = (int) Hud.getInstance().opacityStaffList.getValue();
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
-                .round(4,0,4,0)
-                .thickness(0.1f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(
-                        new Color(18, 19, 20, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(18, 19, 20, 75).getRGB())
-                .build());
+        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F).round(4,0,4,0).color(new Color(0,0,0, staffAlpha).getRGB()).build());
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F).round(4,0,4,0).thickness(0.1f).outlineColor(new Color(33,33,33).getRGB()).color(new Color(18,19,20, staffAlpha).getRGB()).build());
 
-        items.drawString(matrix, "Active:", getX() + getWidth() - boxWidth - 22, getY() + 7, ColorAssist.getText());
-        items.drawString(matrix, staffCountText, getX() + getWidth() - boxWidth - 3, getY() + 7, new Color(225, 225, 255, 255).getRGB());
+        font.drawString(matrix, "Staff List", getX() + 22, getY() + 6.5f, ColorAssist.getText());
 
-        rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6)
-                .color(ColorAssist.getText(0.5F)).round(0F).build());
+        float sepW = getWidth() * 0.5f;
+        float sepX = getX() + (getWidth() - sepW) / 2f;
+        float sepY = getY() + 16;
+        int c1 = ColorAssist.fade(8, 200, ColorAssist.getClientColor(), ColorAssist.getClientColor2());
+        int c2 = ColorAssist.fade(8, 0, ColorAssist.getClientColor(), ColorAssist.getClientColor2());
+        rectangle.render(ShapeProperties.create(matrix, sepX, sepY, sepW, 0.5f).color(c1, c1, c2, c2).build());
 
-        blur.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(0,4,0,4).quality(12)
-                .color(new Color(0, 0, 0, 150).getRGB())
-                .build());
+        float offset = 18;
+        float maxWidth = 80;
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(0,4,0,4)
-                .thickness(0.1f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(
-                        new Color(18, 19, 20, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(18, 19, 20, 75).getRGB())
-                .build());
+        for (Map.Entry<PlayerListEntry, Animation> entry : list.entrySet()) {
+            float anim = entry.getValue().getOutput().floatValue();
+            if (anim <= 0.05) continue;
 
-        icon.drawString(matrix, "E", getX() + 5f, getY() + 6f, new Color(225, 225, 255, 255).getRGB());
-        font.drawString(matrix, getName(), getX() + 22, getY() + 6.5F, ColorAssist.getText());
-        float centerX = getX() + getWidth() / 2.0F;
-        int offset = 23;
-        int maxWidth = 80;
-        Collection<PlayerListEntry> playerList = Objects.requireNonNull(mc.player).networkHandler.getPlayerList();
+            String name = entry.getKey().getProfile().getName();
+            String fullDisplay = entry.getKey().getDisplayName() != null ? entry.getKey().getDisplayName().getString() : name;
 
-        for (Map.Entry<PlayerListEntry, Animation> staff : list.entrySet()) {
-            PlayerListEntry player = staff.getKey();
-            if (player == null) {
-                continue;
-            }
-            String name = player.getProfile().getName();
-            float centerY = getY() + offset;
-            float animation = staff.getValue().getOutput().floatValue();
-            boolean isVisible = playerList.stream().anyMatch(p -> p.getProfile().getName().equals(name));
-            PlayerListEntry renderEntry = isVisible ?
-                    playerList.stream().filter(p -> p.getProfile().getName().equals(name)).findFirst().orElse(player) :
-                    player;
-            String displayName = renderEntry.getDisplayName() != null ? renderEntry.getDisplayName().getString() : name;
-            final String prefix = CHAR_TO_NAME.entrySet().stream()
-                    .filter(e -> displayName.contains(e.getKey()))
-                    .map(Map.Entry::getValue)
-                    .findFirst()
-                    .orElse("Vanish");
-            int prefixColor = PREFIX_COLORS.getOrDefault(prefix, new Color(255, 0, 0, 255).getRGB());
-            Identifier skinTexture = renderEntry.getSkinTextures().texture();
-            int textColor = ColorAssist.getText();
-            int textAlpha = 255;
-            int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-            float prefixWidth = fontPlayer.getStringWidth(prefix);
-            float prefixBoxWidth = prefixWidth + 6;
-            Calculate.scale(matrix, centerX, centerY, 1, animation, () -> {
-                Render2D.drawTexture(context, skinTexture, getX() + 4.5f, centerY - 1.5f, 8, 3.5f, 8, 8, 64, ColorAssist.getRect(1));
-                rectangle.render(ShapeProperties.create(matrix, getX() + 15F, centerY - 1, 0.5F, 7).color(ColorAssist.getOutline(1, 0.5F)).build());
-                fontPlayer.drawString(matrix, name, getX() + 19, centerY + 1, colorWithAlpha);
-                fontPlayer.drawString(matrix, prefix, getX() + getWidth() - prefixWidth - 8, centerY + 1, prefixColor);
+            String role = CHAR_TO_NAME.values().stream().filter(fullDisplay::contains).findFirst().orElse("Vanish");
+            int pColor = PREFIX_COLORS.getOrDefault(role.toLowerCase(), -1);
+
+            float curY = getY() + offset;
+            Calculate.scale(matrix, getX() + getWidth()/2, curY, 1, anim, () -> {
+                fontPlayer.drawString(matrix, name, getX() + 5, curY + 2, ColorAssist.getText());
+                fontPlayer.drawString(matrix, role, getX() + getWidth() - fontPlayer.getStringWidth(role) - 5, curY + 2, pColor);
             });
-            float width = fontPlayer.getStringWidth(name) + 25 + 10;
-            maxWidth = (int) Math.max(width, maxWidth);
-            offset += (int) (11 * animation);
+
+            maxWidth = Math.max(maxWidth, fontPlayer.getStringWidth(name) + fontPlayer.getStringWidth(role) + 20);
+            offset += 12 * anim;
         }
 
-        if (list.isEmpty() && PlayerInteractionHelper.isChat(mc.currentScreen)) {
-            float centerY = getY() + offset;
-            String name = "Example Staff";
-            final String prefix = "Vanish";
-            int textColor = ColorAssist.getText();
-            int textAlpha = 255;
-            int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-            int prefixColor = PREFIX_COLORS.getOrDefault(prefix, new Color(225, 225, 255, 255).getRGB());
-            float prefixWidth = fontPlayer.getStringWidth(prefix);
-            float prefixBoxWidth = prefixWidth + 6;
-            Calculate.scale(matrix, centerX, centerY, 1, 1, () -> {
-                EntityRenderer<? super LivingEntity, ?> baseRenderer = mc.getEntityRenderDispatcher().getRenderer(mc.player);
-                if (baseRenderer instanceof LivingEntityRenderer<?, ?, ?>) {
-                    LivingEntityRenderer<LivingEntity, LivingEntityRenderState, ?> renderer = (LivingEntityRenderer<LivingEntity, LivingEntityRenderState, ?>) baseRenderer;
-                    LivingEntityRenderState state = renderer.getAndUpdateRenderState(mc.player, tickCounter.getTickDelta(false));
-                    Identifier textureLocation = renderer.getTexture(state);
-                    Render2D.drawTexture(context, textureLocation, getX() + 4.5f, centerY - 1.5f, 8, 3, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1));
-                }
-                rectangle.render(ShapeProperties.create(matrix, getX() + 15F, centerY - 1, 0.5F, 7).color(ColorAssist.getOutline(1, 0.5F)).build());
-                fontPlayer.drawString(matrix, name, getX() + 19, centerY + 1, colorWithAlpha);
-                fontPlayer.drawString(matrix, prefix, getX() + getWidth() - prefixWidth - 8, centerY + 1, prefixColor);
-            });
-            int width = (int) fontPlayer.getStringWidth(name) + 25 + 10;
-            maxWidth = Math.max(width, maxWidth);
-            offset += 11;
-        }
-
-        setWidth(maxWidth + 20);
-        setHeight(offset);
+        setWidth((int) (maxWidth + 10));
+        setHeight((int) offset);
     }
 }

@@ -6,6 +6,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Vector4f;
 import fun.rich.features.module.setting.implement.SelectSetting;
+import fun.rich.utils.client.managers.localization.LocalizationManager;
 import fun.rich.common.animation.Animation;
 import fun.rich.common.animation.Direction;
 import fun.rich.common.animation.implement.Decelerate;
@@ -50,7 +51,8 @@ public class SelectedButton extends AbstractComponent {
 
         }
 
-        Fonts.getSize(12, BOLD).drawString(matrix, text, x + 4, y + 5, ColorAssist.multAlpha(new Color(225, 225, 225, 225).getRGB(), Calculate.clamp(alpha, 0, 1)));
+        String displayText = LocalizationManager.getInstance().translateValue(text);
+        Fonts.getSize(12, BOLD).drawString(matrix, displayText, x + 4, y + 5, ColorAssist.multAlpha(new Color(225, 225, 225, 225).getRGB(), Calculate.clamp(alpha, 0, 1)));
     }
 
     @Override

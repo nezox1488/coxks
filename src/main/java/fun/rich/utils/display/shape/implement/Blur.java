@@ -22,9 +22,20 @@ public class Blur implements Shape, QuickImports {
     private final ShaderProgramKey SHADER_KEY = new ShaderProgramKey(Identifier.of("minecraft", "core/blur"), VertexFormats.POSITION, Defines.EMPTY);
     public Framebuffer input;
     public Vector2f resolution = new Vector2f();
+    /** Вызывать setup() только при первом blur.render() за кадр, чтобы не копировать экран, если blur не рисуется */
+    private boolean needsSetupThisFrame = true;
+
+    /** Вызвать в начале кадра HUD вместо setup() — копирование буфера произойдёт только при первом blur.render() */
+    public void prepareFrame() {
+        needsSetupThisFrame = true;
+    }
 
     @Override
     public void render(ShapeProperties shape) {
+        if (needsSetupThisFrame) {
+            setup();
+            needsSetupThisFrame = false;
+        }
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
@@ -36,7 +47,7 @@ public class Blur implements Shape, QuickImports {
         Vector3f pos = matrix4f.transformPosition(shape.getX(), shape.getY(), 0, new Vector3f()).mul(scale);
         Vector3f size = matrix4f.getScale(new Vector3f()).mul(scale);
         Vector4f round = shape.getRound().mul(size.y);
-        float quality = shape.getQuality();
+        float quality = Math.min(shape.getQuality(), 20f);
         float softness = shape.getSoftness();
         float thickness = shape.getThickness();
         float width = shape.getWidth() * size.x;

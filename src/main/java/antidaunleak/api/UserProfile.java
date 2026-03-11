@@ -26,11 +26,11 @@ public class UserProfile {
             cache.put("subTime", getSubsTime());
         } catch (UnsatisfiedLinkError e) {
             nativeFailed = true;
-            cache.put("username", "KODEK1337PROTECTED");
-            cache.put("hwid", "hwid-1231294809786-2348786");
-            cache.put("role", "Admin");
-            cache.put("uid", "228");
-            cache.put("subTime", "2025-24-05");
+            cache.put("username", "Dev");
+            cache.put("hwid", "hwid-afina123");
+            cache.put("role", "Developer");
+            cache.put("uid", "2");
+            cache.put("subTime", "2029-28-09");
         }
     }
 

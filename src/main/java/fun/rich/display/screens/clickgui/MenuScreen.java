@@ -80,8 +80,8 @@ public class MenuScreen extends Screen implements QuickImports {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        width = 400;
-        height = 250;
+        width = 420;
+        height = 275;
 
         int currentWidth = window.getScaledWidth();
         int currentHeight = window.getScaledHeight();
@@ -91,8 +91,8 @@ public class MenuScreen extends Screen implements QuickImports {
                 x = (int) (currentWidth * offsetXPercent - width / 2);
                 y = (int) (currentHeight * offsetYPercent - height / 2);
             } else {
-                x = currentWidth / 2 - 200;
-                y = currentHeight / 2 - 125;
+                x = currentWidth / 2 - 210;
+                y = currentHeight / 2 - 138;
                 offsetXPercent = (x + width / 2f) / currentWidth;
                 offsetYPercent = (y + height / 2f) / currentHeight;
             }
@@ -105,16 +105,19 @@ public class MenuScreen extends Screen implements QuickImports {
         lastTransformedMouseY = transformed[1];
 
         rectangle.render(ShapeProperties.create(context.getMatrices(), 0, 0, window.getScaledWidth(), window.getScaledHeight()).color(Calculate.applyOpacity(0xFF000000, 100 * getScaleAnimation())).build());
-        backgroundComponent.position(x - 20, y).size(width + 40, height);
-        autoBuyGuiComponent.position(x - 20, y).size(width + 40, height + 30);
+        backgroundComponent.position(x, y).size(width, height);
+        autoBuyGuiComponent.position(x, y).size(width, height + 30);
 
-        if (category == ModuleCategory.COMBAT || category == ModuleCategory.MOVEMENT || category == ModuleCategory.RENDER || category == ModuleCategory.PLAYER || category == ModuleCategory.MISC) {
-            searchComponent.position(x + 330, y + 7.5F);
+        int screenWidth = currentWidth;
+        int screenHeight = currentHeight;
+        float searchWidth = 115f;
+        if (category == ModuleCategory.COMBAT || category == ModuleCategory.MOVEMENT || category == ModuleCategory.RENDER || category == ModuleCategory.PLAYER || category == ModuleCategory.MISC || category == ModuleCategory.THEME) {
+            searchComponent.position((screenWidth - searchWidth) / 2f, screenHeight - 50);
         } else {
-            searchComponent.position(x + 330, y - 1000f);
+            searchComponent.position((screenWidth - searchWidth) / 2f, -1000f);
             searchComponent.setText("");
         }
-        categoryContainerComponent.position(x - 20, y);
+        categoryContainerComponent.position(x, y);
 
         Calculate.scale(context.getMatrices(), x + (float) width / 2, y + (float) height / 2, getScaleAnimation(), () -> {
             components.forEach(component -> component.render(context, (int)lastTransformedMouseX, (int)lastTransformedMouseY, delta));
@@ -193,7 +196,16 @@ public class MenuScreen extends Screen implements QuickImports {
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
+    public void setCategory(ModuleCategory category) {
+        if (this.category != category) {
+            this.category = category;
 
+            if (this.searchComponent != null) {
+                this.searchComponent.setText("");
+                SearchComponent.typing = false;
+            }
+        }
+    }
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         double[] transformed = transformMouseCoords(mouseX, mouseY);
@@ -247,7 +259,7 @@ public class MenuScreen extends Screen implements QuickImports {
     }
 
     private boolean isHoveringBackground(double mouseX, double mouseY) {
-        return mouseX >= x - 20 && mouseX <= x + width + 20 &&
+        return mouseX >= x && mouseX <= x + width &&
                 mouseY >= y && mouseY <= y + height;
     }
 }

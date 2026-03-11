@@ -89,6 +89,8 @@ accessible method net/minecraft/network/packet/s2c/play/BossBarS2CPacket$Action 
 accessible field net/minecraft/network/packet/s2c/play/BossBarS2CPacket$AddAction name Lnet/minecraft/text/Text;
 accessible field net/minecraft/network/packet/s2c/play/BossBarS2CPacket uuid Ljava/util/UUID;
 accessible class net/minecraft/network/packet/s2c/play/BossBarS2CPacket$AddAction
+accessible class net/minecraft/network/packet/s2c/play/BossBarS2CPacket$UpdateProgressAction
+accessible field net/minecraft/network/packet/s2c/play/BossBarS2CPacket$UpdateProgressAction progress F
 accessible field net/minecraft/client/option/KeyBinding timesPressed I
 accessible method net/minecraft/client/MinecraftClient doItemUse ()V
 accessible method net/minecraft/client/network/ClientPlayerInteractionManager syncSelectedSlot ()V

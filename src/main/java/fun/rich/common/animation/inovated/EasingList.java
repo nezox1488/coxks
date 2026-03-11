@@ -49,8 +49,17 @@ public class EasingList {
     public static final Easing BOUNCE_IN = (value) -> (float) (1.0 - BOUNCE_OUT.ease((float) (1.0 - value)));
     public static final Easing BOUNCE_BOTH = (value) -> (float) (value < 0.5 ? (1.0 - BOUNCE_OUT.ease((float) (1.0 - 2.0 * value))) / 2.0 : (1.0 + BOUNCE_OUT.ease((float) (2.0 * value - 1.0))) / 2.0);
 
-    public static final Easing QUINT_IN = (x) -> {
-        return x < 0.5 ? 16 * x * x * x * x * x : (float) (1 - Math.pow(-2 * x + 2, 5) / 2);
+    public static final Easing QUINT_IN = (x) -> x < 0.5 ? 16 * x * x * x * x * x : (float) (1 - Math.pow(-2 * x + 2, 5) / 2);
+
+    /**
+     * Квадратичный ease-in-out, используется эффектами таргет-ESP.
+     */
+    public static final Easing QUAD_IN_OUT = (value) -> {
+        if (value < 0.5f) {
+            return 2f * value * value;
+        } else {
+            return (float) (1 - Math.pow(-2 * value + 2, 2) / 2);
+        }
     };
 
 

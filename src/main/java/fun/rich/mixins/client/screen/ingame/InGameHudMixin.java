@@ -34,11 +34,28 @@ public abstract class InGameHudMixin implements QuickImports {
 
     @Shadow protected abstract void renderMountHealth(DrawContext context);
 
+    @Inject(method = "renderStatusBars", at = @At("RETURN"))
+    private void renderSaturationBars(DrawContext context, CallbackInfo ci) {
+        if (client.player == null || !client.interactionManager.hasStatusBars()) return;
+        float saturation = client.player.getHungerManager().getSaturationLevel();
+        int w = client.getWindow().getScaledWidth();
+        int h = client.getWindow().getScaledHeight();
+        int x = w / 2 + 91 - 80;
+        int y = h - 39 + 10;
+        int barW = 80;
+        int barH = 2;
+        context.fill(x, y, x + barW, y + barH, 0xFF404040);
+        int fillW = (int) (barW * Math.min(1f, saturation / 20f));
+        if (fillW > 0) {
+            context.fill(x, y, x + fillW, y + barH, 0xFFE0C000);
+        }
+    }
+
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/LayeredDrawer;render(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
             shift = At.Shift.AFTER))
     public void onRender(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        blur.setup();
+        blur.prepareFrame();
         DrawEvent event = new DrawEvent(context, drawEngine, tickCounter.getTickDelta(false));
         EventManager.callEvent(event);
         Render2D.onRender(context);
@@ -48,9 +65,10 @@ public abstract class InGameHudMixin implements QuickImports {
 
         if (!client.options.hudHidden && !debugHudVisible) {
             context.getMatrices().push();
-            context.getMatrices().translate(0.0F, 0.0F, 400.0F);
+            context.getMatrices().translate(0.0F, 0.0F, 900.0F);
 
-            Rich.getInstance().getDraggableRepository().draggable().forEach(draggable -> {
+            var draggables = Rich.getInstance().getDraggableRepository().draggable();
+            for (var draggable : draggables) {
                 if (draggable.canDraw(hud, draggable)) draggable.startAnimation();
                 else draggable.stopAnimation();
 
@@ -58,10 +76,22 @@ public abstract class InGameHudMixin implements QuickImports {
                 if (!draggable.isCloseAnimationFinished()) {
                     draggable.validPosition();
                     try {
-                        Calculate.setAlpha(scale, () -> draggable.drawDraggable(context));
+                        float visualScale = 0.88f + 0.12f * scale;
+                        float cx = draggable.getX() + draggable.getWidth() / 2f;
+                        float cy = draggable.getY() + draggable.getHeight() / 2f;
+                        var matrix = context.getMatrices();
+                        matrix.push();
+                        matrix.translate(cx, cy, 0);
+                        matrix.scale(visualScale, visualScale, 1f);
+                        matrix.translate(-cx, -cy, 0);
+                        Calculate.setAlpha(scale, () -> {
+                            if (draggable.isDragging()) draggable.renderDragOutline(context);
+                            draggable.drawDraggable(context);
+                        });
+                        matrix.pop();
                     } catch (ConcurrentModificationException ignored) {}
                 }
-            });
+            }
 
             context.getMatrices().pop();
         }

@@ -79,6 +79,7 @@ public class AuctionHandler {
             Slot slot = slots.get(i);
             if (slot.getStack().isEmpty()) continue;
             ItemStack stack = slot.getStack();
+            if (stack.getItem() == Items.GRAY_DYE) continue;
 
             if (AuctionUtils.isArmorItem(stack) && AuctionUtils.hasThornsEnchantment(stack)) {
                 continue;
@@ -139,6 +140,7 @@ public class AuctionHandler {
             Slot slot = slots.get(i);
             if (slot.getStack().isEmpty()) continue;
             ItemStack stack = slot.getStack();
+            if (stack.getItem() == Items.GRAY_DYE) continue;
 
             if (AuctionUtils.isArmorItem(stack) && AuctionUtils.hasThornsEnchantment(stack)) {
                 continue;

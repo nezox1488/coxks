@@ -3,6 +3,7 @@ package fun.rich.mixins.player.entity;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import fun.rich.features.impl.combat.Aura;
+import fun.rich.features.impl.render.NoRender;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -32,6 +33,9 @@ public abstract class LivingEntityRendererMixin implements QuickImports {
             EntityColorEvent event = new EntityColorEvent(-1);
             EventManager.callEvent(event);
             if (event.isCancelled()) translucent = true;
+        }
+        if (NoRender.getInstance() != null && NoRender.getInstance().isState() && NoRender.getInstance().modeSetting.isSelected("Glow")) {
+            showOutline = false;
         }
         return this.getRenderLayer(state, showBody, translucent, showOutline);
     }

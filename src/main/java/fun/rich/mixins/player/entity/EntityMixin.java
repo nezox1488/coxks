@@ -12,13 +12,16 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import fun.rich.features.impl.render.Optimization;
 import fun.rich.utils.client.managers.event.EventManager;
 import fun.rich.utils.display.interfaces.QuickImports;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
 import fun.rich.events.player.BoundingBoxControlEvent;
 import fun.rich.events.player.PlayerVelocityStrafeEvent;
+import fun.rich.features.impl.render.NoRender;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements QuickImports {
@@ -61,5 +64,20 @@ public abstract class EntityMixin implements QuickImports {
     public boolean isControlledByPlayerHook(boolean original) {
         if ((Object) this == mc.player) return false;
         return original;
+    }
+
+    @Inject(method = "isGlowing", at = @At("HEAD"), cancellable = true)
+    private void noRenderGlow(CallbackInfoReturnable<Boolean> cir) {
+        if (mc.world != null && NoRender.getInstance() != null && NoRender.getInstance().isState() && NoRender.getInstance().modeSetting.isSelected("Glow")) {
+            cir.setReturnValue(false);
+        }
+    }
+
+    @ModifyVariable(method = "getLerpedPos", at = @At("HEAD"), argsOnly = true)
+    private float optimizationSmoothPlayersPos(float tickDelta) {
+        if ((Object) this != mc.player && Optimization.getInstance() != null && Optimization.getInstance().isSmoothPlayersEnabled()) {
+            return Optimization.getSmoothRenderDelta(tickDelta);
+        }
+        return tickDelta;
     }
 }

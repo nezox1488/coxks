@@ -8,9 +8,9 @@ import fun.rich.utils.client.chat.ChatMessage;
 import fun.rich.utils.client.logs.Logger;
 import fun.rich.utils.connection.auracheckft.FTCheckClient;
 import fun.rich.utils.connection.irc.IRCManager;
+// import fun.rich.utils.client.protection.SitokuProtect;
 import fun.rich.utils.connection.tps.TPSCalculate;
 import fun.rich.utils.display.scissor.ScissorAssist;
-import fun.rich.utils.client.webhook.WebhookManager;
 import net.fabricmc.api.ModInitializer;
 import fun.rich.common.repository.box.BoxESPRepository;
 import fun.rich.common.repository.rct.RCTRepository;
@@ -29,6 +29,7 @@ import fun.rich.utils.connection.cloud.CloudConfigWebSocketClient;
 import fun.rich.main.client.ClientInfo;
 import fun.rich.main.client.ClientInfoProvider;
 import fun.rich.main.listener.ListenerRepository;
+import fun.rich.client.FoodTooltipHandler;
 import fun.rich.commands.CommandDispatcher;
 import fun.rich.utils.features.aura.striking.StrikerConstructor;
 import com.google.common.eventbus.EventBus;
@@ -55,7 +56,10 @@ import net.minecraft.client.session.report.ReporterEnvironment;
 import com.mojang.authlib.minecraft.UserApiService;
 import java.util.Optional;
 import java.util.UUID;
-
+/**
+ * @Recoded by Sitoku
+ * @since 3/3/2026
+ */
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -95,12 +99,14 @@ public class Rich implements ModInitializer {
     @Native(type = Native.Type.VMProtectBeginMutation)
     public void onInitialize() {
         instance = this;
+     //   SitokuProtect.run();
         initClientInfoProvider();
         initModules();
         initDraggable();
         initFileManager();
         initCommands();
         initListeners();
+        FoodTooltipHandler.register();
         initDiscordRPC();
         initWebSocketClient();
         initFTCheckClient();
@@ -116,40 +122,11 @@ public class Rich implements ModInitializer {
         new Thread(() -> {
             try {
                 Thread.sleep(3000);
-                sendStartupWebhook();
             } catch (Exception e) {
             }
         }).start();
     }
 
-    private void sendStartupWebhook() {
-        try {
-            String username = UserProfile.getInstance().profile("username");
-            String uid = UserProfile.getInstance().profile("uid");
-            String role = UserProfile.getInstance().profile("role");
-            String clientName = clientInfoProvider.clientName();
-
-            String discordName = "Not Connected";
-            String discordAvatar = "Not Connected";
-
-            if (discordManager != null && discordManager.getInfo() != null) {
-                String tempName = discordManager.getInfo().userName();
-                String tempAvatar = discordManager.getInfo().avatarUrl();
-
-                if (tempName != null && !tempName.isEmpty() && !tempName.equals("Unknown")) {
-                    discordName = tempName;
-                }
-
-                if (tempAvatar != null && !tempAvatar.isEmpty()) {
-                    discordAvatar = tempAvatar;
-                }
-            }
-
-            WebhookManager.sendClientStartWebhook(username, uid, role, discordName, discordAvatar, clientName);
-        } catch (Exception e) {
-            Logger.error("Failed to send startup webhook: " + e.getMessage());
-        }
-    }
 
     @Native(type = Native.Type.VMProtectBeginMutation)
     private void loadCurrentAccount() {

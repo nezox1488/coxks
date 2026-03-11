@@ -20,10 +20,12 @@ public final class DefaultCommands {
                 new FriendCommand(),
                 new IRCCommand(),
                 new PrefixCommand(),
+                new RotationLogCommand(),
                 new TargetCommand(),
                 new StaffCommand(),
                 new BlockESPCommand(),
-                new TabParserCommand()
+                new TabParserCommand(),
+                new VClipCommand()
         ));
         return Collections.unmodifiableList(commands);
     }

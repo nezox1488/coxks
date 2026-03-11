@@ -1,5 +1,9 @@
 package fun.rich.features.impl.misc;
-
+/**
+ * @author Sitoku
+ * @since 3/3/2026
+ */
+import fun.rich.utils.display.color.ColorAssist;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import net.minecraft.client.option.Perspective;
@@ -28,22 +32,22 @@ public class FreeCam extends Module {
     }
 
     private final SliderSettings speedSetting = new SliderSettings("Скорость", "Выберите скорость камеры отладки").setValue(2.0F).range(0.5F, 5.0F);
-    private final BooleanSetting freezeSetting = new BooleanSetting("Заморозка", "Вы замораживаетесь на месте").setValue(false);
+    private final BooleanSetting freezeSetting = new BooleanSetting("Отменять пакет", "Вы замораживаетесь на месте").setValue(false);
     public Vec3d pos, prevPos;
 
     public FreeCam() {
-        super("FreeCam", "Free Cam", ModuleCategory.MISC);
+        super("FreeCam", "FreeCam", ModuleCategory.MISC);
         setup(speedSetting, freezeSetting);
     }
 
-    
+
     @Override
     public void activate() {
         prevPos = pos = new Vec3d(mc.getEntityRenderDispatcher().camera.getPos().toVector3f());
         super.activate();
     }
 
-    
+
     @EventHandler
     public void onPacket(PacketEvent e) {
         switch (e.getPacket()) {
@@ -54,13 +58,13 @@ public class FreeCam extends Module {
         }
     }
 
-    
+
     @EventHandler
     public void onWorldRender(WorldRenderEvent e) {
-        Render3D.drawBox(mc.player.getBoundingBox().offset(Calculate.interpolate(mc.player).subtract(mc.player.getPos())), -1, 1);
+        Render3D.drawBox(mc.player.getBoundingBox().offset(Calculate.interpolate(mc.player).subtract(mc.player.getPos())), ColorAssist.getClientColor(), 1);
     }
 
-    
+
     @EventHandler
     public void onMove(MoveEvent e) {
         if (freezeSetting.isValue()) {
@@ -68,7 +72,7 @@ public class FreeCam extends Module {
         }
     }
 
-    
+
     @EventHandler
     public void onInput(InputEvent e) {
         float speed = speedSetting.getValue();
@@ -80,7 +84,7 @@ public class FreeCam extends Module {
         e.inputNone();
     }
 
-    
+
     @EventHandler
     public void onCameraPosition(CameraPositionEvent e) {
         e.setPos(Calculate.interpolate(prevPos, pos));

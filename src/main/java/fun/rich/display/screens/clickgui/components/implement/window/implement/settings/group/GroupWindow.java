@@ -5,6 +5,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
 import fun.rich.features.module.setting.SettingComponentAdder;
 import fun.rich.features.module.setting.implement.GroupSetting;
+import fun.rich.utils.client.managers.localization.LocalizationManager;
 import fun.rich.utils.display.font.Fonts;
 import fun.rich.utils.display.shape.ShapeProperties;
 import fun.rich.display.screens.clickgui.components.implement.settings.AbstractSettingComponent;
@@ -41,7 +42,7 @@ public class GroupWindow extends AbstractWindow {
                 new Color(31,27,35,255).getRGB(),
                 new Color(14,14,16,255).getRGB()).build());
 
-        Fonts.getSize(15, Fonts.Type.SEMI).drawGradientString(context.getMatrices(), setting.getName() + " Settings",
+        Fonts.getSize(15, Fonts.Type.SEMI).drawGradientString(context.getMatrices(), setting.getLocalizedName() + " " + LocalizationManager.getInstance().translate("Settings"),
                 x + 10, y + 10, ColorAssist.getText(), new Color(165, 165, 165, 255).getRGB());
         boolean isLimitedHeight = MathHelper.clamp(height, 0, 200) == 200;
         if (isLimitedHeight) scissorManager.push(matrix.peek().getPositionMatrix(), x, y + 23, width, height - 28);

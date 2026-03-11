@@ -35,12 +35,14 @@ public class BoxESPRepository implements QuickImports, QuickLogger {
     }
 
     @EventHandler
-
     public void onWorldRender(WorldRenderEvent e) {
-        boxes.forEach((pos, pair) -> {
-            if (drawFill) Render3D.drawShape(pos, pair.getLeft(), pair.getRight(), 1);
-            else Render3D.drawShapeAlternative(pos, pair.getLeft(), pair.getRight(), 1, false, false);
-        });
+        if (!boxes.isEmpty()) {
+            boxes.forEach((pos, pair) -> {
+                if (drawFill) Render3D.drawShape(pos, pair.getLeft(), pair.getRight(), 1);
+                else Render3D.drawShapeAlternative(pos, pair.getLeft(), pair.getRight(), 1, false, false);
+            });
+        }
+        if (entities.isEmpty()) return;
         PlayerInteractionHelper.streamEntities().filter(ent -> entities.containsKey(ent.getType()) && ent != mc.player).forEach(ent -> {
             int entityColor = entities.get(ent.getType());
             int color = entityColor == 0 ? ColorAssist.getClientColor() : entityColor;

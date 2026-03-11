@@ -13,6 +13,8 @@ import fun.rich.utils.display.scissor.ScissorAssist;
 import fun.rich.Rich;
 import fun.rich.display.screens.clickgui.components.AbstractComponent;
 import fun.rich.display.screens.clickgui.MenuScreen;
+import fun.rich.utils.client.managers.localization.LocalizationManager;
+
 import java.awt.*;
 
 public class SearchComponent extends AbstractComponent {
@@ -23,6 +25,7 @@ public class SearchComponent extends AbstractComponent {
     private int selectionEnd = -1;
     private long lastClickTime = 0;
     private float xOffset = 0;
+    private boolean languageButtonHovered = false;
     @Getter
     private String text = "";
 
@@ -59,7 +62,8 @@ public class SearchComponent extends AbstractComponent {
                 .color(new Color(155, 155, 155, 55).getRGB()).build());
 
         Fonts.getSize(25, Fonts.Type.ICONS).drawString(context.getMatrices(), "U", x + width - 14, y + 3.5f, typing ? -1 : 0xFF878894);
-        String displayText = text.equalsIgnoreCase("") && !typing ? "Search" : text;
+        LocalizationManager loc = LocalizationManager.getInstance();
+        String displayText = text.equalsIgnoreCase("") && !typing ? loc.translate("Search") : text;
         ScissorAssist scissor = Rich.getInstance().getScissorManager();
         scissor.push(matrix.peek().getPositionMatrix(), x + 1, y, width - 3, height);
         if (typing && selectionStart != -1 && selectionEnd != -1 && selectionStart != selectionEnd) {
@@ -88,13 +92,47 @@ public class SearchComponent extends AbstractComponent {
             }
             selectionEnd = cursorPosition;
         }
+
+        float langButtonX = x + width + 5;
+        float langButtonY = y;
+        float langButtonWidth = 30;
+        float langButtonHeight = height;
+        languageButtonHovered = Calculate.isHovered(mouseX, mouseY, langButtonX, langButtonY, langButtonWidth, langButtonHeight);
+
+        blur.render(ShapeProperties.create(matrix, langButtonX, langButtonY, langButtonWidth, langButtonHeight).round(3).quality(64)
+                .color(new Color(0, 0, 0, 200).getRGB())
+                .build());
+        rectangle.render(ShapeProperties.create(matrix, langButtonX, langButtonY, langButtonWidth, langButtonHeight).round(3)
+                .softness(2)
+                .thickness(0.5f)
+                .outlineColor(new Color(18, 19, 20, 225).getRGB())
+                .color(
+                        languageButtonHovered ? new Color(30, 30, 30, 155).getRGB() : new Color(18, 19, 20, 155).getRGB(),
+                        languageButtonHovered ? new Color(20, 20, 20, 155).getRGB() : new Color(5, 6, 7, 155).getRGB(),
+                        languageButtonHovered ? new Color(20, 20, 20, 155).getRGB() : new Color(5, 6, 7, 155).getRGB(),
+                        languageButtonHovered ? new Color(30, 30, 30, 155).getRGB() : new Color(18, 19, 20, 155).getRGB())
+                .build());
+        String langText = loc.getCurrentLanguage() == LocalizationManager.Language.RU ? "RU" : "EN";
+        Fonts.getSize(11, Fonts.Type.SEMI).drawCenteredString(context.getMatrices(), langText, langButtonX + langButtonWidth / 2f, langButtonY + langButtonHeight / 2f - 0.5f, -1);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         double[] transformed = transformMouseCoords(mouseX, mouseY);
-        boolean isHovered = Calculate.isHovered(transformed[0], transformed[1], x, y, width, height);
+        float langButtonX = x + width + 5;
+        float langButtonY = y;
+        float langButtonWidth = 30;
+        float langButtonHeight = height;
+        boolean langButtonHovered = Calculate.isHovered(transformed[0], transformed[1], langButtonX, langButtonY, langButtonWidth, langButtonHeight);
+        if (langButtonHovered && button == 0) {
+            LocalizationManager loc = LocalizationManager.getInstance();
+            loc.setCurrentLanguage(loc.getCurrentLanguage() == LocalizationManager.Language.RU
+                    ? LocalizationManager.Language.EN
+                    : LocalizationManager.Language.RU);
+            return true;
+        }
 
+        boolean isHovered = Calculate.isHovered(transformed[0], transformed[1], x, y, width, height);
         if (isHovered && button == 0) {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastClickTime < 250) {

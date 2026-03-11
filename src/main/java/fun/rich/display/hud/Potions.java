@@ -10,7 +10,6 @@ import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Formatting;
 import fun.rich.utils.client.managers.api.draggable.AbstractDraggable;
 import fun.rich.common.animation.Animation;
 import fun.rich.common.animation.Direction;
@@ -22,6 +21,8 @@ import fun.rich.utils.display.color.ColorAssist;
 import fun.rich.utils.math.calc.Calculate;
 import fun.rich.utils.display.geometry.Render2D;
 import fun.rich.events.packet.PacketEvent;
+import fun.rich.features.impl.render.Hud;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,10 +30,12 @@ import java.util.Random;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+
 import java.awt.*;
 
 public class Potions extends AbstractDraggable {
     private final List<Potion> list = new ArrayList<>();
+
     private static final RegistryEntry<StatusEffect>[] NEGATIVE_EFFECTS = new RegistryEntry[] {
             StatusEffects.POISON, StatusEffects.WITHER, StatusEffects.NAUSEA, StatusEffects.BLINDNESS,
             StatusEffects.HUNGER, StatusEffects.SLOWNESS, StatusEffects.MINING_FATIGUE, StatusEffects.INSTANT_DAMAGE,
@@ -42,7 +45,7 @@ public class Potions extends AbstractDraggable {
     private RegistryEntry<StatusEffect> currentRandomEffect = StatusEffects.SPEED;
 
     public Potions() {
-        super("Potions", 200, 40, 80, 23, true);
+        super("Potions", 200, 40, 85, 23, true);
     }
 
     @Override
@@ -91,120 +94,86 @@ public class Potions extends AbstractDraggable {
         MatrixStack matrix = context.getMatrices();
         FontRenderer font = Fonts.getSize(13, Fonts.Type.DEFAULT);
         FontRenderer fontPotion = Fonts.getSize(13, Fonts.Type.DEFAULT);
-        FontRenderer icon = Fonts.getSize(17, Fonts.Type.ICONS);
-        FontRenderer items = Fonts.getSize(12, Fonts.Type.DEFAULT);
+        FontRenderer iconFont = Fonts.getSize(17, Fonts.Type.ICONS);
 
-        long activeEffects = list.stream().filter(p -> !p.anim.isFinished(Direction.BACKWARDS)).count();
-        String effectCountText = String.valueOf(activeEffects);
-        float textWidth = items.getStringWidth(effectCountText);
-        float boxWidth = textWidth + 6;
+        Hud hud = Hud.getInstance();
+        int potionsAlpha = (int) hud.opacityPotions.getValue();
 
-        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
-                .round(4,0,4,0).quality(12)
-                .color(new Color(0, 0, 0, 150).getRGB())
+        if (hud.potionsBlur.isValue()) {
+            blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight())
+                    .round(12).quality((int) hud.potionsBlurAmount.getValue()).color(new Color(0, 0, 0, 100).getRGB()).build());
+        }
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight())
+                .round(12)
+                .thickness(0.5f)
+                .outlineColor(new Color(45, 45, 45, 255).getRGB())
+                .color(ColorAssist.setAlpha(hud.potionsColor.getColor(), potionsAlpha))
                 .build());
 
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), 15.5F)
-                .round(4,0,4,0)
-                .thickness(0.1f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(
-                        new Color(18, 19, 20, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(18, 19, 20, 75).getRGB())
-                .build());
+        iconFont.drawString(matrix, "C", getX() + 8f, getY() + 9f, -1);
+        font.drawString(matrix, getName(), getX() + 35, getY() + 6.5f, ColorAssist.getText());
 
-        items.drawString(matrix, "Active:", getX() + getWidth() - boxWidth - 22, getY() + 7, ColorAssist.getText());
-        items.drawString(matrix, effectCountText, getX() + getWidth() - boxWidth - 3, getY() + 7, new Color(225, 225, 255, 255).getRGB());
+        float sepW = getWidth() * 0.5f;
+        float sepX = getX() + (getWidth() - sepW) / 2f;
+        float sepY = getY() + 16;
 
-        rectangle.render(ShapeProperties.create(matrix, getX() + 18, getY() + 5, 0.5f, 6)
-                .color(ColorAssist.getText(0.5F)).round(0F).build());
+        int c1 = ColorAssist.fade(8, 200, ColorAssist.getClientColor(), ColorAssist.getClientColor2());
+        int c2 = ColorAssist.fade(8, 0, ColorAssist.getClientColor(), ColorAssist.getClientColor2());
 
-
-        blur.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(0,4,0,4).quality(12)
-                .color(new Color(0, 0, 0, 150).getRGB())
-                .build());
-
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY() + 16.5F, getWidth(), getHeight() - 17)
-                .round(0,4,0,4)
-                .thickness(0.1f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(
-                        new Color(18, 19, 20, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(18, 19, 20, 75).getRGB())
-                .build());
-
-        icon.drawString(matrix, "C", getX() + 5f, getY() + 6.5f, new Color(225, 225, 255, 255).getRGB());
-        font.drawString(matrix, getName(), getX() + 22, getY() + 6.5f, ColorAssist.getText());
+        rectangle.render(ShapeProperties.create(matrix, sepX, sepY, sepW, 0.5f)
+                .color(c1, c1, c2, c2).build());
 
         float centerX = getX() + getWidth() / 2.0F;
-        int offset = 23;
-        int maxWidth = 95;
+        int offset = 22;
+        int maxWidth = 98;
 
         if (list.isEmpty() && PlayerInteractionHelper.isChat(mc.currentScreen)) {
             float centerY = getY() + offset;
-            String name = "Example effect";
-            String duration = "**:**";
-            int textColor = ColorAssist.getText();
-            int textAlpha = 255;
-            int colorWithAlpha = ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-            int color = new Color(225, 225, 255, 255).getRGB();
-            int colorWithAlphaRectangle = ColorAssist.rgba((textColor >> 16) & 205, (textColor >> 8) & 205, textColor & 205, textAlpha - 125);
-            float durationWidth = fontPotion.getStringWidth(duration);
-            float durationBoxWidth = durationWidth + 6;
+            String name = "Example";
+            String duration = "0:00";
             Calculate.scale(matrix, centerX, centerY, 1, 1, () -> {
-                Render2D.drawSprite(matrix, mc.getStatusEffectSpriteManager().getSprite(currentRandomEffect), getX() + 3.5F, (int) centerY - 2, 8, 8, colorWithAlpha);
-                rectangle.render(ShapeProperties.create(matrix, getX() + 14, centerY - 1, 0.5F, 7).color(colorWithAlphaRectangle).build());
-                fontPotion.drawString(matrix, name, getX() + 18, centerY + 1, colorWithAlpha);
-                fontPotion.drawString(matrix, duration, getX() + getWidth() - durationWidth - 8, centerY + 1, color);
+                Render2D.drawSprite(matrix, mc.getStatusEffectSpriteManager().getSprite(currentRandomEffect), getX() + 4F, (int) centerY - 2, 8, 8, -1);
+                fontPotion.drawString(matrix, name, getX() + 16, centerY + 1, ColorAssist.getText());
+                fontPotion.drawString(matrix, duration, getX() + getWidth() - fontPotion.getStringWidth(duration) - 6, centerY + 1, -1);
             });
-            int width = (int) fontPotion.getStringWidth(name + duration) + 30;
-            maxWidth = Math.max(width, maxWidth);
+            maxWidth = Math.max((int) fontPotion.getStringWidth(name + duration) + 25, maxWidth);
             offset += 11;
         } else {
             for (Potion potion : list) {
                 StatusEffectInstance effect = potion.effect;
                 float animation = potion.anim.getOutput().floatValue();
+                if (animation < 0.05) continue;
+
                 float centerY = getY() + offset;
-                int amplifier = effect.getAmplifier();
                 String name = effect.getEffectType().value().getName().getString();
                 String duration = getDuration(effect);
-                String lvl = amplifier > 0 ? Formatting.RED + " " + (amplifier + 1) + Formatting.RESET : "";
-                boolean isBadEffect = isBadEffect(effect.getEffectType());
-                int textColor = isBadEffect ? ColorAssist.rgba(255, 85, 75, 255) : ColorAssist.getText();
-                int textAlpha = 255;
+                int amplifier = effect.getAmplifier();
+
+                boolean isBad = isBadEffect(effect.getEffectType());
+                int alpha = (int)(255 * animation);
+
                 if (effect.getDuration() <= 200 && effect.getDuration() > 0) {
-                    double output = 0.5 + 0.5 * Math.cos(2 * Math.PI * (System.currentTimeMillis() % 700) / 700.0);
-                    textAlpha = (int) (100 + (155 * output));
-                } else if (effect.getDuration() == 0) {
-                    textAlpha = 0;
+                    alpha = (int) (155 + 100 * Math.sin(System.currentTimeMillis() / 100.0));
                 }
-                int colorWithAlpha = isBadEffect ? ColorAssist.rgba(255, 85, 75, textAlpha) : ColorAssist.rgba((textColor >> 16) & 255, (textColor >> 8) & 255, textColor & 255, textAlpha);
-                int color = new Color(225, 225, 255, 255).getRGB();
-                int colorWithAlphaRectangle = isBadEffect ? ColorAssist.rgba(255, 85, 75, textAlpha - 125) : ColorAssist.rgba((textColor >> 16) & 205, (textColor >> 8) & 205, textColor & 205, textAlpha - 125);
-                float durationWidth = fontPotion.getStringWidth(duration);
-                float durationBoxWidth = durationWidth + 6;
+
+                int color = ColorAssist.rgba(255, 255, 255, alpha);
+                int nameColor = isBad ? ColorAssist.rgba(255, 80, 80, alpha) : ColorAssist.rgba(200, 200, 200, alpha);
+
                 Calculate.scale(matrix, centerX, centerY, 1, animation, () -> {
-                    Render2D.drawSprite(matrix, mc.getStatusEffectSpriteManager().getSprite(effect.getEffectType()), getX() + 3.5F, (int) centerY - 2, 8, 8, colorWithAlpha);
-                    rectangle.render(ShapeProperties.create(matrix, getX() + 14, centerY - 1, 0.5F, 7).color(colorWithAlphaRectangle).build());
-                    fontPotion.drawString(matrix, name, getX() + 18, centerY + 1, colorWithAlpha);
-                    if (amplifier > 0) {
-                        String level = " " + (amplifier + 1);
-                        fontPotion.drawString(matrix, level, getX() + 18 + fontPotion.getStringWidth(name), centerY + 1, colorWithAlpha);
-                    }
-                    fontPotion.drawString(matrix, duration, getX() + getWidth() - durationWidth - 8, centerY + 1, color);
+                    Render2D.drawSprite(matrix, mc.getStatusEffectSpriteManager().getSprite(effect.getEffectType()), getX() + 4F, (int) centerY - 2, 8, 8, color);
+                    String displayName = name + (amplifier > 0 ? " " + (amplifier + 1) : "");
+                    fontPotion.drawString(matrix, displayName, getX() + 16, centerY + 1, nameColor);
+                    float dWidth = fontPotion.getStringWidth(duration);
+                    fontPotion.drawString(matrix, duration, getX() + getWidth() - dWidth - 6, centerY + 1, color);
                 });
-                int width = (int) fontPotion.getStringWidth(name + lvl + duration) + 30;
-                maxWidth = Math.max(width, maxWidth);
-                offset += (int) (11 * animation);
+
+                maxWidth = Math.max((int) fontPotion.getStringWidth(name + duration) + 30, maxWidth);
+                offset += (int) (8 * animation);
             }
         }
+
         setWidth(maxWidth);
-        setHeight(offset);
+        setHeight(offset + 3);
     }
 
     private String getDuration(StatusEffectInstance pe) {
@@ -215,12 +184,10 @@ public class Potions extends AbstractDraggable {
 
     private boolean isBadEffect(RegistryEntry<StatusEffect> effect) {
         for (RegistryEntry<StatusEffect> negativeEffect : NEGATIVE_EFFECTS) {
-            if (effect == negativeEffect) {
-                return true;
-            }
+            if (effect == negativeEffect) return true;
         }
         return false;
     }
 
-    private record Potion(StatusEffectInstance effect, Animation anim) {}
+    private record Potion(StatusEffectInstance effect, fun.rich.common.animation.Animation anim) {}
 }

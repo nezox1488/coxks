@@ -49,7 +49,7 @@ public class BindComponent extends AbstractSettingComponent {
 
         Fonts.getSize(14, GUIICONS).drawString(context.getMatrices(), "L", x + 6, y + 11f, new Color(128, 128, 128, 64).getRGB());
 
-        Fonts.getSize(12, DEFAULT).drawString(context.getMatrices(), setting.getName(), x + 17, y + 10f, 0xFFD4D6E1);
+        Fonts.getSize(12, DEFAULT).drawString(context.getMatrices(), setting.getLocalizedName(), x + 17, y + 10f, 0xFFD4D6E1);
 //        Fonts.getSize(12, DEFAULT).drawString(context.getMatrices(), wrapped, x + 9, y + 15, 0xFF878894);
     }
 

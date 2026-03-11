@@ -60,7 +60,8 @@ public class Fonts {
         ICONS("icons"),
         ICONSTYPENEW("icon2"),
         GUIICONS("guiicons"),
-        ICONSCATEGORY("categoryicons"),;
+        ICONSCATEGORY("categoryicons"),
+        THEME_ICON("Theme");
 
         private final String type;
     }

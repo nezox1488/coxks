@@ -15,6 +15,36 @@ import static net.minecraft.util.math.MathHelper.*;
 @UtilityClass
 public class Calculate implements QuickImports {
     public double PI2 = Math.PI * 2;
+
+    /** Кэш tickDelta на один кадр — меньше вызовов getTickDelta() в горячих путях (рендер/интерполяция) */
+    private static float cachedTickDelta;
+    private static double cachedTickDeltaDouble;
+    private static long lastTickDeltaFrame = -1;
+
+    private static void updateTickDeltaCache() {
+        long frame = System.nanoTime() / 10_000_000L; // ~10ms buckets
+        if (frame != lastTickDeltaFrame) {
+            lastTickDeltaFrame = frame;
+            cachedTickDelta = mc.getRenderTickCounter().getTickDelta(false);
+            cachedTickDeltaDouble = cachedTickDelta;
+        }
+    }
+
+    /**
+     * Возвращает закэшированный tickDelta текущего кадра.
+     */
+    public static float getTickDelta() {
+        updateTickDeltaCache();
+        return cachedTickDelta;
+    }
+
+    /**
+     * Двойная версия tickDelta — для более точных интерполяций.
+     */
+    public static double getTickDeltaDouble() {
+        updateTickDeltaCache();
+        return cachedTickDeltaDouble;
+    }
     public boolean isHovered(double mouseX, double mouseY, double x, double y, double width, double height) {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
@@ -146,18 +176,22 @@ public class Calculate implements QuickImports {
 
     public Vec3d interpolate(Entity entity) {
         if (entity == null) return Vec3d.ZERO;
-        return new Vec3d(interpolate(entity.prevX, entity.getX()), interpolate(entity.prevY, entity.getY()), interpolate(entity.prevZ, entity.getZ()));
+        updateTickDeltaCache();
+        float t = cachedTickDelta;
+        return new Vec3d(lerp(t, entity.prevX, entity.getX()), lerp(t, entity.prevY, entity.getY()), lerp(t, entity.prevZ, entity.getZ()));
     }
 
     public float interpolate(float prev, float orig) {
-        return lerp(tickCounter.getTickDelta(false), prev, orig);
+        updateTickDeltaCache();
+        return lerp(cachedTickDelta, prev, orig);
     }
 
     public double interpolate(double prev, double orig) {
-        return lerp(tickCounter.getTickDelta(false), prev, orig);
+        updateTickDeltaCache();
+        return lerp(cachedTickDeltaDouble, prev, orig);
     }
 
     public float interpolateSmooth(double smooth, float prev, float orig) {
-        return (float) lerp(tickCounter.getLastDuration() / smooth, prev, orig);
+        return (float) lerp(mc.getRenderTickCounter().getLastDuration() / smooth, prev, orig);
     }
 }

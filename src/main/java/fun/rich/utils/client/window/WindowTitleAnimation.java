@@ -51,6 +51,6 @@ public class WindowTitleAnimation {
     }
 
     public String getCurrentTitle() {
-        return "Rich 1.21.4 " + currentTitle;
+        return "RoxsyClient Build 0.5 " + currentTitle;
     }
 }

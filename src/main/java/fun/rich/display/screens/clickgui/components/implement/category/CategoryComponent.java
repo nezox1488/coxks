@@ -17,6 +17,7 @@ import fun.rich.utils.display.color.ColorAssist;
 import fun.rich.utils.math.calc.Calculate;
 import fun.rich.utils.display.scissor.ScissorAssist;
 import fun.rich.Rich;
+import fun.rich.features.impl.render.Theme;
 import fun.rich.display.screens.clickgui.MenuScreen;
 import fun.rich.display.screens.clickgui.components.AbstractComponent;
 import java.awt.*;
@@ -147,15 +148,13 @@ public class CategoryComponent extends AbstractComponent {
         float baseHeight = 20;
         float scaledWidth = baseWidth * scale;
         float scaledHeight = baseHeight * scale;
-        float baseX = ModuleCategory.RENDER.equals(category) ? x + 4.65f : ModuleCategory.MOVEMENT.equals(category) ? x + 4.75f : x + 5.25f;
-        float baseY = y;
-        float centerX = baseX + baseWidth / 2;
-        float centerY = baseY + baseHeight / 2;
+        float tabX = x;
+        float tabY = y;
+        float centerX = tabX + baseWidth / 2;
+        float centerY = tabY + baseHeight / 2;
         float scaledX = centerX - scaledWidth / 2;
         float scaledY = centerY - scaledHeight / 2;
-        float hoverX = ModuleCategory.RENDER.equals(category) ? x + 4.65f : ModuleCategory.MOVEMENT.equals(category) ? x + 4.75f : x + 5.25f;
-        float hoverY = y;
-        if (Calculate.isHovered(mouseX, mouseY, hoverX, hoverY, baseWidth, baseHeight) && button == 0) {
+        if (Calculate.isHovered(mouseX, mouseY, tabX, tabY, baseWidth, baseHeight) && button == 0) {
             MenuScreen.INSTANCE.setCategory(category);
             alphaAnimation.setMs(300);
             scaleAnimation.setMs(300);
@@ -182,10 +181,10 @@ public class CategoryComponent extends AbstractComponent {
         float baseHeight = 20;
         float scaledWidth = baseWidth * scale;
         float scaledHeight = baseHeight * scale;
-        float baseX = ModuleCategory.RENDER.equals(category) ? x + 4.65f : ModuleCategory.MOVEMENT.equals(category) ? x + 4.75f : x + 5.25f;
-        float baseY = y;
-        float centerX = baseX + baseWidth / 2;
-        float centerY = baseY + baseHeight / 2;
+        float tabX = x;
+        float tabY = y;
+        float centerX = tabX + baseWidth / 2;
+        float centerY = tabY + baseHeight / 2;
         float scaledX = centerX - scaledWidth / 2;
         float scaledY = centerY - scaledHeight / 2;
 
@@ -250,57 +249,56 @@ public class CategoryComponent extends AbstractComponent {
         scaleAnimation.setDirection(MenuScreen.INSTANCE.getCategory().equals(category) ? Direction.FORWARDS : Direction.BACKWARDS);
         float anim = alphaAnimation.getOutput().floatValue();
         float scale = 0.5f + (scaleAnimation.getOutput().floatValue() * 0.5f);
-        int alpha = MathHelper.clamp((int) (anim * 135), 0, 135);
+        int alpha = MathHelper.clamp((int) (anim * 255), 0, 255);
         float baseWidth = 20;
         float baseHeight = 20;
         float scaledWidth = baseWidth * scale;
         float scaledHeight = baseHeight * scale;
-        float baseX = ModuleCategory.RENDER.equals(category) ? x + 4.65f : ModuleCategory.MOVEMENT.equals(category) ? x + 4.75f : x + 5.25f;
-        float baseY = y;
-        float centerX = baseX + baseWidth / 2;
-        float centerY = baseY + baseHeight / 2;
+        float tabX = x;
+        float tabY = y;
+        float centerX = tabX + baseWidth / 2;
+        float centerY = tabY + baseHeight / 2;
         float scaledX = centerX - scaledWidth / 2;
         float scaledY = centerY - scaledHeight / 2;
-        float hoverX = ModuleCategory.RENDER.equals(category) ? x + 4.65f : ModuleCategory.MOVEMENT.equals(category) ? x + 4.75f : x + 5.25f;
-        float hoverY = y;
 
-        if (!MenuScreen.INSTANCE.getCategory().equals(category) && Calculate.isHovered(mouseX, mouseY, hoverX, hoverY, baseWidth, baseHeight)) {
-            rectangle.render(ShapeProperties.create(matrix, hoverX, hoverY, baseWidth, baseHeight)
-                    .round(4F)
-                    .color(new Color(55, 55, 55, 100).getRGB(),
-                            new Color(85, 85, 100, 100).getRGB(),
-                            new Color(55, 55, 55, 100).getRGB(),
-                            new Color(85, 85, 100, 100).getRGB()).build());
+        int guiBg = Theme.getInstance() != null ? Theme.getInstance().guiBgColor.getColor() : new Color(18, 19, 20, 200).getRGB();
+        int baseBg = ColorAssist.multAlpha(guiBg, 0.9f);
+        rectangle.render(ShapeProperties.create(matrix, tabX, tabY, baseWidth, baseHeight)
+                .round(5F)
+                .color(baseBg, baseBg, baseBg, baseBg).build());
+
+        if (!MenuScreen.INSTANCE.getCategory().equals(category) && Calculate.isHovered(mouseX, mouseY, tabX, tabY, baseWidth, baseHeight)) {
+            int hoverBg = ColorAssist.multAlpha(guiBg, 0.5f);
+            rectangle.render(ShapeProperties.create(matrix, tabX, tabY, baseWidth, baseHeight)
+                    .round(5F)
+                    .color(hoverBg, hoverBg, hoverBg, hoverBg).build());
         }
 
+        int oldSelectedAlpha = MathHelper.clamp((int) (anim * 135), 0, 135);
+        int oldSelectedBg1 = new Color(21, 21, 21, oldSelectedAlpha).getRGB();
+        int oldSelectedBg2 = new Color(61, 61, 61, oldSelectedAlpha).getRGB();
         rectangle.render(ShapeProperties.create(matrix, scaledX, scaledY, scaledWidth, scaledHeight)
                 .round(5F)
-                .color(new Color(21, 21, 21, alpha).getRGB(),
-                        new Color(61, 61, 61, alpha).getRGB(),
-                        new Color(61, 61, 61, alpha).getRGB(),
-                        new Color(21, 21, 21, alpha).getRGB()).build());
+                .color(oldSelectedBg1, oldSelectedBg2, oldSelectedBg2, oldSelectedBg1).build());
 
-
+        float iconCenterX = x + 10f;
+        float iconCenterY = y + 10f + category.getIconOffsetY();
         if (ModuleCategory.COMBAT.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "A", x + 16f, y + 8.5f, ColorAssist.getText());
-        }
-        if (ModuleCategory.MOVEMENT.equals(category)) {
-            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "B", x + 15f, y + 7.5f, ColorAssist.getText());
-        }
-        if (ModuleCategory.RENDER.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "C", x + 15f, y + 7.5f, ColorAssist.getText());
-        }
-        if (ModuleCategory.PLAYER.equals(category)) {
-            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "D", x + 15f, y + 7.5f, ColorAssist.getText());
-        }
-        if (ModuleCategory.MISC.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "E", x + 15.5f, y + 7.5f, ColorAssist.getText());
-        }
-        if (ModuleCategory.CONFIGS.equals(category)) {
-            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "F", x + 15.5f, y + 7.5f, ColorAssist.getText());
-        }
-        if (ModuleCategory.AUTOBUY.equals(category)) {
-            Fonts.getSize(33, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "H", x + 15.5f, y + 4f, ColorAssist.getText());
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "A", iconCenterX, iconCenterY, ColorAssist.getText());
+        } else if (ModuleCategory.MOVEMENT.equals(category)) {
+            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "B", iconCenterX, iconCenterY, ColorAssist.getText());
+        } else if (ModuleCategory.RENDER.equals(category)) {
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "C", iconCenterX, iconCenterY, ColorAssist.getText());
+        } else if (ModuleCategory.PLAYER.equals(category)) {
+            Fonts.getSize(23, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "D", iconCenterX, iconCenterY, ColorAssist.getText());
+        } else if (ModuleCategory.MISC.equals(category)) {
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "E", iconCenterX, iconCenterY, ColorAssist.getText());
+        } else if (ModuleCategory.CONFIGS.equals(category)) {
+            Fonts.getSize(21, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "F", iconCenterX, iconCenterY, ColorAssist.getText());
+        } else if (ModuleCategory.AUTOBUY.equals(category)) {
+            Fonts.getSize(33, Fonts.Type.ICONSCATEGORY).drawCenteredString(context.getMatrices(), "H", iconCenterX, iconCenterY, ColorAssist.getText());
+        } else if (ModuleCategory.THEME.equals(category)) {
+            Fonts.getSize(21, Fonts.Type.THEME_ICON).drawCenteredString(context.getMatrices(), "G", iconCenterX, iconCenterY, ColorAssist.getText());
         }
     }
 

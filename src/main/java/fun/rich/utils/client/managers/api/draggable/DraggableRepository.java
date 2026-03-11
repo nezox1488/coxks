@@ -15,6 +15,7 @@ public class DraggableRepository {
     public void setup() {
         register(
                 new TargetHud(),
+                new ArmorHud(),
                 new Potions(),
                 new HotKeys(),
                 new Watermark(),

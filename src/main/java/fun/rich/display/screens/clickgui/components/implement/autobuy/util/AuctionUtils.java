@@ -22,6 +22,7 @@ public class AuctionUtils {
     public static final Pattern funTimePricePattern = Pattern.compile("\\$(\\d+(?:[\\s,]\\d{3})*(?:\\.\\d{2})?)");
 
     public static int getPrice(ItemStack stack) {
+        if (stack.getItem() == Items.GRAY_DYE) return -1;
         var tag = stack.getComponents();
         if (tag == null) return -1;
 

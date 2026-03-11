@@ -29,17 +29,21 @@ public class NoSlow extends Module {
     private final Script script = new Script();
     private boolean finish;
 
-    public final SelectSetting itemMode = new SelectSetting("Режим предмета", "Выберите режим обхода").value("Grim Old", "SpookyTime");
+    public final SelectSetting itemMode = new SelectSetting("Режим предмета", "Выберите режим обхода")
+            .value("Grim Old", "SpookyTime", "Funsky");
 
     public NoSlow() {
-        super("NoSlow", "No Slow", ModuleCategory.MOVEMENT);
+        super("NoSlow", "NoSlow", ModuleCategory.MOVEMENT);
         setup(itemMode);
     }
+
     private int ticks = 0;
+    private int slowEventCount = 0;
 
     @EventHandler
     public void onUpdate(TickEvent event) {
-        if (mc.player.getActiveHand() == Hand.MAIN_HAND ||  mc.player.getActiveHand() == Hand.OFF_HAND) {
+        if (mc.player == null) return;
+        if (mc.player.getActiveHand() == Hand.MAIN_HAND || mc.player.getActiveHand() == Hand.OFF_HAND) {
             ticks++;
         } else {
             ticks = 0;
@@ -49,24 +53,50 @@ public class NoSlow extends Module {
     @EventHandler
     @Native(type = Native.Type.VMProtectBeginUltra)
     public void onUsingItem(UsingItemEvent e) {
-        Hand first = mc.player.getActiveHand();
-        Hand second = first.equals(Hand.MAIN_HAND) ? Hand.OFF_HAND : Hand.MAIN_HAND;
+        if (mc.player == null || mc.world == null || mc.interactionManager == null) return;
 
+        if (!mc.player.isUsingItem()) {
+            ticks = 0;
+            slowEventCount = 0;
+            return;
+        }
+
+        Hand first = mc.player.getActiveHand();
+        Hand second = first == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
 
         switch (e.getType()) {
             case EventType.ON -> {
+                boolean spookyTest = itemMode.isSelected("FunSky");
+                boolean spookyTime = itemMode.isSelected("SpookyTime");
+
+                if (spookyTest || spookyTime) {
+                    slowEventCount++;
+                }
+
+                if ((mc.player.getMainHandStack().getUseAction() == UseAction.BLOCK || mc.player.getOffHandStack().getUseAction() == UseAction.EAT) && first == Hand.MAIN_HAND) {
+                    return;
+                }
+
+                mc.player.setSprinting(true);
+
                 switch (itemMode.getSelected()) {
                     case "Grim Old" -> {
-                        if (mc.player.getOffHandStack().getUseAction().equals(UseAction.NONE) || mc.player.getMainHandStack().getUseAction().equals(UseAction.NONE)) {
+                        if (mc.player.getOffHandStack().getUseAction() == UseAction.NONE || mc.player.getMainHandStack().getUseAction() == UseAction.NONE) {
                             PlayerInteractionHelper.interactItem(first);
                             PlayerInteractionHelper.interactItem(second);
                             e.cancel();
                         }
                     }
                     case "SpookyTime" -> {
-                        if (ticks > 1F && mc.player.getItemUseTime() > 1) {
+                        if (ticks > 1 && mc.player.getItemUseTime() > 1) {
                             e.cancel();
                             ticks = 0;
+                        }
+                    }
+                    case "FunSky" -> {
+                        if (slowEventCount >= 2) {
+                            e.cancel();
+                            slowEventCount = 0;
                         }
                     }
                 }

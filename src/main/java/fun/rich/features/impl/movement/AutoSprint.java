@@ -24,8 +24,9 @@ public class AutoSprint extends Module {
 
     public static int tickStop;
 
-    MultiSelectSetting settings = new MultiSelectSetting("Игнорировать", "Не дает спринтиться при эффектах")
-            .value("Slowness", "Blindness");
+    MultiSelectSetting settings = new MultiSelectSetting("Игнорировать", "Спринт не отключается при")
+            .value("Slowness", "Blindness")
+            .selected();
 
     public AutoSprint() {
         super("AutoSprint", "Auto Sprint", ModuleCategory.MOVEMENT);
@@ -35,6 +36,11 @@ public class AutoSprint extends Module {
     @EventHandler
     @Native(type = Native.Type.VMProtectBeginMutation)
     public void onTick(TickEvent e) {
+        // При беге вперёд (W) игнорируем зажатый Ctrl — не даём войти в sneak, чтобы не замедляться
+        if (mc.options.forwardKey.isPressed()) {
+            mc.options.sneakKey.setPressed(false);
+        }
+
         boolean hasSlowness = mc.player.hasStatusEffect(StatusEffects.SLOWNESS);
         boolean hasBlindness = mc.player.hasStatusEffect(StatusEffects.BLINDNESS);
 

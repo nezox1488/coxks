@@ -15,10 +15,18 @@ public class Pressing implements QuickImports {
 
 
     public boolean isCooldownComplete(boolean dynamicCooldown, int ticks) {
+        return isCooldownComplete(dynamicCooldown, ticks, 0.9f, MINIMUM_COOLDOWN_MS);
+    }
+
+    public boolean isCooldownComplete(boolean dynamicCooldown, int ticks, float threshold) {
+        return isCooldownComplete(dynamicCooldown, ticks, threshold, MINIMUM_COOLDOWN_MS);
+    }
+
+    public boolean isCooldownComplete(boolean dynamicCooldown, int ticks, float threshold, long minDelayMs) {
         boolean isMace = isHoldingMace();
 
-        boolean cooldownReady = isMace || mc.player.getAttackCooldownProgress(ticks) > 0.9F;
-        boolean minimumDelayPassed = lastClickPassed() >= 500;
+        boolean cooldownReady = isMace || mc.player.getAttackCooldownProgress(ticks) > threshold;
+        boolean minimumDelayPassed = lastClickPassed() >= minDelayMs;
 
         return cooldownReady && minimumDelayPassed;
     }

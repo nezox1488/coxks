@@ -4,6 +4,7 @@ import fun.rich.utils.display.font.FontRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import fun.rich.features.module.setting.implement.SelectSetting;
+import fun.rich.utils.client.managers.localization.LocalizationManager;
 import fun.rich.common.animation.Animation;
 import fun.rich.common.animation.Direction;
 import fun.rich.common.animation.implement.Decelerate;
@@ -57,7 +58,7 @@ public class SelectComponent extends AbstractSettingComponent {
         renderSelected(matrices);
         if (!alphaAnimation.isFinished(Direction.BACKWARDS)) renderSelectList(context, mouseX, mouseY, delta);
         Fonts.getSize(21, GUIICONS).drawString(matrices, "J", x + 6f, y + 11f, new Color(128, 128, 128, 64).getRGB());
-        Fonts.getSize(12, DEFAULT).drawString(matrices, setting.getName(), x + 19, y + 13f, 0xFFD4D6E1);
+        Fonts.getSize(12, DEFAULT).drawString(matrices, setting.getLocalizedName(), x + 19, y + 13f, 0xFFD4D6E1);
     }
 
     @Override
@@ -98,7 +99,7 @@ public class SelectComponent extends AbstractSettingComponent {
                         new Color(15, 15, 15, 0).getRGB(),
                         new Color(15, 15, 15, 0).getRGB())
                 .build());
-        String selectedName = String.join(", ", setting.getSelected());
+        String selectedName = LocalizationManager.getInstance().translateValue(setting.getSelected());
         Fonts.getSize(12, BOLD).drawString(matrices, selectedName, x + width - 75 + 3, y + 13, new Color(225, 225, 225, 225).getRGB());
 
     }

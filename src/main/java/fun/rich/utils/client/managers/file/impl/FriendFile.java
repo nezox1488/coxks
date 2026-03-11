@@ -46,7 +46,7 @@ public class FriendFile extends ClientFile {
         try (FileReader reader = new FileReader(file)) {
             Friend[] friends = gson.fromJson(reader, Friend[].class);
             FriendUtils.clear();
-            FriendUtils.getFriends().addAll(Arrays.asList(friends));
+            if (friends != null) FriendUtils.getFriends().addAll(Arrays.asList(friends));
         } catch (IOException e) {
             throw new FileLoadException(String.format("Failed to load %s from file", getName()), e);
         } catch (JsonSyntaxException e) {

@@ -52,8 +52,10 @@ public class BlockESPFile extends ClientFile {
         try (FileReader reader = new FileReader(file)) {
             BlockESP[] blockESP = gson.fromJson(reader, BlockESP[].class);
             repository.blocks.clear();
-            Arrays.asList(blockESP).forEach(esp -> Registries.BLOCK.stream().filter(type -> type.getTranslationKey().equals(esp.block))
-                    .findFirst().ifPresent(type -> repository.blocks.put(type, esp.color)));
+            if (blockESP != null) {
+                Arrays.asList(blockESP).forEach(esp -> Registries.BLOCK.stream().filter(type -> type.getTranslationKey().equals(esp.block))
+                        .findFirst().ifPresent(type -> repository.blocks.put(type, esp.color)));
+            }
         } catch (IOException e) {
             throw new FileLoadException(String.format("Failed to load %s from file", getName()), e);
         } catch (JsonSyntaxException e) {

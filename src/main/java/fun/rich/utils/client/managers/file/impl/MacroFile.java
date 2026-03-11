@@ -45,7 +45,7 @@ public class MacroFile extends ClientFile {
         try (FileReader reader = new FileReader(file)) {
             Macro[] macros = gson.fromJson(reader, Macro[].class);
             macroRepository.macroList.clear();
-            macroRepository.macroList.addAll(Arrays.asList(macros));
+            if (macros != null) macroRepository.macroList.addAll(Arrays.asList(macros));
         } catch (IOException e) {
             throw new FileLoadException(String.format("Failed to load %s from file", getName()), e);
         } catch (JsonSyntaxException e) {

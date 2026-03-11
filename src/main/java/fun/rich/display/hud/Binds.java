@@ -373,7 +373,7 @@ public class Binds extends AbstractDraggable {
 
                     blur.render(ShapeProperties.create(matrix, posX + offsetX - 1, currentY, backgroundWidth, rowHeight - 6)
                             .round(3).quality(12)
-                            .color(new Color(0, 0, 0, 150).getRGB())
+                            .color(new Color(0, 0, 0, 0).getRGB())
                             .build());
 
                     if (isEmpty) {

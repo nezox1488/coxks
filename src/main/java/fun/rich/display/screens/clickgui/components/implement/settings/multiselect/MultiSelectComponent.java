@@ -9,6 +9,7 @@ import fun.rich.utils.display.font.FontRenderer;
 import fun.rich.display.screens.clickgui.components.implement.settings.AbstractSettingComponent;
 import fun.rich.utils.display.scissor.ScissorAssist;
 import fun.rich.features.module.setting.implement.MultiSelectSetting;
+import fun.rich.utils.client.managers.localization.LocalizationManager;
 import fun.rich.utils.display.font.Fonts;
 import fun.rich.utils.display.shape.ShapeProperties;
 import fun.rich.utils.math.calc.Calculate;
@@ -58,7 +59,7 @@ public class MultiSelectComponent extends AbstractSettingComponent {
         renderSelected(matrices);
         if (!alphaAnimation.isFinished(Direction.BACKWARDS)) renderSelectList(context, mouseX, mouseY, delta);
         Fonts.getSize(20, GUIICONS).drawString(matrices, "I", x + 6, y + 12f, new Color(128, 128, 128, 64).getRGB());
-        Fonts.getSize(12, DEFAULT).drawString(matrices, setting.getName(), x + 19, y + 13f, 0xFFD4D6E1);
+        Fonts.getSize(12, DEFAULT).drawString(matrices, setting.getLocalizedName(), x + 19, y + 13f, 0xFFD4D6E1);
     }
 
     @Override
@@ -92,7 +93,8 @@ public class MultiSelectComponent extends AbstractSettingComponent {
                         new Color(15, 15, 15, 0).getRGB(),
                         new Color(15, 15, 15, 0).getRGB())
                 .build());
-        String selectedName = String.join(", ", setting.getSelected());
+        String selectedName = String.join(", ", setting.getSelected().stream()
+                .map(LocalizationManager.getInstance()::translateValue).toList());
         float offset = 64;
         ScissorAssist scissor = Rich.getInstance().getScissorManager();
         scissor.push(matrix.peek().getPositionMatrix(), x1 - 2, y + 4, 64, 14);

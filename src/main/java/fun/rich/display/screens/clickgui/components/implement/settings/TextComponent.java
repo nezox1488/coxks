@@ -51,7 +51,7 @@ public class TextComponent extends AbstractSettingComponent {
         rectangle.render(ShapeProperties.create(matrix, rectX, rectY, rectWidth, rectHeight)
                 .round(2).thickness(2).outlineColor(ColorAssist.getOutline()).color(ColorAssist.getGuiRectColor(1)).build());
 
-        Fonts.getSize(14, Fonts.Type.BOLD).drawString(context.getMatrices(), setting.getName(), x + 9, y + 6, 0xFFD4D6E1);
+        Fonts.getSize(14, Fonts.Type.BOLD).drawString(context.getMatrices(), setting.getLocalizedName(), x + 9, y + 6, 0xFFD4D6E1);
         font.drawString(context.getMatrices(), wrapped, x + 9, y + 15, 0xFF878894);
 
         updateXOffset(font, cursorPosition);

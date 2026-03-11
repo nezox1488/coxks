@@ -3,7 +3,6 @@ package fun.rich.features.impl.render;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fun.rich.features.impl.combat.TriggerBot;
-import fun.rich.features.module.setting.implement.ColorSetting;
 import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.utils.client.managers.event.types.EventType;
 import fun.rich.features.impl.combat.Aura;
@@ -19,6 +18,7 @@ import fun.rich.utils.math.calc.CalcVector;
 import fun.rich.utils.client.Instance;
 import fun.rich.utils.math.time.StopWatch;
 import fun.rich.utils.display.geometry.Render3D;
+import fun.rich.features.module.setting.implement.BooleanSetting;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import net.minecraft.client.gl.ShaderProgramKeys;
@@ -52,12 +52,46 @@ public class TargetESP extends Module {
     SelectSetting cubeType = new SelectSetting("Картинка для куба", "Выбирает тип куба")
             .value("1", "2", "3", "4", "5")
             .visible(() -> targetEspType.isSelected("Cube"));
-    public ColorSetting colorSetting = new ColorSetting("Цвет", "Выберите цвет для esp")
-            .setColor(new Color(255, 101, 57, 255).getRGB());
+
+    // Дополнительные настройки/данные для старых рендеров (Render3D)
+    public static final BooleanSetting redOnHit = new BooleanSetting(
+            "Red On Hit",
+            "Подсвечивать таргет красным при получении урона"
+    );
+
+    public static final BooleanSetting ghostMovement = new BooleanSetting(
+            "Ghost Movement",
+            "Отрисовывать след от движения таргета"
+    );
+
+    public static final List<PositionEntry> targetPositionHistory = new ArrayList<>();
+
+    public static class PositionEntry {
+        public final Vec3d position;
+        public final long time;
+
+        public PositionEntry(Vec3d position, long time) {
+            this.position = position;
+            this.time = time;
+        }
+    }
 
     public TargetESP() {
         super("TargetEsp", "Target Esp", ModuleCategory.RENDER);
-        setup(targetEspType, cubeType, colorSetting);
+        setup(targetEspType, cubeType, redOnHit, ghostMovement);
+    }
+
+    public int getEspColor() {
+        Theme theme = Theme.getInstance();
+        return theme != null ? theme.targetEspColor.getColor() : new Color(255, 101, 57, 255).getRGB();
+    }
+
+    /**
+     * Совместимость со старым кодом Render3D.
+     */
+    public static int getColor() {
+        TargetESP inst = getInstance();
+        return inst != null ? inst.getEspColor() : new Color(255, 101, 57, 255).getRGB();
     }
 
     @EventHandler
@@ -69,25 +103,28 @@ public class TargetESP extends Module {
 
     @EventHandler
     public void onWorldRender(WorldRenderEvent e) {
+        Aura aura = Aura.getInstance();
+        TriggerBot triggerBot = TriggerBot.getInstance();
         StrikeManager attackHandler = Rich.getInstance().getAttackPerpetrator().getAttackHandler();
         StopWatch attackTimer = attackHandler.getAttackTimer();
 
         LivingEntity currentTarget = null;
         LivingEntity lastTarget = null;
 
-        if (Aura.getInstance().isState()) {
-            currentTarget = Aura.getInstance().getTarget();
-            lastTarget = Aura.getInstance().getLastTarget();
-        } else if (TriggerBot.getInstance().isState()) {
-            currentTarget = TriggerBot.getInstance().target;
-            lastTarget = TriggerBot.getInstance().target;
+        if (aura.isState()) {
+            currentTarget = aura.getTarget();
+            lastTarget = aura.getLastTarget();
+        } else if (triggerBot.isState()) {
+            currentTarget = triggerBot.target;
+            lastTarget = triggerBot.target;
         }
 
         esp_anim.setDirection(currentTarget != null ? Direction.FORWARDS : Direction.BACKWARDS);
         float anim = esp_anim.getOutput().floatValue();
 
         if (lastTarget != null && !esp_anim.isFinished(Direction.BACKWARDS)) {
-            float red = MathHelper.clamp((lastTarget.hurtTime - tickCounter.getTickDelta(false)) / 20, 0, 1);
+            float tickDelta = mc.getRenderTickCounter().getTickDelta(false);
+            float red = MathHelper.clamp((lastTarget.hurtTime - tickDelta) / 20, 0, 1);
             switch (targetEspType.getSelected()) {
                 case "Cube" -> Render3D.drawCube(lastTarget, anim, red, cubeType.getSelected());
                 case "Circle" -> Render3D.drawCircle(e.getStack(), lastTarget, anim, red);
@@ -134,7 +171,7 @@ public class TargetESP extends Module {
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
             RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
-            int baseColor = ColorAssist.interpolateColor(TargetESP.getInstance().colorSetting.getColor(), new Color(255, 0, 0).getRGB(), red);
+            int baseColor = ColorAssist.interpolateColor(TargetESP.getInstance().getEspColor(), new Color(255, 0, 0).getRGB(), red);
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE);
             drawCrystal(ms, baseColor, 0.2f, true, anim);
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);

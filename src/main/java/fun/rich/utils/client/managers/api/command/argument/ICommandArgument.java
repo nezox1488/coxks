@@ -21,13 +21,8 @@ import fun.rich.utils.client.managers.api.command.argparser.IArgParser;
 import fun.rich.utils.client.managers.api.command.exception.CommandInvalidTypeException;
 
 /**
- * A {@link ICommandArgument} is an immutable object representing one command argument. It contains data on the index of
- * that argument, its value, and the rest of the string that argument was found in
- * <p>
- * You're recommended to use {@link IArgConsumer}}s to handle these.
- *
- * @author Brady
- * @since 10/2/2019
+ * @author Sitoku
+ * @since 3/3/2026
  */
 public interface ICommandArgument {
 

@@ -1,5 +1,8 @@
 package fun.rich.features.impl.misc;
-
+/**
+ * @author Sitoku
+ * @since 3/3/2026
+ */
 import antidaunleak.api.annotation.Native;
 import fun.rich.events.keyboard.KeyEvent;
 import fun.rich.events.player.InputEvent;

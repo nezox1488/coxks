@@ -1,5 +1,8 @@
 package fun.rich.features.impl.render;
-
+/**
+ * @author Sitoku
+ * @since 3/3/2026
+ */
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.AccessLevel;
@@ -10,7 +13,6 @@ import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import org.joml.Matrix4f;
 import fun.rich.utils.client.managers.event.EventHandler;
@@ -33,7 +35,7 @@ import static net.minecraft.client.render.VertexFormats.POSITION_TEXTURE_COLOR;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class Arrows extends Module {
-    Identifier iconId = Identifier.of("textures/features/arrows/arrow.png");
+    private static final String ARROWS_TEXTURE = "textures/features/arrows/arrows.png";
     Animation radiusAnim = new Decelerate().setMs(150).setValue(6);
 
     SliderSettings radiusSetting = new SliderSettings("Радиус", "Радиус стрелок")
@@ -70,7 +72,8 @@ public class Arrows extends Module {
             RenderSystem.disableCull();
             RenderSystem.disableDepthTest();
             RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_CONSTANT_ALPHA);
-            RenderSystem.setShaderTexture(0, Identifier.of("textures/features/arrows/arrow.png"));
+            image.setTexture(ARROWS_TEXTURE);
+            RenderSystem.setShaderTexture(0, image.getTexture());
             RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
             BufferBuilder buffer = tessellator.begin(QUADS, POSITION_TEXTURE_COLOR);
 

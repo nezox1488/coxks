@@ -1,5 +1,10 @@
 package fun.rich.features.impl.misc;
 
+import fun.rich.common.repository.way.WayRepository;
+import fun.rich.features.impl.movement.GuiMove;
+import fun.rich.features.module.setting.implement.BooleanSetting;
+import fun.rich.utils.display.render.post.KawaseBlur;
+import fun.rich.utils.display.shape.ShapeProperties;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import fun.rich.utils.features.aura.point.MultiPoint;
@@ -9,6 +14,9 @@ import fun.rich.utils.features.aura.warp.Turns;
 import fun.rich.utils.features.aura.warp.TurnsConnection;
 import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
 import fun.rich.utils.interactions.inv.InventoryTask;
+import fun.rich.utils.interactions.inv.InventoryTick;
+import fun.rich.utils.math.script.Script;
+import fun.rich.utils.math.time.StopWatch;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -20,10 +28,6 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.passive.MerchantEntity;
@@ -33,8 +37,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.*;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.MutableText;
@@ -57,21 +59,21 @@ import fun.rich.utils.client.managers.event.EventHandler;
 import fun.rich.utils.client.managers.event.types.EventType;
 import fun.rich.utils.features.aura.rotations.constructor.LinearConstructor;
 import fun.rich.features.impl.render.ProjectilePrediction;
+import fun.rich.Rich;
 import fun.rich.common.repository.friend.FriendUtils;
-import fun.rich.utils.display.font.FontRenderer;
-import fun.rich.utils.display.font.Fonts;
-import fun.rich.utils.display.shape.ShapeProperties;
+import fun.rich.common.repository.way.WayRepository;
+import fun.rich.utils.display.render.font.FontRenderer;
+import fun.rich.utils.display.render.font.Fonts;
 import fun.rich.utils.display.color.ColorAssist;
 import fun.rich.utils.display.color.GradientAssist;
-import fun.rich.utils.interactions.inv.InventoryFlowManager;
 import fun.rich.utils.interactions.simulate.PlayerSimulation;
 import fun.rich.utils.math.calc.Calculate;
 import fun.rich.utils.math.projection.Projection;
 import fun.rich.utils.client.Instance;
 import fun.rich.utils.math.time.StopWatch;
 import fun.rich.utils.client.chat.StringHelper;
-import fun.rich.utils.display.geometry.Render2D;
-import fun.rich.utils.display.geometry.Render3D;
+import fun.rich.utils.display.render.geometry.Render2D;
+import fun.rich.utils.display.render.geometry.Render3D;
 import fun.rich.utils.math.task.TaskPriority;
 import fun.rich.utils.math.script.Script;
 import fun.rich.utils.client.packet.network.Network;
@@ -80,8 +82,12 @@ import fun.rich.events.packet.PacketEvent;
 import fun.rich.events.player.RotationUpdateEvent;
 import fun.rich.events.render.DrawEvent;
 import fun.rich.events.render.WorldRenderEvent;
+
+import java.awt.*;
 import java.util.*;
-import java.util.stream.StreamSupport;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ServerHelper extends Module {
@@ -100,8 +106,36 @@ public class ServerHelper extends Module {
     StopWatch repairWatch = new StopWatch();
     Script script = new Script();
     Script script2 = new Script();
+    WayRepository wayRepository = Rich.getInstance().getWayRepository();
     @NonFinal UUID entityUUID;
     Map<Integer, Item> stacks = new HashMap<>();
+
+
+    public static class TemporaryEventWay {
+        private final String name;
+        private final Vec3d pos;
+        private final String server;
+        private final long creationTime;
+
+        public TemporaryEventWay(String name, Vec3d pos, String server) {
+            this.name = name;
+            this.pos = pos;
+            this.server = server;
+            this.creationTime = System.currentTimeMillis();
+        }
+
+        public String name() { return name; }
+        public Vec3d pos() { return pos; }
+        public String server() { return server; }
+        public long creationTime() { return creationTime; }
+
+        public boolean isExpired() {
+            return System.currentTimeMillis() - creationTime > 15 * 60 * 1000;
+        }
+    }
+
+    List<TemporaryEventWay> temporaryEventWays = new ArrayList<>();
+
     SelectSetting mode = new SelectSetting("Тип сервера", "Позволяет выбрать тип сервера")
             .value("ReallyWorld", "HolyWorld", "FunTime")
             .selected("FunTime");
@@ -111,34 +145,27 @@ public class ServerHelper extends Module {
     BooleanSetting autoShulkerSetting = new BooleanSetting("Авто шалкер", "Автоматически кладет лут в шалкер")
             .setValue(true)
             .visible(() -> mode.isSelected("HolyWorld"));
-    BooleanSetting autoRepairSetting = new BooleanSetting("Авто ремонт", "Авто ремонтирует броню пузырем опыта при низкой прочности")
-            .setValue(true)
-            .visible(() -> mode.isSelected("HolyWorld"));
+
     BooleanSetting consumablesSetting = new BooleanSetting("Таймер расходников", "Отображает время до окончания расходников")
             .setValue(true)
             .visible(() -> mode.isSelected("FunTime"));
-    BooleanSetting autoPointSetting = new BooleanSetting("Авто поинт", "Отображает информацию об ивенте")
+    BooleanSetting autoPointSetting = new BooleanSetting("Авто вейпоинт", "Отображает информацию об ивенте")
             .setValue(true)
             .visible(() -> mode.isSelected("FunTime"));
+
+
+    private static final Pattern EVENTS_BLOCK_PATTERN = Pattern.compile(
+            "\\\\[(\\\\d+)]\\\\s*([^:\\\\n]+):\\\\s*\\\\n\\\\|\\\\|\\\\s*Статус:\\\\s*([^\\\\n]+)\\\\n\\\\|\\\\|\\\\s*Координаты:\\\\s*\\\\[\\\\s*(-?\\\\d+)\\\\s+(-?\\\\d+)\\\\s+(-?\\\\d+)\\\\s*]",
+            Pattern.MULTILINE
+    );
+    private static final Pattern TIME_MIN_SEC = Pattern.compile("(\\\\d+)\\\\s*мин\\\\s*(\\\\d+)\\\\s*сек");
+    private static final Pattern TIME_SEC = Pattern.compile("(\\\\d+)\\\\s*сек");
     List<java.lang.String> potionQueue = new ArrayList<>();
     StopWatch potionTimer = new StopWatch();
     Map<java.lang.String, ItemInfo> itemConfig = new HashMap<>();
     Map<java.lang.String, Boolean> itemStates = new HashMap<>();
     Map<java.lang.String, Boolean> lastKeyStates = new HashMap<>();
     Map<java.lang.String, Boolean> keyPressedThisTick = new HashMap<>();
-    @NonFinal int originalSlot = -1;
-    @NonFinal int targetSlot = -1;
-    @NonFinal ActionState actionState = ActionState.IDLE;
-    @NonFinal long actionTimer = 0;
-    @NonFinal java.lang.String pendingItemKey = null;
-    @NonFinal long stopMovementUntil = 0;
-    @NonFinal boolean keysOverridden = false;
-    @NonFinal boolean wasForwardPressed, wasBackPressed, wasLeftPressed, wasRightPressed;
-    @NonFinal int originalSourceSlot = -1;
-
-    private enum ActionState {
-        IDLE, SLOWING_DOWN, WAITING_STOP, SWAP_TO_ITEM, USE_ITEM, SWAP_BACK, SPEEDING_UP
-    }
 
     private static class ItemInfo {
         java.lang.String searchName;
@@ -153,16 +180,25 @@ public class ServerHelper extends Module {
     }
 
     public ServerHelper() {
-        super("Server Assist", "Server Assist", ModuleCategory.MISC);
+        super("Server Assist", "ServerAssist", ModuleCategory.MISC);
         initialize();
     }
 
+
+    public void addTemporaryEventWay(String name, Vec3d pos, String server) {
+
+        temporaryEventWays.removeIf(w -> w.name().equalsIgnoreCase(name));
+        temporaryEventWays.add(new TemporaryEventWay(name, pos, server));
+    }
+
     public void initialize() {
-        setup(mode, autoLootSetting, consumablesSetting, autoPointSetting, autoShulkerSetting, autoRepairSetting);
+        setup(mode, autoLootSetting, consumablesSetting, autoPointSetting, autoShulkerSetting);
         keyBindings.add(new KeyBind(Items.FIREWORK_STAR, new BindSetting("Анти полет", "Клавиша анти полета")
                 .visible(() -> mode.isSelected("ReallyWorld")), 0));
         keyBindings.add(new KeyBind(Items.FLOWER_BANNER_PATTERN, new BindSetting("Свиток опыта", "Клавиша свитка опыта")
-                .visible(() -> mode.isSelected("ReallyWorld")), 0));
+                .visible(() -> mode.isSelected("ReallyWorld")), 0))
+
+        ;
         keyBindings.add(new KeyBind(Items.PRISMARINE_SHARD, new BindSetting("Взрывная трапка", "Клавиша взрывной трапки")
                 .visible(() -> mode.isSelected("HolyWorld")), 5));
         keyBindings.add(new KeyBind(Items.POPPED_CHORUS_FRUIT, new BindSetting("Обычная трапка", "Клавиша обычной трапки")
@@ -171,8 +207,12 @@ public class ServerHelper extends Module {
                 .visible(() -> mode.isSelected("HolyWorld")), 30));
         keyBindings.add(new KeyBind(Items.FIRE_CHARGE, new BindSetting("Взрывная штучка", "Клавиша взрывной штучки")
                 .visible(() -> mode.isSelected("HolyWorld")), 0));
-        keyBindings.add(new KeyBind(Items.SNOWBALL, new BindSetting("Снежок заморозка", "Клавиша снежка")
-                .visible(() -> mode.isSelected("HolyWorld") || mode.isSelected("FunTime")), 0));
+
+
+        keyBindings.add(new KeyBind(Items.SNOWBALL, new BindSetting("Снежок заморозки", "Клавиша снежка заморозки")
+                .visible(() -> mode.isSelected("FunTime")), 0));
+        keyBindings.add(new KeyBind(Items.SNOWBALL, new BindSetting("Ком Снега", "Клавиша снежка")
+                .visible(() -> mode.isSelected("HolyWorld")), 0));
         keyBindings.add(new KeyBind(Items.PHANTOM_MEMBRANE, new BindSetting("Божья аура", "Клавиша божьей ауры")
                 .visible(() -> mode.isSelected("FunTime")), 0));
         keyBindings.add(new KeyBind(Items.NETHERITE_SCRAP, new BindSetting("Трапка", "Клавиша трапки")
@@ -185,9 +225,9 @@ public class ServerHelper extends Module {
                 .visible(() -> mode.isSelected("FunTime")), 10));
         keyBindings.add(new KeyBind(Items.ENDER_EYE, new BindSetting("Дезориентация", "Клавиша дезориентации")
                 .visible(() -> mode.isSelected("FunTime")), 10));
+
+
         keyBindings.add(new KeyBind(Items.JACK_O_LANTERN, new BindSetting("Светильник Джека", "Клавиша светильника Джека")
-                .visible(() -> mode.isSelected("HolyWorld")), 0));
-        keyBindings.add(new KeyBind(Items.EXPERIENCE_BOTTLE, new BindSetting("Пузырь опыта", "Клавиша пузыря опыта")
                 .visible(() -> mode.isSelected("HolyWorld")), 0));
         keyBindings.add(new KeyBind(Items.PINK_SHULKER_BOX, new BindSetting("Рюкзак 1 уровня", "Клавиша рюкзака 1 уровня")
                 .visible(() -> mode.isSelected("HolyWorld")), 0));
@@ -197,38 +237,41 @@ public class ServerHelper extends Module {
                 .visible(() -> mode.isSelected("HolyWorld")), 0));
         keyBindings.add(new KeyBind(Items.PINK_SHULKER_BOX, new BindSetting("Рюкзак 4 уровня", "Клавиша рюкзака 4 уровня")
                 .visible(() -> mode.isSelected("HolyWorld")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье отрыжки", "Клавиша зелья отрыжки")
+
+
+        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Хлопушка", "Клавиша хлопушки")
                 .visible(() -> mode.isSelected("FunTime")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье серной кислоты", "Клавиша зелья серной кислоты")
+        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Святая вода", "Клавиша святой воды")
                 .visible(() -> mode.isSelected("FunTime")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье вспышки", "Клавиша зелья вспышки")
+        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Снотворное", "Клавиша снотворного")
                 .visible(() -> mode.isSelected("FunTime")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье мочи Флеша", "Клавиша зелья мочи Флеша")
+        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье гнева", "Клавиша зелья гнева")
                 .visible(() -> mode.isSelected("FunTime")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье победителя", "Клавиша зелья победителя")
+        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье паладина", "Клавиша зелья паладина")
                 .visible(() -> mode.isSelected("FunTime")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье агента", "Клавиша зелья агента")
+        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье ассасина", "Клавиша зелья ассасина")
                 .visible(() -> mode.isSelected("FunTime")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье медика", "Клавиша зелья медика")
+        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье радиации", "Клавиша зелья радиации")
                 .visible(() -> mode.isSelected("FunTime")), 0));
-        keyBindings.add(new KeyBind(Items.SPLASH_POTION, new BindSetting("Зелье киллера", "Клавиша зелья киллера")
-                .visible(() -> mode.isSelected("FunTime")), 0));
+
+
         keyBindings.forEach(bind -> setup(bind.setting));
         itemConfig.put("disorientation", new ItemInfo("дезориентация", Items.ENDER_EYE, "Дезориентация"));
         itemConfig.put("sugar", new ItemInfo("явная", Items.SUGAR, "Явная пыль"));
         itemConfig.put("bojaura", new ItemInfo("божья аура", Items.PHANTOM_MEMBRANE, "Божья аура"));
-        itemConfig.put("snow", new ItemInfo("Снежок заморозка", Items.SNOWBALL, "Снежок заморозка"));
+        itemConfig.put("snow", new ItemInfo("Ком Снега", Items.SNOWBALL, "Ком Снега"));
         itemConfig.put("plast", new ItemInfo("пласт", Items.DRIED_KELP, "Пласт"));
         itemConfig.put("trap", new ItemInfo("трапка", Items.NETHERITE_SCRAP, "Трапка"));
         itemConfig.put("fireSwirl", new ItemInfo("огненный смерч", Items.FIRE_CHARGE, "Огненный смерч"));
-        itemConfig.put("otriga", new ItemInfo("отрыжки", Items.SPLASH_POTION, "Зелье отрыжки"));
-        itemConfig.put("serka", new ItemInfo("серная", Items.SPLASH_POTION, "Зелье серной кислоты"));
-        itemConfig.put("vspihka", new ItemInfo("вспышка", Items.SPLASH_POTION, "Зелье вспышки"));
-        itemConfig.put("mochaflesha", new ItemInfo("моча флеша", Items.SPLASH_POTION, "Зелье мочи Флеша"));
-        itemConfig.put("pobedilka", new ItemInfo("победителя", Items.SPLASH_POTION, "Зелье победителя"));
-        itemConfig.put("agent", new ItemInfo("агента", Items.SPLASH_POTION, "Зелье агента"));
-        itemConfig.put("medik", new ItemInfo("медика", Items.SPLASH_POTION, "Зелье медика"));
-        itemConfig.put("killer", new ItemInfo("киллера", Items.SPLASH_POTION, "Зелье киллера"));
+        itemConfig.put("hlopushka", new ItemInfo("хлопушка", Items.SPLASH_POTION, "Хлопушка"));
+        itemConfig.put("svyataya", new ItemInfo("святая", Items.SPLASH_POTION, "Святая вода"));
+        itemConfig.put("snotvornoe", new ItemInfo("снотворное", Items.SPLASH_POTION, "Снотворное"));
+        itemConfig.put("gnev", new ItemInfo("гнева", Items.SPLASH_POTION, "Зелье гнева"));
+        itemConfig.put("paladin", new ItemInfo("паладина", Items.SPLASH_POTION, "Зелье паладина"));
+        itemConfig.put("assassin", new ItemInfo("ассасина", Items.SPLASH_POTION, "Зелье ассасина"));
+        itemConfig.put("radiacia", new ItemInfo("радиации", Items.SPLASH_POTION, "Зелье радиации"));
+
+
         itemConfig.put("antiflight", new ItemInfo("анти полет", Items.FIREWORK_STAR, "Анти полет"));
         itemConfig.put("expscroll", new ItemInfo("свиток опыта", Items.FLOWER_BANNER_PATTERN, "Свиток опыта"));
         itemConfig.put("dtrap", new ItemInfo("взрывная трапка", Items.PRISMARINE_SHARD, "Взрывная трапка"));
@@ -236,7 +279,7 @@ public class ServerHelper extends Module {
         itemConfig.put("stan", new ItemInfo("стан", Items.NETHER_STAR, "Стан"));
         itemConfig.put("ditem", new ItemInfo("взрывная штучка", Items.FIRE_CHARGE, "Взрывная штучка"));
         itemConfig.put("tikva", new ItemInfo("светильник джейка", Items.JACK_O_LANTERN, "Светильник Джека"));
-        itemConfig.put("exp", new ItemInfo("пузырь опыта", Items.EXPERIENCE_BOTTLE, "Пузырь опыта"));
+
         itemConfig.put("shulker1", new ItemInfo("рюкзак (i уровень)", Items.PINK_SHULKER_BOX, "Рюкзак 1 уровня"));
         itemConfig.put("shulker2", new ItemInfo("рюкзак (ii уровень)", Items.BLUE_SHULKER_BOX, "Рюкзак 2 уровня"));
         itemConfig.put("shulker3", new ItemInfo("рюкзак (iii уровень)", Items.RED_SHULKER_BOX, "Рюкзак 3 уровня"));
@@ -254,16 +297,10 @@ public class ServerHelper extends Module {
         stacks.clear();
         potionQueue.clear();
         potionTimer.reset();
+        temporaryEventWays.clear();
         itemStates.replaceAll((k, v) -> false);
         lastKeyStates.replaceAll((k, v) -> false);
         keyPressedThisTick.replaceAll((k, v) -> false);
-        actionState = ActionState.IDLE;
-        originalSlot = -1;
-        targetSlot = -1;
-        originalSourceSlot = -1;
-        pendingItemKey = null;
-        stopMovementUntil = 0;
-        keysOverridden = false;
     }
 
     @Override
@@ -273,19 +310,7 @@ public class ServerHelper extends Module {
         keyPressedThisTick.replaceAll((k, v) -> false);
         potionQueue.clear();
         potionTimer.reset();
-        actionState = ActionState.IDLE;
-        originalSlot = -1;
-        targetSlot = -1;
-        originalSourceSlot = -1;
-        pendingItemKey = null;
-        stopMovementUntil = 0;
-        if (keysOverridden) {
-            mc.options.forwardKey.setPressed(false);
-            mc.options.backKey.setPressed(false);
-            mc.options.leftKey.setPressed(false);
-            mc.options.rightKey.setPressed(false);
-        }
-        keysOverridden = false;
+        temporaryEventWays.clear();
     }
 
     @EventHandler
@@ -328,6 +353,13 @@ public class ServerHelper extends Module {
                     Text content = gameMessage.content();
                     java.lang.String contentString = content.toString();
                     java.lang.String message = content.getString();
+
+
+                    if (message.contains("[Ивенты]") && message.contains("Координаты:")) {
+                        parseEventsList(message);
+                        return;
+                    }
+
                     java.lang.String name = StringUtils.substringBetween(message, "||| [", "] ");
                     if (name != null) {
                         java.lang.String position = StringUtils.substringBetween(contentString, "value='/gps ", "'");
@@ -380,22 +412,6 @@ public class ServerHelper extends Module {
         if (e.getType() != EventType.PRE || mc.currentScreen != null) {
             return;
         }
-
-        boolean noMoveOrAction = System.currentTimeMillis() < stopMovementUntil || (actionState != ActionState.IDLE && actionState != ActionState.SPEEDING_UP);
-        if (noMoveOrAction) {
-            mc.options.forwardKey.setPressed(false);
-            mc.options.backKey.setPressed(false);
-            mc.options.leftKey.setPressed(false);
-            mc.options.rightKey.setPressed(false);
-            if (mc.player.input != null) {
-                mc.player.input.movementForward = 0;
-                mc.player.input.movementSideways = 0;
-            }
-            if (mc.player.isSprinting()) {
-                mc.player.setSprinting(false);
-            }
-        }
-
         for (KeyBind bind : keyBindings) {
             java.lang.String key = switch (bind.setting.getName()) {
                 case "Анти полет" -> "antiflight";
@@ -404,7 +420,7 @@ public class ServerHelper extends Module {
                 case "Обычная трапка" -> "trap_holy";
                 case "Стан" -> "stan";
                 case "Взрывная штучка" -> "ditem";
-                case "Снежок заморозка" -> "snow";
+                case "Ком Снега", "Снежок заморозки" -> "snow";
                 case "Божья аура" -> "bojaura";
                 case "Трапка" -> "trap";
                 case "Пласт" -> "plast";
@@ -417,30 +433,33 @@ public class ServerHelper extends Module {
                 case "Рюкзак 2 уровня" -> "shulker2";
                 case "Рюкзак 3 уровня" -> "shulker3";
                 case "Рюкзак 4 уровня" -> "shulker4";
-                case "Зелье отрыжки" -> "otriga";
-                case "Зелье серной кислоты" -> "serka";
-                case "Зелье вспышки" -> "vspihka";
-                case "Зелье мочи Флеша" -> "mochaflesha";
-                case "Зелье победителя" -> "pobedilka";
-                case "Зелье агента" -> "agent";
-                case "Зелье медика" -> "medik";
-                case "Зелье киллера" -> "killer";
+                case "Хлопушка" -> "hlopushka";
+                case "Святая вода" -> "svyataya";
+                case "Снотворное" -> "snotvornoe";
+                case "Зелье гнева" -> "gnev";
+                case "Зелье паладина" -> "paladin";
+                case "Зелье ассасина" -> "assassin";
+                case "Зелье радиации" -> "radiacia";
                 default -> null;
             };
             if (key != null && bind.setting.isVisible()) {
                 boolean currentKey = false;
                 if (bind.setting.getKey() != -1) {
                     if (bind.setting.getKey() >= GLFW.GLFW_MOUSE_BUTTON_1 && bind.setting.getKey() <= GLFW.GLFW_MOUSE_BUTTON_8) {
-                        currentKey = GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), bind.setting.getKey()) == GLFW.GLFW_PRESS;} else {
+                        currentKey = GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), bind.setting.getKey()) == GLFW.GLFW_PRESS;
+                    } else {
                         currentKey = InputUtil.isKeyPressed(mc.getWindow().getHandle(), bind.setting.getKey());
                     }
                 }
                 boolean wasPressedLastTick = lastKeyStates.getOrDefault(key, false);
-                if (currentKey && !wasPressedLastTick) {
+                if (wasPressedLastTick && !currentKey && keyPressedThisTick.getOrDefault(key, false)) {
+                    itemStates.put(key, true);
                     ItemInfo info = itemConfig.get(key);
                     if (info != null) {
-                        Slot slot = InventoryTask.getSlot(s -> s.getStack().getItem().equals(info.item) && InventoryTask.getCleanName(s.getStack().getName()).contains(info.searchName.toLowerCase()));
-                        boolean addStarPrefix = info.displayName.equals("Дезориентация")|| info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Снежок заморозка") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
+                        java.lang.String searchName = key.equals("snow") && mode.isSelected("FunTime") ? "заморозка" : info.searchName;
+                        java.lang.String displayName = key.equals("snow") && mode.isSelected("FunTime") ? "Снежок заморозки" : (key.equals("snow") ? "Ком Снега" : info.displayName);
+                        Slot slot = InventoryTask.getSlot(s -> s.getStack().getItem().equals(info.item) && InventoryTask.getCleanName(s.getStack().getName()).contains(searchName.toLowerCase()));
+                        boolean addStarPrefix = displayName.equals("Дезориентация") || displayName.equals("Божья аура") || displayName.equals("Пласт") || displayName.equals("Трапка") || displayName.equals("Огненный смерч") || displayName.equals("Ком Снега") || displayName.equals("Снежок заморозки") || displayName.equals("Явная пыль") || displayName.equals("Хлопушка") || displayName.equals("Святая вода") || displayName.equals("Снотворное") || displayName.equals("Зелье гнева") || displayName.equals("Зелье паладина") || displayName.equals("Зелье ассасина") || displayName.equals("Зелье радиации");
                         if (slot != null) {
                             ItemStack stack = slot.getStack();
                             if (mc.player.getItemCooldownManager().isCoolingDown(stack)) {
@@ -448,22 +467,25 @@ public class ServerHelper extends Module {
                                         .filter(c -> c.item().equals(info.item))
                                         .findFirst()
                                         .ifPresent(coolDown -> {
-                                            int time = Math.toIntExact(-coolDown.time().elapsedTime() / 1000);
+                                            int time = (int) (-coolDown.time().elapsedTime() / 1000);
                                             java.lang.String duration = StringHelper.getDuration(time);
                                             MutableText text = Text.empty()
-                                                    .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
+                                                    .append(GradientAssist.applyGradientToText(displayName, GradientAssist.getGradientColors(displayName), addStarPrefix))
                                                     .append("  будет  доступен  через ")
                                                     .append(Text.literal(duration).formatted(Formatting.GRAY));
                                             Notifications.getInstance().addList(text, 4000);
                                         });
-                            } else {
-                                if (!potionQueue.contains(key)) {
-                                    potionQueue.add(key);
-                                }
+                            } else if (!potionQueue.contains(key)) {
+
+                                potionQueue.add(key);
+                                MutableText text = Text.empty()
+                                        .append(GradientAssist.applyGradientToText(displayName, GradientAssist.getGradientColors(displayName), addStarPrefix))
+                                        .append("  использован");
+                                Notifications.getInstance().addList(text, 4000);
                             }
                         } else {
                             MutableText text = Text.empty()
-                                    .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
+                                    .append(GradientAssist.applyGradientToText(displayName, GradientAssist.getGradientColors(displayName), addStarPrefix))
                                     .append("  не  найдено");
                             Notifications.getInstance().addList(text, 4000);
                         }
@@ -473,60 +495,66 @@ public class ServerHelper extends Module {
                 keyPressedThisTick.put(key, currentKey);
             }
         }
-        if (actionState != ActionState.IDLE) {
-            processItemAction();
-        }
-        if (actionState == ActionState.IDLE && !potionQueue.isEmpty() && potionTimer.finished(150)) {
+        if (!potionQueue.isEmpty() && potionTimer.finished(150)) {
             java.lang.String potionKey = potionQueue.remove(0);
             ItemInfo info = itemConfig.get(potionKey);
             if (info != null) {
-                Slot slot = InventoryTask.getSlot(s -> s.getStack().getItem().equals(info.item) && InventoryTask.getCleanName(s.getStack().getName()).contains(info.searchName.toLowerCase()));
-                boolean addStarPrefix = info.displayName.equals("Дезориентация") || info.displayName.equals("Божья аура") || info.displayName.equals("Пласт") || info.displayName.equals("Трапка") || info.displayName.equals("Огненный смерч") || info.displayName.equals("Снежок заморозка") || info.displayName.equals("Явная пыль") || info.displayName.equals("Зелье отрыжки") || info.displayName.equals("Зелье серной кислоты") || info.displayName.equals("Зелье вспышки") || info.displayName.equals("Зелье мочи Флеша") || info.displayName.equals("Зелье победителя") || info.displayName.equals("Зелье агента") || info.displayName.equals("Зелье медика") || info.displayName.equals("Зелье киллера");
+                java.lang.String searchName = potionKey.equals("snow") && mode.isSelected("FunTime") ? "заморозка" : info.searchName;
+                java.lang.String displayName = potionKey.equals("snow") && mode.isSelected("FunTime") ? "Снежок заморозки" : (potionKey.equals("snow") ? "Ком Снега" : info.displayName);
+                Slot slot = InventoryTask.getSlot(s -> s.getStack().getItem().equals(info.item) && InventoryTask.getCleanName(s.getStack().getName()).contains(searchName.toLowerCase()));
+                boolean addStarPrefix = displayName.equals("Дезориентация") || displayName.equals("Божья аура") || displayName.equals("Пласт") || displayName.equals("Трапка") || displayName.equals("Огненный смерч") || displayName.equals("Ком Снега") || displayName.equals("Снежок заморозки") || displayName.equals("Явная пыль") || displayName.equals("Хлопушка") || displayName.equals("Святая вода") || displayName.equals("Снотворное") || displayName.equals("Зелье гнева") || displayName.equals("Зелье паладина") || displayName.equals("Зелье ассасина") || displayName.equals("Зелье радиации");
                 if (slot != null) {
                     ItemStack stack = slot.getStack();
-                    if (!mc.player.getItemCooldownManager().isCoolingDown(stack)) {
-                        startItemUse(slot, info, addStarPrefix);
-                    } else {
+
+                    float cooldownProgress = fun.rich.utils.interactions.item.ItemTask.getCooldownProgress(info.item);
+                    if (cooldownProgress > 0) {
                         CoolDowns.getInstance().list.stream()
                                 .filter(c -> c.item().equals(info.item))
                                 .findFirst()
                                 .ifPresent(coolDown -> {
-                                    int time = Math.toIntExact(-coolDown.time().elapsedTime() / 1000);
+                                    int time = (int) (-coolDown.time().elapsedTime() / 1000);
                                     java.lang.String duration = StringHelper.getDuration(time);
                                     MutableText text = Text.empty()
-                                            .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
+                                            .append(GradientAssist.applyGradientToText(displayName, GradientAssist.getGradientColors(displayName), addStarPrefix))
                                             .append("  будет  доступен  через ")
                                             .append(Text.literal(duration).formatted(Formatting.GRAY));
                                     Notifications.getInstance().addList(text, 4000);
                                 });
+                    } else {
+
+                        int hotbarSlot = InventoryTask.findHotbarSlot(info.item);
+                        if (hotbarSlot != -1) {
+
+                            int previousSlot = mc.player.getInventory().selectedSlot;
+                            mc.player.getInventory().selectedSlot = hotbarSlot;
+                            if (mc.getNetworkHandler() != null) {
+                                mc.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(hotbarSlot));
+                            }
+
+                            InventoryTick.schelude(() -> {
+                                PlayerInteractionHelper.interactItem(Hand.MAIN_HAND);
+                                mc.player.swingHand(Hand.MAIN_HAND);
+
+                                mc.player.getInventory().selectedSlot = previousSlot;
+                                if (mc.getNetworkHandler() != null) {
+                                    mc.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(previousSlot));
+                                }
+                            }, GuiMove.mode.isSelected("ХолиВорлд") ? 2 : 1);
+                        } else {
+
+                            InventoryTask.swapAndUse(slot, searchName, true);
+                        }
                     }
                 } else {
                     MutableText text = Text.empty()
-                            .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
+                            .append(GradientAssist.applyGradientToText(displayName, GradientAssist.getGradientColors(displayName), addStarPrefix))
                             .append("  не  найдено");
                     Notifications.getInstance().addList(text, 4000);
                 }
                 potionTimer.reset();
             }
         }
-        if (autoRepairSetting.isValue() && autoRepairSetting.isVisible() && StreamSupport.stream(mc.player.getArmorItems().spliterator(), false)
-                .anyMatch(stack -> {
-                    if ((double) stack.getDamage() / stack.getMaxDamage() < 0.94) return false;
-                    RegistryEntry<Enchantment> mendingEntry = mc.world.getRegistryManager()
-                            .getOrThrow(RegistryKeys.ENCHANTMENT)
-                            .getEntry(Enchantments.MENDING.getValue())
-                            .orElse(null);
-                    return mendingEntry != null && EnchantmentHelper.getLevel(mendingEntry, stack) > 0;
-                })) {
-            InventoryTask.slots()
-                    .filter(slot -> {
-                        ItemStack stack = slot.getStack();
-                        NbtComponent component = stack.get(DataComponentTypes.CUSTOM_DATA);
-                        return !mc.player.getItemCooldownManager().isCoolingDown(stack) && stack.getItem().equals(Items.EXPERIENCE_BOTTLE) && component != null && component.toString().contains("\"text\":\" - при нажатие ПКМ, полностью ремонтирует\"") && repairWatch.every(5000);
-                    })
-                    .findFirst()
-                    .ifPresent(slot -> InventoryFlowManager.addTask(() -> InventoryTask.swapAndUse(slot, MathAngle.cameraAngle())));
-        }
+
         if (!InventoryTask.isServerScreen() && !stacks.isEmpty() && script2.isFinished() && shulkerWatch.finished(300)) {
             InventoryTask.slots()
                     .filter(s -> s.getStack().get(DataComponentTypes.CONTAINER) != null)
@@ -573,176 +601,8 @@ public class ServerHelper extends Module {
         blockStateMap.clear();
         structures.removeIf(cons -> cons.time - System.currentTimeMillis() <= 0);
         serverEvents.removeIf(event -> event.timeEnd + 90000 - System.currentTimeMillis() <= 0);
-    }
 
-    private void startItemUse(Slot slot, ItemInfo info, boolean addStarPrefix) {
-        originalSlot = mc.player.getInventory().selectedSlot;
-        originalSourceSlot = slot.id;
-        targetSlot = slot.id;
-        pendingItemKey = info.searchName;
-
-        boolean needsSwap = !(slot.id >= 0 && slot.id < 9) && !(slot.id >= 36 && slot.id < 45);
-
-        wasForwardPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.forwardKey.getDefaultKey().getCode());
-        wasBackPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.backKey.getDefaultKey().getCode());
-        wasLeftPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.leftKey.getDefaultKey().getCode());
-        wasRightPressed = InputUtil.isKeyPressed(mc.getWindow().getHandle(), mc.options.rightKey.getDefaultKey().getCode());
-
-        if (needsSwap) {
-            actionState = ActionState.SLOWING_DOWN;
-            actionTimer = System.currentTimeMillis();
-            stopMovementUntil = System.currentTimeMillis() + 95;
-            keysOverridden = true;
-            mc.options.forwardKey.setPressed(false);
-            mc.options.backKey.setPressed(false);
-            mc.options.leftKey.setPressed(false);
-            mc.options.rightKey.setPressed(false);
-        } else {
-            actionState = ActionState.SWAP_TO_ITEM;
-            actionTimer = System.currentTimeMillis();
-            stopMovementUntil = System.currentTimeMillis() + 95;
-            keysOverridden = true;
-            mc.options.forwardKey.setPressed(false);
-            mc.options.backKey.setPressed(false);
-            mc.options.leftKey.setPressed(false);
-            mc.options.rightKey.setPressed(false);
-        }
-
-        MutableText text = Text.empty()
-                .append(GradientAssist.applyGradientToText(info.displayName, GradientAssist.getGradientColors(info.displayName), addStarPrefix))
-                .append("  использована");
-        Notifications.getInstance().addList(text, 4000);
-    }
-
-    private void processItemAction() {
-        long currentTime = System.currentTimeMillis();
-        long elapsed = currentTime - actionTimer;
-
-        switch (actionState) {
-            case SLOWING_DOWN -> {
-                mc.player.input.movementForward = 0;
-                mc.player.input.movementSideways = 0;
-                if (mc.player.isSprinting()) {
-                    mc.player.setSprinting(false);
-                }
-                if (elapsed > 1) {
-                    actionState = ActionState.WAITING_STOP;
-                }
-            }
-            case WAITING_STOP -> {
-                mc.player.input.movementForward = 0;
-                mc.player.input.movementSideways = 0;
-                double velocityX = Math.abs(mc.player.getVelocity().x);
-                double velocityZ = Math.abs(mc.player.getVelocity().z);
-                if ((velocityX < 0.001 && velocityZ < 0.001) || elapsed > 75) {
-                    actionState = ActionState.SWAP_TO_ITEM;
-                    actionTimer = currentTime;
-                }
-            }
-            case SWAP_TO_ITEM -> {
-                if (elapsed > 25) {
-                    if (targetSlot >= 0 && targetSlot < 9) {
-                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(targetSlot));
-                        mc.player.getInventory().selectedSlot = targetSlot;
-                    } else if (targetSlot >= 36 && targetSlot < 45) {
-                        int hotbarSlot = targetSlot - 36;
-                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(hotbarSlot));
-                        mc.player.getInventory().selectedSlot = hotbarSlot;
-                        targetSlot = hotbarSlot;
-                    } else {
-                        int swapSlot = 8;
-                        InventoryTask.clickSlot(targetSlot, swapSlot, SlotActionType.SWAP, false);
-                        targetSlot = swapSlot;
-                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(swapSlot));
-                        mc.player.getInventory().selectedSlot = swapSlot;
-                    }
-
-                    actionState = ActionState.USE_ITEM;
-                    actionTimer = currentTime;
-                }
-            }
-            case USE_ITEM -> {
-                if (elapsed > 40) {
-                    mc.player.networkHandler.sendPacket(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0, mc.player.getYaw(), mc.player.getPitch()));
-                    mc.player.swingHand(Hand.MAIN_HAND);
-                    actionState = ActionState.SWAP_BACK;
-                    actionTimer = currentTime;
-                }
-            }
-            case SWAP_BACK -> {
-                if (elapsed > 25) {
-                    boolean wasFromInventory = !(originalSourceSlot >= 0 && originalSourceSlot < 9) && !(originalSourceSlot >= 36 && originalSourceSlot < 45);
-
-                    if (wasFromInventory) {
-                        if (targetSlot >= 0 && targetSlot < 9) {
-                            InventoryTask.clickSlot(originalSourceSlot, targetSlot, SlotActionType.SWAP, false);
-                        }
-                    } else {
-                        if (originalSourceSlot >= 36 && originalSourceSlot < 45) {
-                            int hotbarSlot = originalSourceSlot - 36;
-                            if (targetSlot != hotbarSlot) {
-                                mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(hotbarSlot));
-                                mc.player.getInventory().selectedSlot = hotbarSlot;
-                            }
-                        } else if (originalSourceSlot >= 0 && originalSourceSlot < 9) {
-                            if (targetSlot != originalSourceSlot) {
-                                mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(originalSourceSlot));
-                                mc.player.getInventory().selectedSlot = originalSourceSlot;
-                            }
-                        }
-                    }
-
-                    if (mc.player.getInventory().selectedSlot != originalSlot) {
-                        mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(originalSlot));
-                        mc.player.getInventory().selectedSlot = originalSlot;
-                    }
-
-                    restoreKeyStates();
-                    actionState = ActionState.SPEEDING_UP;
-                    actionTimer = currentTime;
-                }
-            }
-            case SPEEDING_UP -> {
-                long speedupElapsed = currentTime - actionTimer;
-
-                if (speedupElapsed > 75) {
-                    actionState = ActionState.IDLE;
-                    originalSlot = -1;
-                    targetSlot = -1;
-                    originalSourceSlot = -1;
-                    pendingItemKey = null;
-                }
-            }
-        }
-    }
-
-    private void restoreKeyStates() {
-        if (!keysOverridden) return;
-
-        mc.options.forwardKey.setPressed(wasForwardPressed);
-        mc.options.backKey.setPressed(wasBackPressed);
-        mc.options.leftKey.setPressed(wasLeftPressed);
-        mc.options.rightKey.setPressed(wasRightPressed);
-
-        if (mc.player.input != null) {
-            if (wasForwardPressed) {
-                mc.player.input.movementForward = 1.0f;
-                if (!mc.player.isSprinting()) {
-                    mc.player.setSprinting(true);
-                }
-            }
-            if (wasBackPressed) {
-                mc.player.input.movementForward = -1.0f;
-            }
-            if (wasLeftPressed) {
-                mc.player.input.movementSideways = 1.0f;
-            }
-            if (wasRightPressed) {
-                mc.player.input.movementSideways = -1.0f;
-            }
-        }
-
-        keysOverridden = false;
+        temporaryEventWays.removeIf(TemporaryEventWay::isExpired);
     }
 
     @EventHandler
@@ -799,13 +659,14 @@ public class ServerHelper extends Module {
                         }
                         case "Взрывная трапка" -> drawItemCube(playerPos, smooth, 3.99F, color);
                         case "Стан" -> drawItemCube(playerPos, smooth, 15.01F, color);
-                        case "Снежок заморозка" -> ProjectilePrediction.getInstance().drawPredictionInHand(matrix, List.of(Items.SNOWBALL.getDefaultStack()), MathAngle.cameraAngle());
+                        case "Ком Снега", "Снежок заморозки" -> ProjectilePrediction.getInstance().drawPredictionInHand(matrix, List.of(Items.SNOWBALL.getDefaultStack()), MathAngle.cameraAngle());
                     }
                 });
     }
 
     @EventHandler
     public void onDraw(DrawEvent e) {
+        if (e == null || e.getDrawContext() == null) return;
         DrawContext context = e.getDrawContext();
         MatrixStack matrix = context.getMatrices();
         structures.forEach(cons -> {
@@ -818,12 +679,13 @@ public class ServerHelper extends Module {
             float posY = (float) vec3d.y;
             float padding = 2;
             if (Projection.canSee(cons.vec) && cons.anarchy == Network.getAnarchy() && Network.getWorldType().equals(cons.world)) {
-                blur.render(ShapeProperties.create(matrix, posX - padding, posY - padding, width + padding * 2, 10)
+                //       Render2D.rectangleWithMask(context.getMatrices().peek().getPositionMatrix(), posX - padding, posY - padding, width + padding * 2, 10, 1.5f,0, KawaseBlur.INSTANCE.fbos.getFirst().getColorAttachment());
+                rectangle.render(ShapeProperties.create(matrix, posX - padding-8, posY - padding, width + padding * 2 + 8, 10)
                         .round(1.5F)
-                        .color(ColorAssist.HALF_BLACK)
-                        .build());
+                        .color(new Color(27,27,30,255).getRGB()).build());
+
                 font.drawString(matrix, text, posX, posY + 1, ColorAssist.getText());
-                Render2D.defaultDrawStack(context, cons.item.getDefaultStack(), posX - 14, posY - 2.5F, true, false, 0.5F);
+                Render2D.defaultDrawStack(context, cons.item.getDefaultStack(), posX - 9, posY - 1.5F, false, false, 0.45F);
             }
         });
         serverEvents.forEach(event -> {
@@ -854,13 +716,47 @@ public class ServerHelper extends Module {
                     double y = vec.getY() - height / 2;
                     Formatting formatting = mc.player.getEyePos().distanceTo(ent.getEyePos()) < 5F ? Formatting.GREEN : Formatting.RED;
                     if (Projection.canSee(pos)) {
-                        blur.render(ShapeProperties.create(matrix, x - padding, y - padding, width + padding * 2, height + padding * 2)
+                        Render2D.rectangleWithMask(context.getMatrices().peek().getPositionMatrix(), (float) (x - padding), (float) (y - padding), width + padding * 2, height + padding * 2, 2,0, KawaseBlur.INSTANCE.fbos.getFirst().getColorAttachment());
+
+                 /*       blur.render(ShapeProperties.create(matrix, x - padding, y - padding, width + padding * 2, height + padding * 2)
                                 .round(2)
                                 .color(ColorAssist.HALF_BLACK)
-                                .build());
+                                .build());*/
                         font.drawString(matrix, formatting + text, x, y, ColorAssist.getText());
                     }
                 });
+
+
+        temporaryEventWays.forEach(way -> {
+            Vec3d vec3d = Projection.worldSpaceToScreenSpace(way.pos());
+            double timeLeft = 15 * 60 - (System.currentTimeMillis() - way.creationTime()) / 1000.0;
+            java.lang.String timeText = timeLeft > 60 ?
+                    String.format("%.0f мин", timeLeft / 60) :
+                    String.format("%.0f сек", timeLeft);
+
+            java.lang.String distance = " [" + Calculate.round(mc.getEntityRenderDispatcher().camera.getPos().distanceTo(way.pos()), 0.1) + "m" + "]";
+            java.lang.String text = way.name() + distance + " (" + timeText + ")";
+
+            if (Projection.canSee(way.pos()) && way.server().equals(Network.getWorldType())) {
+                FontRenderer font = Fonts.getSize(14);
+                float width = font.getStringWidth(text);
+                float posX = (float) (vec3d.x - width / 2);
+                float posY = (float) vec3d.y;
+                float padding = 2;
+
+                Render2D.rectangleWithMask(context.getMatrices().peek().getPositionMatrix(), posX - padding, posY - padding, width + padding * 2, 10, 1.5f,0, KawaseBlur.INSTANCE.fbos.getFirst().getColorAttachment());
+
+             /*   blur.render(ShapeProperties.create(matrix, posX - padding, posY - padding, width + padding * 2, 10)
+                        .round(1.5F)
+                        .color(ColorAssist.HALF_BLACK)
+                        .build());*/
+                font.drawString(matrix, text, posX, posY + 1, ColorAssist.getText());
+
+
+                Item iconItem = getEventIconItem(way.name());
+                Render2D.defaultDrawStack(context, iconItem.getDefaultStack(), posX - 14, posY - 2.5F, true, false, 0.5F);
+            }
+        });
     }
 
     private void drawItemCube(BlockPos playerPos, Vec3d smooth, float size, int color) {
@@ -906,11 +802,13 @@ public class ServerHelper extends Module {
             java.lang.String string = list.get(i);
             float width = font.getStringWidth(string);
             float posX = (float) (vec3d.x - width / 2);
-            blur.render(ShapeProperties.create(matrix, posX - 2, vec3d.y - 2 + offsetY, width + 2 * 2, 10)
+            Render2D.rectangleWithMask(matrix.peek().getPositionMatrix(), posX - 2, (float) (vec3d.y - 2 + offsetY), width + 2 * 2, 10, 2,0, KawaseBlur.INSTANCE.fbos.getFirst().getColorAttachment());
+
+         /*   blur.render(ShapeProperties.create(matrix, posX - 2, vec3d.y - 2 + offsetY, width + 2 * 2, 10)
                     .softness(3)
                     .round(getRound(font, list, i, width))
                     .color(ColorAssist.HALF_BLACK)
-                    .build());
+                    .build());*/
             font.drawString(matrix, string, posX, vec3d.y + 1 + offsetY, ColorAssist.getText());
             offsetY += 10;
         }
@@ -946,18 +844,16 @@ public class ServerHelper extends Module {
 
     private void drawVerticalLines(Vec3d vec3d, int color, float width, int i, boolean ff) {
         float x = ff ? i : -i;
-        Render3D.drawLine(vec3d, vec3d = vec3d.add(x, 0, 0), color, width, true);
+        Render3D.drawLine(vec3d, vec3d.add(0, 5, 0), color, width, true);
+        Render3D.drawLine(vec3d = vec3d.add(x, 0, 0), vec3d.add(0, 5, 0), color, width, true);
         for (int f = 0; f < 4; f++) {
-            Render3D.drawLine(vec3d, vec3d = vec3d.add(0, 0, i), color, width, true);
-            Render3D.drawLine(vec3d, vec3d = vec3d.add(x, 0, 0), color, width, true);
+            Render3D.drawLine(vec3d = vec3d.add(x, 0, i), vec3d.add(0, 5, 0), color, width, true);
         }
-        Render3D.drawLine(vec3d, vec3d = vec3d.add(0, 0, i), color, width, true);
-        Render3D.drawLine(vec3d, vec3d = vec3d.add(x * -2, 0, 0), color, width, true);
+        Render3D.drawLine(vec3d = vec3d.add(0, 0, i), vec3d.add(0, 5, 0), color, width, true);
+        Render3D.drawLine(vec3d = vec3d.add(x * -2, 0, 0), vec3d.add(0, 5, 0), color, width, true);
         for (int f = 0; f < 3; f++) {
-            Render3D.drawLine(vec3d, vec3d = vec3d.add(0, 0, i* -1), color, width, true);
-            Render3D.drawLine(vec3d, vec3d = vec3d.add(x * -1, 0, 0), color, width, true);
+            Render3D.drawLine(vec3d = vec3d.add(x * -1, 0, i * -1), vec3d.add(0, 5, 0), color, width, true);
         }
-        Render3D.drawLine(vec3d, vec3d.add(0, 0, i * -2), color, width, true);
     }
 
     private void drawHorizontalQuads(Vec3d vec3d, int color, int i, boolean ff) {
@@ -993,6 +889,73 @@ public class ServerHelper extends Module {
             long loot = open + timeLoot * 1000L;
             serverEvents.add(new ServerEvent(name, lvl, owner, vec3d, world, Network.getAnarchy(), open, loot));
         }
+    }
+
+    private void parseEventsList(String message) {
+        try {
+
+            Pattern funTimePattern = Pattern.compile(
+                    "\\[(\\d+)]\\s*([^:\\n]+):.*?\\|\\|\\s*Координаты:\\s*\\[\\s*(-?\\d+)\\s+(-?\\d+)\\s+(-?\\d+)\\s*]",
+                    Pattern.DOTALL
+            );
+
+            Matcher m = funTimePattern.matcher(message);
+            boolean found = false;
+            while (m.find()) {
+                found = true;
+                String eventName = m.group(2).trim();
+                int x = Integer.parseInt(m.group(3));
+                int y = Integer.parseInt(m.group(4));
+                int z = Integer.parseInt(m.group(5));
+
+
+                String waypointName = eventName.replace(" ", "-");
+
+
+                String serverAddress = mc.getNetworkHandler() != null && mc.getNetworkHandler().getServerInfo() != null
+                        ? mc.getNetworkHandler().getServerInfo().address
+                        : "vanilla";
+
+
+                addTemporaryEventWay(waypointName, new Vec3d(x, y, z), serverAddress);
+
+
+                MutableText notification = Text.empty()
+                        .append(Text.literal("Создан временный waypoint для ивента: ").formatted(Formatting.GREEN))
+                        .append(Text.literal(waypointName).formatted(Formatting.YELLOW))
+                        .append(Text.literal(" [" + x + " " + y + " " + z + "]").formatted(Formatting.GRAY))
+                        .append(Text.literal(" (15 мин)").formatted(Formatting.GRAY));
+                Notifications.getInstance().addList(notification, 5000);
+            }
+
+            if (!found) {
+
+                MutableText noMatchNotification = Text.empty()
+                        .append(Text.literal("Паттерн не нашел совпадений в сообщении").formatted(Formatting.RED));
+                Notifications.getInstance().addList(noMatchNotification, 3000);
+            }
+        } catch (Exception e) {
+
+            MutableText errorNotification = Text.empty()
+                    .append(Text.literal("Ошибка парсинга FunTime: ").formatted(Formatting.RED))
+                    .append(Text.literal(e.getMessage()).formatted(Formatting.GRAY));
+            Notifications.getInstance().addList(errorNotification, 3000);
+        }
+    }
+
+    private int parseSecondsUntil(String status) {
+        if (status == null) return 0;
+        Matcher mm = TIME_MIN_SEC.matcher(status);
+        if (mm.find()) {
+            int min = Integer.parseInt(mm.group(1));
+            int sec = Integer.parseInt(mm.group(2));
+            return min * 60 + sec;
+        }
+        Matcher ss = TIME_SEC.matcher(status);
+        if (ss.find()) {
+            return Integer.parseInt(ss.group(1));
+        }
+        return 0;
     }
 
     private void addStructure(Item item, Vec3d vec, double time) {
@@ -1048,6 +1011,29 @@ public class ServerHelper extends Module {
             if (inconsistencies > 1) return false;
         }
         return true;
+    }
+
+
+    private Item getEventIconItem(String eventName) {
+        if (eventName == null) return Items.PAPER;
+
+        String name = eventName.toLowerCase();
+
+
+        if (name.contains("метеоритный-дождь") || name.contains("метеоритный дождь")) {
+            return Items.FIREWORK_ROCKET;
+        }
+        if (name.contains("вулкан")) {
+            return Items.LAVA_BUCKET;
+        }
+        if (name.contains("мистический-сундук") || name.contains("мистический сундук")) {
+            return Items.CHEST;
+        }
+        if (name.contains("маяк-убийца") || name.contains("маяк убийца")) {
+            return Items.BEACON;
+        }
+
+        return Items.PAPER;
     }
 
     public List<KeyBind> getKeyBindings() {

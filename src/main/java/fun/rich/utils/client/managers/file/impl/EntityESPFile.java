@@ -52,8 +52,10 @@ public class EntityESPFile extends ClientFile {
         try (FileReader reader = new FileReader(file)) {
             EntityESP[] blockESP = gson.fromJson(reader, EntityESP[].class);
             repository.entities.clear();
-            Arrays.asList(blockESP).forEach(esp -> Registries.ENTITY_TYPE.stream().filter(type -> type.getTranslationKey().equals(esp.entity))
-                    .findFirst().ifPresent(type -> repository.entities.put(type, esp.color)));
+            if (blockESP != null) {
+                Arrays.asList(blockESP).forEach(esp -> Registries.ENTITY_TYPE.stream().filter(type -> type.getTranslationKey().equals(esp.entity))
+                        .findFirst().ifPresent(type -> repository.entities.put(type, esp.color)));
+            }
         } catch (IOException e) {
             throw new FileLoadException(String.format("Failed to load %s from file", getName()), e);
         } catch (JsonSyntaxException e) {

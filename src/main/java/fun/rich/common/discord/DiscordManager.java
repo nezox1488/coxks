@@ -33,14 +33,14 @@ public class DiscordManager implements QuickImports {
                             .setStartTimestamp(System.currentTimeMillis() / 1000)
                             .setDetails("User: " + UserProfile.getInstance().profile("username"))
                             .setState("Uid: " + UserProfile.getInstance().profile("uid"))
-                            .setLargeImage("https://i.postimg.cc/nznMWbhM/0001-0250.gif", "https://richclient.fun/")
-                            .setSmallImage(Rich.getInstance().getDiscordManager().getInfo().avatarUrl, "https://richclient.fun/")
-                            .setButtons(RPCButton.create("Телеграм", "https://t.me/richclientnew"),
-                                    RPCButton.create("Дискорд", "https://discord.gg/zYctK4mjZZ"))
+                            .setLargeImage("https://i.postimg.cc/d0WYPjGb/2026-02-15-15-32-52-online-video-cutter-com.gif", "https://t.me/roxsyclient")
+                            .setSmallImage(Rich.getInstance().getDiscordManager().getInfo().avatarUrl, "https://roxsyclient.fun/")
+                            .setButtons(RPCButton.create("Телеграм", "https://t.me/roxsyclient"),
+                                    RPCButton.create("Дискорд", "discord.gg/soon..."))
                             .build();
                     DiscordRPC.INSTANCE.Discord_UpdatePresence(richPresence);
                 }).build();
-        DiscordRPC.INSTANCE.Discord_Initialize("1419653405265105021", handlers, true, "");
+        DiscordRPC.INSTANCE.Discord_Initialize("1472575866629263455", handlers, true, "");
         discordDaemonThread.start();
     }
 

@@ -26,7 +26,7 @@ public class CheckboxComponent extends AbstractSettingComponent {
 
         Fonts.getSize(20, GUIICONS).drawString(context.getMatrices(), "K", x + 6, y + 10f, new Color(128, 128, 128, 64).getRGB());
 
-        Fonts.getSize(12, DEFAULT).drawString(context.getMatrices(), setting.getName(), x + 20, y + 11f, 0xFFD4D6E1);
+        Fonts.getSize(12, DEFAULT).drawString(context.getMatrices(), setting.getLocalizedName(), x + 20, y + 11f, 0xFFD4D6E1);
 
         ((CheckComponent) checkComponent.position(x + width - 19, y + 6))
                 .setRunnable(() -> setting.setValue(!setting.isValue()))

@@ -94,9 +94,11 @@ public class FontRenderer implements QuickImports {
     }
 
     public void drawString(MatrixStack matrix, java.lang.String text, double x, double y, int color) {
+        if (text == null) text = "";
         TextFactoryEvent event = new TextFactoryEvent(text);
         EventManager.callEvent(event);
         text = event.getText();
+        if (text == null) text = "";
 
         char[] chars = text.toCharArray();
         float xOffset = 0;
@@ -159,9 +161,11 @@ public class FontRenderer implements QuickImports {
     }
 
     public void drawGradientString(MatrixStack matrix, java.lang.String text, double x, double y, int colorStart, int colorEnd) {
+        if (text == null) text = "";
         TextFactoryEvent event = new TextFactoryEvent(text);
         EventManager.callEvent(event);
         text = event.getText();
+        if (text == null) text = "";
 
         char[] chars = text.toCharArray();
         float xOffset = 0;
@@ -243,9 +247,11 @@ public class FontRenderer implements QuickImports {
     }
 
     public float getStringWidth(java.lang.String text) {
+        if (text == null) text = "";
         TextFactoryEvent event = new TextFactoryEvent(text);
         EventManager.callEvent(event);
         text = event.getText();
+        if (text == null) text = "";
 
         float currentLine = 0;
         float maxPreviousLines = 0;
@@ -276,6 +282,7 @@ public class FontRenderer implements QuickImports {
     }
 
     public float getStringHeight(java.lang.String text) {
+        if (text == null) text = "";
         float currentLine = 0;
         float previous = 0;
 

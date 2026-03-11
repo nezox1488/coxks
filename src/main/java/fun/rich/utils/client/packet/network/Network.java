@@ -107,4 +107,9 @@ public class Network implements QuickImports {
     public boolean isSpookyTime() {return server.equals("SpookyTime");}
     public boolean isAresMine() {return server.equals("aresmine");}
     public boolean isVanilla() {return server.equals("Vanilla");}
+
+    // Явный геттер TPS, чтобы можно было вызывать Network.getTPS()
+    public static float getTPS() {
+        return TPS;
+    }
 }

@@ -15,6 +15,13 @@ import fun.rich.utils.display.shape.ShapeProperties;
 public class Image implements Shape, QuickImports {
     private String texture;
 
+    /** Возвращает Identifier текстуры (после setTexture) */
+    public Identifier getTexture() {
+        return texture != null ? Identifier.of(texture) : null;
+    }
+    /** false = без поворота (для квадратных иконок), true = поворот 90° (backmenu и т.п.) */
+    private boolean rotate = true;
+
     @Override
     public void render(ShapeProperties shape) {
         MatrixStack matrix = shape.getMatrix();
@@ -24,17 +31,22 @@ public class Image implements Shape, QuickImports {
         RenderSystem.setShaderTexture(0, Identifier.of(texture));
 
         float width = shape.getWidth();
-        float x = shape.getX() + width;
+        float height = shape.getHeight();
+        float x = rotate ? shape.getX() + width : shape.getX();
         float y = shape.getY();
 
-        matrix.push();
-        matrix.translate(x, y, 0.0F);
-        matrix.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90));
-        matrix.translate(-x, -y, 0.0F);
+        if (rotate) {
+            matrix.push();
+            matrix.translate(x, y, 0.0F);
+            matrix.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90));
+            matrix.translate(-x, -y, 0.0F);
+        }
 
-        drawEngine.quad(matrix.peek().getPositionMatrix(), x, y, shape.getHeight(), width, shape.getColor().x);
+        drawEngine.quad(matrix.peek().getPositionMatrix(), x, y, height, width, shape.getColor().x);
 
-        matrix.pop();
+        if (rotate) {
+            matrix.pop();
+        }
 
         RenderSystem.disableBlend();
     }

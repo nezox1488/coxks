@@ -1,6 +1,7 @@
 package fun.rich.utils.display.atlasfont.msdf;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import fun.rich.utils.display.atlasfont.providers.ColorProvider;
 import fun.rich.utils.display.atlasfont.providers.ResourceProvider;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumer;
@@ -36,7 +37,7 @@ public final class MsdfFont {
 		return this.texture.getGlId();
 	}
 	
-	public void applyGlyphs(Matrix4f matrix, VertexConsumer consumer, String text, float size, float thickness, float spacing, float x, float y, float z, int color) {
+    public void applyGlyphs(Matrix4f matrix, VertexConsumer consumer, String text, float size, float thickness, float spacing, float x, float y, float z, int color) {
 		int prevChar = -1;
 		for (int i = 0; i < text.length(); i++) {
 			int _char = (int) text.charAt(i);
@@ -53,6 +54,46 @@ public final class MsdfFont {
 			prevChar = _char;
 		}
 	}
+
+    public void applyRainbowGlyphs(Matrix4f matrix,
+                                   VertexConsumer consumer,
+                                   String text,
+                                   float size,
+                                   float thickness,
+                                   float spacing,
+                                   float x,
+                                   float y,
+                                   float z,
+                                   int color1,
+                                   int color2) {
+        int prevChar = -1;
+        int length = text.length();
+        if (length == 0) return;
+
+        for (int i = 0; i < length; i++) {
+            int _char = (int) text.charAt(i);
+            MsdfGlyph glyph = this.glyphs.get(_char);
+
+            if (glyph == null) continue;
+
+            float t = length == 1 ? 0.0f : (float) i / (float) (length - 1);
+            int[] c1 = ColorProvider.unpack(color1);
+            int[] c2 = ColorProvider.unpack(color2);
+            int r = (int) (c1[0] + (c2[0] - c1[0]) * t);
+            int g = (int) (c1[1] + (c2[1] - c1[1]) * t);
+            int b = (int) (c1[2] + (c2[2] - c1[2]) * t);
+            int a = (int) (c1[3] + (c2[3] - c1[3]) * t);
+            int color = ColorProvider.pack(r, g, b, a);
+
+            Map<Integer, Float> kerning = this.kernings.get(prevChar);
+            if (kerning != null) {
+                x += kerning.getOrDefault(_char, 0.0f) * size;
+            }
+
+            x += glyph.apply(matrix, consumer, size, x, y, z, color) + thickness + spacing;
+            prevChar = _char;
+        }
+    }
 	
 	public float getWidth(String text, float size) {
 		int prevChar = -1;

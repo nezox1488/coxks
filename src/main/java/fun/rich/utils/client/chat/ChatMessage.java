@@ -48,6 +48,14 @@ public class ChatMessage {
         }
     }
 
+    public static void packetloggermessage(String message) {
+        if (MinecraftClient.getInstance().player != null) {
+            Text prefix = TextHelper.applyPredefinedGradient("PacketLogger -> ", "black_light_purple", true);
+            Text formattedMessage = prefix.copy().append(Text.literal(message));
+            MinecraftClient.getInstance().player.sendMessage(formattedMessage, false);
+        }
+    }
+
     public static void swapmessage(String message) {
         if (MinecraftClient.getInstance().player != null) {
             Text prefix = TextHelper.applyPredefinedGradient("AutoSwap -> ", "black_light_purple", true);

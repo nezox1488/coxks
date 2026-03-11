@@ -2,6 +2,7 @@ package fun.rich.utils.interactions.simulate;
 
 import fun.rich.features.impl.combat.Aura;
 import fun.rich.features.impl.misc.SelfDestruct;
+import fun.rich.features.impl.render.Optimization;
 import lombok.experimental.UtilityClass;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.PlayerInput;
@@ -125,7 +126,12 @@ public class Simulations implements QuickImports {
         return bodyYaw;
     }
 
+    /** 1488 = без изменений (стандартный tickDelta). Меньше = плавнее камера (Optimization) */
     public static double kizdamati() {
+        Optimization opt = Optimization.getInstance();
+        if (opt != null && opt.isSmoothCameraEnabled()) {
+            return opt.getSmoothInterpolationFactor();
+        }
         return 1488;
     }
 

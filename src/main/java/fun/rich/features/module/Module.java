@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.lwjgl.glfw.GLFW;
 import fun.rich.common.animation.Animation;
@@ -65,13 +66,15 @@ public class Module extends SettingRepository implements QuickImports {
         if (mc.player != null && mc.world != null) {
             if (state) {
                 if (Hud.getInstance().notificationSettings.isSelected("Module Switch")) {
-                    Notifications.getInstance().addList("Feature " + Formatting.GRAY + visibleName + Formatting.RESET + " - enabled!", 2000, null);
+                    String msg = visibleName + " " + fun.rich.utils.client.managers.localization.LocalizationManager.getInstance().translate("notif.enabled");
+                    Notifications.getInstance().addList(Text.literal(msg), 2000, null);
                     SoundManager.playSound(SoundManager.ENABLE_MODULE, volume, 1.0f);
                 }
                 activate();
             } else {
                 if (Hud.getInstance().notificationSettings.isSelected("Module Switch")) {
-                    Notifications.getInstance().addList("Feature " + Formatting.GRAY + visibleName + Formatting.RESET + " - disabled!", 2000, null);
+                    String msg = visibleName + " " + fun.rich.utils.client.managers.localization.LocalizationManager.getInstance().translate("notif.disabled");
+                    Notifications.getInstance().addList(Text.literal(msg), 2000, null);
                     SoundManager.playSound(SoundManager.DISABLE_MODULE, volume, 1.0f);
                 }
                 deactivate();

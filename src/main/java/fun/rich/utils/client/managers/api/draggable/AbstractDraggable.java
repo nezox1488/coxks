@@ -10,6 +10,7 @@ import fun.rich.common.animation.implement.Decelerate;
 import fun.rich.utils.display.interfaces.QuickImports;
 import fun.rich.utils.display.interfaces.QuickLogger;
 import fun.rich.utils.display.color.ColorAssist;
+import fun.rich.utils.display.shape.ShapeProperties;
 import fun.rich.utils.display.geometry.Render2D;
 import fun.rich.Rich;
 import fun.rich.events.container.SetScreenEvent;
@@ -33,7 +34,8 @@ public abstract class AbstractDraggable implements Draggable, QuickImports, Quic
         this.canDrag = canDrag;
     }
 
-    public final Animation scaleAnimation = new Decelerate().setValue(1).setMs(200);
+    /** Плавная анимация появления/скрытия элемента HUD (включение/выключение) */
+    public final Animation scaleAnimation = new Decelerate().setValue(1).setMs(350);
 
     @Override
     public boolean visible() {
@@ -60,8 +62,9 @@ public abstract class AbstractDraggable implements Draggable, QuickImports, Quic
         int radius = 3;
 
         if (dragging) {
-            this.x = (int) Math.max(0, Math.min(mouseDragX, windowWidth - width));
-            this.y = (int) Math.max(0, Math.min(mouseDragY, windowHeight - height));
+            int margin = 2;
+            this.x = (int) Math.max(-margin, Math.min(mouseDragX, windowWidth - width + margin));
+            this.y = (int) Math.max(-margin, Math.min(mouseDragY, windowHeight - height + margin));
         }
 
         for (AbstractDraggable drag : Rich.getInstance().getDraggableRepository().draggable()) {
@@ -108,11 +111,9 @@ public abstract class AbstractDraggable implements Draggable, QuickImports, Quic
 
     @Override
     public void setScreen(SetScreenEvent e) {
-        if (PlayerInteractionHelper.isChat(e.getScreen())) {
-            dragging = false;
-            dragX = 0;
-            dragY = 0;
-        }
+        dragging = false;
+        dragX = 0;
+        dragY = 0;
     }
 
     @Override
@@ -136,6 +137,37 @@ public abstract class AbstractDraggable implements Draggable, QuickImports, Quic
 
     public abstract void drawDraggable(DrawContext context);
 
+    /** Паддинг обводки — переопредели для кастомизации (Notifications: меньше по горизонтали) */
+    protected int getOutlinePadX() { return 4; }
+    protected int getOutlinePadY() { return 4; }
+    /** Смещение обводки вниз — только для Watermark (+2px) */
+    protected int getOutlineOffsetY() { return 0; }
+    /** Уменьшить ширину обводки (Notifications) — сколько пикселей вычесть */
+    protected int getOutlineWidthReduce() { return 0; }
+
+    /** Обводка при перетаскивании — переливание между двумя цветами Theme */
+    public void renderDragOutline(DrawContext context) {
+        if (!dragging || !canDrag) return;
+        var matrix = context.getMatrices();
+        int padX = getOutlinePadX();
+        int padY = getOutlinePadY();
+        int reduce = getOutlineWidthReduce();
+        float ox = x - padX + reduce / 2f;
+        float oy = y - padY + getOutlineOffsetY();
+        float ow = width + padX * 2f - reduce;
+        float oh = height + padY * 2f;
+        int c1 = ColorAssist.getClientColor();
+        int c2 = ColorAssist.getClientColor2();
+        int idx = (int) (System.currentTimeMillis() / 40) % 360;
+        int ca = ColorAssist.fade(8, idx, c1, c2);
+        int cb = ColorAssist.fade(8, idx + 90, c1, c2);
+        int cc = ColorAssist.fade(8, idx + 180, c1, c2);
+        int cd = ColorAssist.fade(8, idx + 270, c1, c2);
+        float round = Math.min(8, Math.min(ow, oh) / 4f);
+        rectangle.render(ShapeProperties.create(matrix, ox, oy, ow, oh)
+                .round(round).thickness(2f).outlineColor(ca).color(ca, cb, cc, cd).build());
+    }
+
     public void drawRect(float x, float y, float width, float height) {
         Render2D.drawQuad(x, y, width, height, ColorAssist.getText(0.5F));
     }
@@ -149,10 +181,13 @@ public abstract class AbstractDraggable implements Draggable, QuickImports, Quic
     }
 
     public void validPosition() {
-        if (x + width > window.getScaledWidth()) x = window.getScaledWidth() - width;
-        if (y + height > window.getScaledHeight()) y = window.getScaledHeight() - height;
-        if (y < 0) y = 0;
-        if (x < 0) x = 0;
+        int w = window.getScaledWidth();
+        int h = window.getScaledHeight();
+        int margin = 2;
+        if (x + width > w + margin) x = w - width + margin;
+        if (y + height > h + margin) y = h - height + margin;
+        if (y < -margin) y = -margin;
+        if (x < -margin) x = -margin;
     }
 
     public boolean isHovered(double mouseX, double mouseY) {

@@ -33,6 +33,9 @@ import lombok.experimental.NonFinal;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
@@ -93,6 +96,10 @@ public class Aura extends Module {
     @NonFinal
     long shiftTapEndTime = 0;
 
+    /** Оффханд таргета до обработки пакетов (для определения зачарован ли тотем при снесении) */
+    @NonFinal
+    ItemStack lastTargetOffhand = ItemStack.EMPTY;
+
     public static boolean fakeRotate;
 
     @NonFinal
@@ -103,7 +110,7 @@ public class Aura extends Module {
     private FovCircleRenderer fovCircleRenderer;
 
     SelectSetting aimMode = new SelectSetting("Наводка", "Выберите тип наводки")
-            .value("FunTime", "Legit Snap", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
+            .value("FunTime", "FuntimeTest", "SpookyTest", "Legit Snap", "ReallyWorld", "HolyWorld", "SpookyTime", "CakeWorld")
             .selected("FunTime");
 
     MultiSelectSetting targetType = new MultiSelectSetting("Тип таргета", "Фильтрует весь список целей по типу")
@@ -124,7 +131,7 @@ public class Aura extends Module {
             .setValue(100).range(1F, 100F).visible(() -> attackSetting.isSelected("Hit Chance"));
 
     SelectSetting correctionType = new SelectSetting("Коррекции движения", "Выбор коррекции движения игрока")
-            .value("Free", "Focused", "Not visible").selected("Free");
+            .value("Free", "Focused", "Target", "Not visible").selected("Free");
 
     SelectSetting sprintReset = new SelectSetting("Сброс спринта", "Выбор сброса спринта перед ударом")
             .value("Legit", "Packet").selected("Legit");
@@ -158,6 +165,12 @@ public class Aura extends Module {
         target = null;
         packets.forEach(PlayerInteractionHelper::sendPacketWithOutEvent);
         packets.clear();
+
+        TurnsConnection controller = TurnsConnection.INSTANCE;
+        controller.clear();
+        controller.setRotation(null);
+        controller.setFakeRotation(null);
+
         super.deactivate();
     }
 
@@ -167,10 +180,12 @@ public class Aura extends Module {
 
     @EventHandler
     public void onPacket(PacketEvent e) {
-        if (e.getPacket() instanceof EntityStatusS2CPacket status && status.getStatus() == 30) {
+        if (e.getPacket() instanceof EntityStatusS2CPacket status) {
             Entity entity = status.getEntity(mc.world);
-            if (entity != null && entity.equals(target) && Hud.getInstance().notificationSettings.isSelected("Break Shield")) {
-                Notifications.getInstance().addList(Text.literal("Сломали щит игроку - ").append(entity.getDisplayName()), 5000);
+            if (entity != null && entity.equals(target)) {
+                if (status.getStatus() == 30 && Hud.getInstance().notificationSettings.isSelected("Break Shield")) {
+                    Notifications.getInstance().addList(Text.literal("Сломали щит игроку - ").append(entity.getDisplayName()), 5000);
+                }
             }
         }
 
@@ -273,6 +288,7 @@ public class Aura extends Module {
         if (PlayerInteractionHelper.nullCheck()) return;
         if (target == null) return;
 
+        lastTargetOffhand = target.getOffHandStack();
         tickStop--;
         if (tickStop >= 0 && !packets.isEmpty() && attackSetting.isSelected("Fake Lag")) {
             box = mc.player.getBoundingBox();
@@ -344,10 +360,10 @@ public class Aura extends Module {
         switch (aimMode.getSelected()) {
 
 
-            case "FunTime" -> {
+            case "FunTime", "FuntimeTest" -> {
                 if (attackHandler.canAttack(config, 5)) {
-                        controller.clear();
-                        controller.rotateTo(rotation, target, 40, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
+                    controller.clear();
+                    controller.rotateTo(rotation, target, 40, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
                 }
             }
 
@@ -363,7 +379,7 @@ public class Aura extends Module {
                 }
             }
 
-            case "ReallyWorld", "SpookyTime", "CakeWorld" -> {
+            case "ReallyWorld", "SpookyTime", "SpookyTest", "CakeWorld" -> {
                 controller.rotateTo(rotation, target, 1, rotationConfig, TaskPriority.HIGH_IMPORTANCE_1, this);
             }
 
@@ -435,8 +451,11 @@ public class Aura extends Module {
 
     @Native(type = Native.Type.VMProtectBeginMutation)
     public TurnsConfig getRotationConfig() {
+        if (correctionType.isSelected("Target")) {
+            return new TurnsConfig(getSmoothMode(), true, true, 0f);
+        }
         boolean visibleCorrection = !correctionType.isSelected("Not visible");
-        boolean freeCorrection = !aimMode.isSelected("Legit") && correctionType.isSelected("Free");
+        boolean freeCorrection = !aimMode.isSelected("Legit") && (correctionType.isSelected("Free") || correctionType.isSelected("Target"));
         if (TargetStrafe.getInstance().isState() && TargetStrafe.getInstance().mode.isSelected("Grim") && target !=null) { freeCorrection = false; }
         return new TurnsConfig(getSmoothMode(), visibleCorrection, freeCorrection);
     }
@@ -452,10 +471,12 @@ public class Aura extends Module {
         }
         return switch (aimMode.getSelected()) {
             case "FunTime" -> new FTAngle();
+            case "FuntimeTest" -> new FuntimeTestAngle();
             case "HolyWorld" -> new HWAngle();
             case "HvH" -> new HAngle();
             case "CakeWorld" -> new LGAngle();
             case "SpookyTime" -> new SPAngle();
+            case "SpookyTest" -> new SpookyTestAngle();
             case "ReallyWorld" -> new RWAngle();
             case "Snap" -> new SnapAngle();
             case "Legit Snap" -> new SnapAngle();

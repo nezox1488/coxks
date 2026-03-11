@@ -1,235 +1,216 @@
 package fun.rich.display.hud;
-import com.nimbusds.jose.crypto.impl.MACProvider;
-import fun.rich.utils.interactions.interact.PlayerInteractionHelper;
-import fun.rich.utils.math.time.StopWatch;
+
+import fun.rich.features.impl.combat.Aura;
+import fun.rich.utils.client.managers.api.draggable.AbstractDraggable;
+import fun.rich.utils.display.color.ColorAssist;
+import fun.rich.utils.display.font.Fonts;
+import fun.rich.utils.display.geometry.Render2D;
+import fun.rich.utils.display.shape.ShapeProperties;
+import fun.rich.utils.math.Animation;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.LivingEntityRenderer;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.Item;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import fun.rich.utils.client.managers.api.draggable.AbstractDraggable;
-import fun.rich.features.impl.combat.Aura;
-import fun.rich.features.impl.render.Hud;
-import fun.rich.common.animation.Animation;
-import fun.rich.common.animation.Direction;
-import fun.rich.common.animation.implement.Decelerate;
-import fun.rich.utils.display.font.FontRenderer;
-import fun.rich.utils.display.font.Fonts;
-import fun.rich.utils.display.shape.ShapeProperties;
-import fun.rich.Rich;
-import fun.rich.utils.display.color.ColorAssist;
-import fun.rich.utils.interactions.item.ItemTask;
-import fun.rich.utils.math.calc.Calculate;
-import fun.rich.utils.display.geometry.Render2D;
-import fun.rich.utils.display.scissor.ScissorAssist;
-import fun.rich.utils.client.packet.network.Network;
-import java.awt.*;
+import net.minecraft.scoreboard.*;
+import net.minecraft.scoreboard.number.StyledNumberFormat;
+
+import java.awt.Color;
 
 public class TargetHud extends AbstractDraggable {
-    private final Animation animation = new Decelerate().setMs(650).setValue(1);
-    private final Animation faceAlphaAnimation = new Decelerate().setMs(125).setValue(1);
-    private final StopWatch stopWatch = new StopWatch();
-    private final StopWatch distanceUpdateTimer = new StopWatch();
-    private LivingEntity lastTarget;
-    private Item lastItem = Items.AIR;
-    private float health;
-    private float absorption;
-    private float displayedDistance;
+
+    private final Animation openAnimation = new Animation(1.4f);
+    private final Animation healthAnimation = new Animation(0.55f);
+    private final Animation absorptionAnimation = new Animation(0.55f);
+
+    private LivingEntity renderTarget = null;
 
     public TargetHud() {
-        super("Target Hud", 10, 80, 100, 36, true);
-    }
-
-    @Override
-    public boolean visible() {
-        return scaleAnimation.isDirection(Direction.FORWARDS);
+        super("Target Hud", 100, 100, 110, 35, true);
     }
 
     @Override
     public void tick() {
         LivingEntity auraTarget = Aura.getInstance().getTarget();
-        if (auraTarget != null) {
-            lastTarget = auraTarget;
-            startAnimation();
-            faceAlphaAnimation.setDirection(Direction.FORWARDS);
-        } else if (PlayerInteractionHelper.isChat(mc.currentScreen)) {
-            lastTarget = mc.player;
-            startAnimation();
-            faceAlphaAnimation.setDirection(Direction.FORWARDS);
-        } else if (stopWatch.finished(500)) {
-            stopAnimation();
-            faceAlphaAnimation.setDirection(Direction.BACKWARDS);
+        boolean isAuraActive = Aura.getInstance().isState();
+        boolean isChatOpen = mc.currentScreen instanceof ChatScreen;
+
+        boolean canShow = (isAuraActive && auraTarget != null && auraTarget.isAlive()) || isChatOpen;
+
+        openAnimation.setTarget(canShow ? 1.0 : 0.0);
+        openAnimation.update();
+
+        if (canShow) {
+            renderTarget = (auraTarget != null && auraTarget.isAlive()) ? auraTarget : mc.player;
+        } else if (openAnimation.getValue() < 0.01) {
+            renderTarget = null;
         }
     }
 
     @Override
     public void drawDraggable(DrawContext context) {
-        if (Hud.getInstance().interfaceSettings.isSelected("Target Hud") && Hud.getInstance().state) {
-            if (lastTarget != null) {
-                MatrixStack matrix = context.getMatrices();
-//                drawUsingItem(context, matrix);
-                drawMain(context, matrix);
-                drawArmor(context, matrix);
-                drawFace(context);
-            }
-        }
-    }
+        if (!fun.rich.features.impl.render.Hud.getInstance().interfaceSettings.isSelected("Target Hud") || !fun.rich.features.impl.render.Hud.getInstance().state) return;
+        if (renderTarget == null || openAnimation.getValue() < 0.001) return;
 
-    private void drawMain(DrawContext context, MatrixStack matrix) {
+        MatrixStack matrix = context.getMatrices();
+        float alphaPC = (float) openAnimation.getValue();
+        int alpha = (int) (alphaPC * 255);
 
-        FontRenderer font = Fonts.getSize(18, Fonts.Type.REGULAR);
-        FontRenderer distancefont = Fonts.getSize(12, Fonts.Type.SEMI);
-        float hp = PlayerInteractionHelper.getHealth(lastTarget);
-        String stringHp = (lastTarget.isInvisible() && !Network.isSpookyTime() && !Network.isCopyTime()) ? " ??" : PlayerInteractionHelper.getHealthString(hp);
-        health = MathHelper.clamp(Calculate.interpolateSmooth(1, health, hp / lastTarget.getMaxHealth() * 360), 0, 360);
-        float absorptionAmount = lastTarget.getAbsorptionAmount();
-        absorption = MathHelper.clamp(Calculate.interpolateSmooth(1, absorption, absorptionAmount / 20.0F * 360), 0, 360);
-        float actualDistance = mc.player.distanceTo(lastTarget);
-        float roundedDistance = Math.round(actualDistance * 2) / 2.0f;
-        if (distanceUpdateTimer.finished(10)) {
-            displayedDistance = MathHelper.clamp(Calculate.interpolateSmooth(0.5f, displayedDistance, roundedDistance), 0, 100);
-            distanceUpdateTimer.reset();
-        }
-        String distanceText = String.format("%.1f", displayedDistance);
+        float scale = 0.95f + (alphaPC * 0.05f);
 
-        float nameWidth = font.getStringWidth(lastTarget.getName().getString());
-        float baseWidth = Math.max(34 + 36 + 10, 100);
-        setWidth((int) baseWidth + 10);
-        setHeight((int) 41);
-
-        blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight() - 10)
-                .round(6).quality(12)
-                .color(new Color(0, 0, 0, 150).getRGB())
-                .build());
-
-        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight() - 10)
-                .round(6)
-                .thickness(0.1f)
-                .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                .color(
-                        new Color(18, 19, 20, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(0, 2, 5, 75).getRGB(),
-                        new Color(18, 19, 20, 75).getRGB())
-                .build());
-
-        arc.render(ShapeProperties.create(matrix, getX() + getWidth() - 28.5f, getY() + 2.5f, 26, 26).round(0.26F).thickness(0.30f).end(361)
-                .color(new Color(255,255,255,25).getRGB()).build());
-        arc.render(ShapeProperties.create(matrix, getX() + getWidth() - 28.5f, getY() + 2.5f, 26, 26).round(0.26F).thickness(0.30f).end(health)
-                .color(ColorAssist.fade(0), ColorAssist.fade(200), ColorAssist.fade(0), ColorAssist.fade(200)).build());
-        if (absorption > 0 && !Network.isFunTime()) {
-            arc.render(ShapeProperties.create(matrix, getX() + getWidth() - 28.5f, getY() + 2.5f, 26, 26).round(0.26F).thickness(0.30f)
-                    .end(absorption - 2.5f)
-                    .color(new Color(255, 215, 0, 255).getRGB(), new Color(255, 128, 0, 255).getRGB(), new Color(255, 215, 0, 255).getRGB(), new Color(255, 128, 0, 255).getRGB())
-                    .build());
-        }
-
-        if (nameWidth > 50) {
-            ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
-            scissorManager.push(matrix.peek().getPositionMatrix(), getX(), getY(), getWidth() - 29, getHeight());
-            font.drawGradientString(matrix, lastTarget.getName().getString(), getX() + 29, getY() + 9f, ColorAssist.getText(), ColorAssist.getText(0.15F));
-            distancefont.drawString(matrix, "Distance: " + distanceText, getX() + 29, getY() + 19f, new Color(225, 225, 255, 255).getRGB());
-            scissorManager.pop();
-        } else {
-            font.drawString(matrix, lastTarget.getName().getString(), getX() + 29, getY() + 9f, ColorAssist.getText());
-            distancefont.drawString(matrix, "Distance: " + distanceText, getX() + 29, getY() + 19f, new Color(225, 225, 255, 255).getRGB());
-        }
-
-        float arcCenterX = getX() + getWidth() - 30.5f / 2.0F;
-        float arcCenterY = getY() + 30 / 2.0F;
-        Fonts.getSize(11, Fonts.Type.BOLD).drawCenteredString(matrix, stringHp, arcCenterX, arcCenterY, new Color(255,255,255,225).getRGB());
-    }
-
-    private void drawArmor(DrawContext context, MatrixStack matrix) {
-        ItemStack[] slots = new ItemStack[] {
-                lastTarget.getMainHandStack(),
-                lastTarget.getOffHandStack(),
-                lastTarget.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD),
-                lastTarget.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST),
-                lastTarget.getEquippedStack(net.minecraft.entity.EquipmentSlot.LEGS),
-                lastTarget.getEquippedStack(net.minecraft.entity.EquipmentSlot.FEET)
-        };
-        float x = getX() + 21f;
-        float y = getY() + 17;
-        float slotSize = 16 * 0.5F + 2;
         matrix.push();
-        matrix.translate(x, y, 0);
-        for (int i = 0; i < 6; i++) {
-            float currentX = i * 11.5f;
+        matrix.translate(getX() + getWidth() / 2f, getY() + getHeight() / 2f, 0);
+        matrix.scale(scale, scale, 1);
+        matrix.translate(-(getX() + getWidth() / 2f), -(getY() + getHeight() / 2f), 0);
 
-            blur.render(ShapeProperties.create(matrix, currentX - 0.5f, 15F, slotSize + 1, slotSize + 1)
-                    .round(3).quality(12)
-                    .color(new Color(0, 0, 0, 150).getRGB())
-                    .build());
+        renderContent(context, matrix, alpha, alphaPC);
 
-            rectangle.render(ShapeProperties.create(matrix, currentX - 0.5f, 15F, slotSize + 1, slotSize + 1)
-                    .round(3)
-                    .thickness(0.1f)
-                    .outlineColor(new Color(33, 33, 33, 255).getRGB())
-                    .color(
-                            new Color(18, 19, 20, 75).getRGB(),
-                            new Color(0, 2, 5, 75).getRGB(),
-                            new Color(0, 2, 5, 75).getRGB(),
-                            new Color(18, 19, 20, 75).getRGB())
-                    .build());
-
-            if (!slots[i].isEmpty()) {
-                Render2D.defaultDrawStack(context, slots[i], currentX, 15.5F, false, false, 0.5F);
-            } else {
-                String xText = "x";
-                FontRenderer font = Fonts.getSize(12, Fonts.Type.DEFAULT);
-                float textWidth = font.getStringWidth(xText);
-                float textHeight = font.getStringHeight(xText);
-                float textX = currentX + (slotSize - textWidth) / 2.0F;
-                float textY = 15.5F + (slotSize - textHeight) / 2.0F;
-                font.drawString(matrix, xText, textX, textY + 6.25f, new Color(225, 225, 255, 255).getRGB());
-            }
-        }
         matrix.pop();
     }
 
-    private void drawUsingItem(DrawContext context, MatrixStack matrix) {
-        animation.setDirection(lastTarget.isUsingItem() ? Direction.FORWARDS : Direction.BACKWARDS);
-        if (!lastTarget.getActiveItem().isEmpty() && lastTarget.getActiveItem().getCount() != 0) {
-            lastItem = lastTarget.getActiveItem().getItem();
+    private void renderContent(DrawContext context, MatrixStack matrix, int alpha, float alphaPC) {
+        float hpValue = getScoreboardHealth(renderTarget);
+
+        float health = renderTarget.getHealth();
+        float absorption = renderTarget.getAbsorptionAmount();
+        float maxHealth = renderTarget.getMaxHealth();
+        if (maxHealth <= 0) maxHealth = 20f;
+
+        boolean isInvisible = renderTarget.isInvisible();
+        boolean isFunTime = mc.getCurrentServerEntry() != null && mc.getCurrentServerEntry().address.toLowerCase().contains("funtime");
+        boolean hpUnknown = isInvisible || hpValue >= 100;
+
+        // Красная полоска — только здоровье (без поглощения), как в ванильном Minecraft
+        float totalHpForBar;
+        if (isFunTime && hpUnknown) {
+            totalHpForBar = maxHealth;
+        } else {
+            totalHpForBar = (hpValue >= 100) ? health : hpValue;
         }
-        if (!animation.isFinished(Direction.BACKWARDS) && !lastItem.equals(Items.AIR)) {
-            int size = 24;
-            float anim = animation.getOutput().floatValue();
-            float progress = (lastTarget.getItemUseTime() + tickCounter.getTickDelta(false)) / ItemTask.maxUseTick(lastItem) * 360;
-            float x = getX() - (size + 5) * anim;
-            float y = getY() + 4;
-            ScissorAssist scissorManager = Rich.getInstance().getScissorManager();
-            scissorManager.push(matrix.peek().getPositionMatrix(), getX() - 50, getY(), 50, getHeight());
-            Calculate.setAlpha(anim, () -> {
-                blur.render(ShapeProperties.create(matrix, x, y, size, size).quality(5)
-                        .round(12).softness(1).thickness(2).outlineColor(ColorAssist.getOutline(0)).color(ColorAssist.getRect(0.7F)).build());
-                arc.render(ShapeProperties.create(matrix, x, y, size, size).round(0.38F).thickness(0.30f).end(progress)
-                        .color(ColorAssist.fade(0), ColorAssist.fade(200), ColorAssist.fade(0), ColorAssist.fade(200)).build());
-                Render2D.defaultDrawStack(context, lastItem.getDefaultStack(), x + 3f, y + 3f, false, false, 1f);
-            });
-            scissorManager.pop();
+        float totalFill = MathHelper.clamp(totalHpForBar / maxHealth, 0f, 1f);
+        // Золотая полоска — только при эффекте Absorption (гепл = I, чарка = II+)
+        boolean hasAbsorptionEffect = renderTarget.hasStatusEffect(StatusEffects.ABSORPTION) && absorption > 0.001f;
+        float absorptionFill = hasAbsorptionEffect ? MathHelper.clamp(absorption / maxHealth, 0f, 1f) : 0f;
+
+        healthAnimation.setTarget(totalFill);
+        healthAnimation.update();
+        absorptionAnimation.setTarget(absorptionFill);
+        absorptionAnimation.update();
+
+        float currentHealthWidth = (float) healthAnimation.getValue();
+        float currentAbsorptionWidth = (float) absorptionAnimation.getValue();
+
+        fun.rich.features.impl.render.Hud hud = fun.rich.features.impl.render.Hud.getInstance();
+        int thAlpha = (int) (hud.opacityTargetHud.getValue() * alphaPC);
+
+        if (hud.thBlur.isValue()) {
+            blur.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight())
+                    .round(6).quality((int) hud.thBlurAmount.getValue()).color(new Color(0, 0, 0, 100).getRGB()).build());
+        }
+
+        int hudColor = hud.targetHudColor.getColor();
+        rectangle.render(ShapeProperties.create(matrix, getX(), getY(), getWidth(), getHeight())
+                .round(6).color(ColorAssist.setAlpha(hudColor, thAlpha)).build());
+
+        drawArmor(context, getX() + 5, getY() + getHeight() - 2, alphaPC);
+
+        Identifier skin = (renderTarget instanceof AbstractClientPlayerEntity p)
+                ? p.getSkinTextures().texture() : Identifier.ofVanilla("textures/entity/steve.png");
+
+        int skinOverlay = (renderTarget.hurtTime > 0)
+                ? ColorAssist.setAlpha(new Color(255, 60, 60).getRGB(), (int) (180 * alphaPC))
+                : ColorAssist.setAlpha(-1, alpha);
+
+        Render2D.drawTexture(context, skin, getX() + 5, getY() + 5, 25f, 5f, 8, 8, 64,
+                ColorAssist.setAlpha(new Color(30, 30, 30).getRGB(), alpha), skinOverlay);
+
+        String hpString = (isInvisible || hpValue >= 100) ? "HP: Неизвестно" : String.format("%.1f HP", hpValue);
+        Fonts.getSize(14, Fonts.Type.REGULAR).drawString(matrix, renderTarget.getName().getString(), getX() + 35, getY() + 6, ColorAssist.setAlpha(-1, alpha));
+        Fonts.getSize(11, Fonts.Type.SEMI).drawString(matrix, hpString, getX() + 35, getY() + 16, ColorAssist.setAlpha(-1, alpha));
+
+        float barX = getX() + 35;
+        float barY = getY() + 26;
+        float barW = getWidth() - 40;
+
+        rectangle.render(ShapeProperties.create(matrix, barX, barY, barW, 3.2f).round(1.5f)
+                .color(ColorAssist.setAlpha(new Color(25, 25, 25).getRGB(), alpha)).build());
+
+        if (currentHealthWidth > 0.001f) {
+            int c1 = ColorAssist.setAlpha(ColorAssist.fade(8, 200, ColorAssist.getClientColor(), ColorAssist.getClientColor2()), alpha);
+            int c2 = ColorAssist.setAlpha(ColorAssist.fade(8, 0, ColorAssist.getClientColor(), ColorAssist.getClientColor2()), alpha);
+            rectangle.render(ShapeProperties.create(matrix, barX, barY, barW * currentHealthWidth, 3.2f)
+                    .round(1.5f).color(c1, c1, c2, c2).build());
+        }
+
+        if (currentAbsorptionWidth > 0.001f) {
+            int gold = ColorAssist.setAlpha(new Color(255, 215, 0).getRGB(), alpha);
+            float absX = barX + barW * (1f - currentAbsorptionWidth);
+            rectangle.render(ShapeProperties.create(matrix, absX, barY, barW * currentAbsorptionWidth, 3.2f)
+                    .round(1.5f).color(gold, gold, gold, gold).build());
         }
     }
 
-    private void drawFace(DrawContext context) {
-        EntityRenderer<? super LivingEntity, ?> baseRenderer = mc.getEntityRenderDispatcher().getRenderer(lastTarget);
-        if (!(baseRenderer instanceof LivingEntityRenderer<?, ?, ?>)) {
-            return;
+    private float getScoreboardHealth(LivingEntity entity) {
+        if (entity instanceof net.minecraft.entity.player.PlayerEntity player) {
+            try {
+                Scoreboard scoreboard = player.getScoreboard();
+                ScoreboardObjective obj = scoreboard.getObjectiveForSlot(ScoreboardDisplaySlot.BELOW_NAME);
+                if (obj != null) {
+                    ReadableScoreboardScore score = scoreboard.getScore(player, obj);
+                    if (score != null) {
+                        String text = ReadableScoreboardScore.getFormattedScore(score, obj.getNumberFormatOr(StyledNumberFormat.EMPTY)).getString();
+                        return Float.parseFloat(text.replaceAll("[^0-9.]", ""));
+                    }
+                }
+            } catch (Exception ignored) {}
         }
-        @SuppressWarnings("unchecked")
-        LivingEntityRenderer<LivingEntity, LivingEntityRenderState, ?> renderer = (LivingEntityRenderer<LivingEntity, LivingEntityRenderState, ?>) baseRenderer;
-        LivingEntityRenderState state = renderer.getAndUpdateRenderState(lastTarget, tickCounter.getTickDelta(false));
-        Identifier textureLocation = renderer.getTexture(state);
-        float alpha = faceAlphaAnimation.getOutput().floatValue();
-        Calculate.setAlpha(alpha, () -> {
-            Render2D.drawTexture(context, textureLocation, getX() + 5, getY() + 5.5F, 20, 4, 8, 8, 64, ColorAssist.getRect(1), ColorAssist.multRed(-1, 1 + lastTarget.hurtTime / 4F));
-        });
+        return entity.getHealth() + entity.getAbsorptionAmount();
+    }
+
+    private void drawArmor(DrawContext context, float x, float y, float alpha) {
+        float slotSize = 12f;
+        float gap = 2f;
+        net.minecraft.entity.EquipmentSlot[] armorOrder = { net.minecraft.entity.EquipmentSlot.FEET, net.minecraft.entity.EquipmentSlot.LEGS, net.minecraft.entity.EquipmentSlot.CHEST, net.minecraft.entity.EquipmentSlot.HEAD };
+        for (net.minecraft.entity.EquipmentSlot slot : armorOrder) {
+            ItemStack stack = renderTarget.getEquippedStack(slot);
+            if (!stack.isEmpty()) {
+                Render2D.defaultDrawStack(context, stack, x, y, false, false, 0.65f * alpha);
+            }
+            if (!stack.isEmpty() && stack.isDamageable() && stack.getMaxDamage() > 0) {
+                float durability = 1f - (float) stack.getDamage() / stack.getMaxDamage();
+                float barW = slotSize - 2;
+                float barY = y + slotSize - 0.5f;
+                rectangle.render(ShapeProperties.create(context.getMatrices(), x + 1, barY, barW, 1.2f)
+                        .round(0.6f).color(ColorAssist.setAlpha(new Color(25, 25, 25).getRGB(), (int)(200 * alpha))).build());
+                if (durability > 0.001f) {
+                    int color = getDurabilityColor(durability);
+                    rectangle.render(ShapeProperties.create(context.getMatrices(), x + 1, barY, barW * MathHelper.clamp(durability, 0f, 1f), 1.2f)
+                            .round(0.6f).color(ColorAssist.setAlpha(color, (int)(255 * alpha))).build());
+                }
+            }
+            x += slotSize + gap;
+        }
+        float handY = y;
+        ItemStack mainHand = renderTarget.getMainHandStack();
+        if (!mainHand.isEmpty()) {
+            Render2D.defaultDrawStack(context, mainHand, x + 2, handY + 2, false, false, 0.65f * alpha);
+            x += slotSize + gap;
+        }
+        ItemStack offHand = renderTarget.getOffHandStack();
+        if (!offHand.isEmpty()) {
+            Render2D.defaultDrawStack(context, offHand, x + 2, handY + 2, false, false, 0.65f * alpha);
+        }
+    }
+
+    /** Цвет полоски прочности как в ванильном Minecraft */
+    private static int getDurabilityColor(float durability) {
+        if (durability > 0.6f) return new Color(85, 255, 85).getRGB();
+        if (durability > 0.4f) return new Color(255, 255, 85).getRGB();
+        if (durability > 0.2f) return new Color(255, 165, 0).getRGB();
+        return new Color(255, 85, 85).getRGB();
     }
 }

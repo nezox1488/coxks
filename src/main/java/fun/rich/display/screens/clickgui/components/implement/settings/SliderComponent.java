@@ -33,7 +33,8 @@ public class SliderComponent extends AbstractSettingComponent {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         MatrixStack matrix = context.getMatrices();
-        float nameWidth = Fonts.getSize(12, DEFAULT).getStringWidth(setting.getName());
+        String displayName = setting.getLocalizedName();
+        float nameWidth = Fonts.getSize(12, DEFAULT).getStringWidth(displayName);
 
         height = 20;
 
@@ -49,11 +50,11 @@ public class SliderComponent extends AbstractSettingComponent {
         if (nameWidth > 62) {
             ScissorAssist scissor = Rich.getInstance().getScissorManager();
             scissor.push(matrix.peek().getPositionMatrix(), x + 19, y + 12f, 65, 50);
-            Fonts.getSize(12, DEFAULT).drawStringWithScroll(matrix, setting.getName(), x + 19, y + 15f, offset, new Color(225, 225, 225, 225).getRGB());
+            Fonts.getSize(12, DEFAULT).drawStringWithScroll(matrix, displayName, x + 19, y + 15f, offset, new Color(225, 225, 225, 225).getRGB());
             scissor.pop();
 
         } else {
-            Fonts.getSize(12, DEFAULT).drawString(matrix, setting.getName(), x + 19, y + 15f, 0xFFD4D6E1);
+            Fonts.getSize(12, DEFAULT).drawString(matrix, displayName, x + 19, y + 15f, 0xFFD4D6E1);
         }
     }
 

@@ -22,7 +22,7 @@ public class SButtonComponent extends AbstractSettingComponent {
 
         height = 20;
 
-        Fonts.getSize(14, BOLD).drawString(context.getMatrices(), setting.getName(), x + 9, y + 6, 0xFFD4D6E1);
+        Fonts.getSize(14, BOLD).drawString(context.getMatrices(), setting.getLocalizedName(), x + 9, y + 6, 0xFFD4D6E1);
 //        Fonts.getSize(12).drawString(context.getMatrices(), wrapped, x + 9, y + 15, 0xFF878894);
 
         ((ButtonComponent) buttonComponent.setText("Click on me")

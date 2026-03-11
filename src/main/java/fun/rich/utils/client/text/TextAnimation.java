@@ -20,10 +20,10 @@ public class TextAnimation {
     public TextAnimation() {
         String username = UserProfile.getInstance().profile("username");
         messages = Arrays.asList(
-                "Glad to see you again, " + username + "! Come on in, everything’s ready for you",
-                "Welcome back, " + username + "! Ready to dive into the adventure?",
-                "Hey " + username + ", let’s make some epic moments today!",
-                username + ", the game awaits your legendary skills!"
+                "Мы снова вместе!? " + username + "! Погнали в игру!",
+                "Бей! Убивай! Зарабатывай " + username + "!",
+                "Рад тебя видеть " + username + ", в моем прекрастном чите!",
+                username + ", возникли проблемы? discord: sitokushkin"
         );
     }
 

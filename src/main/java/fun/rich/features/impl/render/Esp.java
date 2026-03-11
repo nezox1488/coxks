@@ -102,19 +102,25 @@ public class Esp extends Module {
     @EventHandler
     public void onWorldRender(WorldRenderEvent e) {
         if (!entityType.isSelected("Player")) return;
+        if (players.isEmpty()) return;
         float tickDelta = mc.getRenderTickCounter().getTickDelta(false);
+        Vec3d cameraPos = mc.getEntityRenderDispatcher().camera.getPos();
+        final float maxDistSq = DISTANCE * DISTANCE;
+        int baseColorCache = -1;
+        int friendColorCache = -1;
         for (PlayerEntity player : players) {
-            if (player == null) continue;
-            if (player == mc.player) continue;
+            if (player == null || player == mc.player) continue;
             if (player.getCustomName() != null && player.getCustomName().getString().startsWith("Ghost_")) continue;
             double interpX = MathHelper.lerp(tickDelta, player.prevX, player.getX());
             double interpY = MathHelper.lerp(tickDelta, player.prevY, player.getY());
             double interpZ = MathHelper.lerp(tickDelta, player.prevZ, player.getZ());
-            Vec3d interpCenter = new Vec3d(interpX, interpY, interpZ);
-            float distance = (float) mc.getEntityRenderDispatcher().camera.getPos().distanceTo(interpCenter);
-            if (distance < 1) continue;
+            double dx = cameraPos.x - interpX, dy = cameraPos.y - interpY, dz = cameraPos.z - interpZ;
+            double distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < 1) continue;
+            if (distSq > maxDistSq) continue;
+            float distance = (float) Math.sqrt(distSq);
             boolean friend = FriendUtils.isFriend(player);
-            int baseColor = friend ? ColorAssist.getFriendColor() : ColorAssist.getClientColor();
+            int baseColor = friend ? (friendColorCache != -1 ? friendColorCache : (friendColorCache = ColorAssist.getFriendColor())) : (baseColorCache != -1 ? baseColorCache : (baseColorCache = ColorAssist.getClientColor()));
             int alpha = (int) (boxAlpha.getValue() * 255);
             int fillColor = (baseColor & 0x00FFFFFF) | (alpha << 24);
             int outlineColor = baseColor | 0xFF000000;
@@ -124,8 +130,7 @@ public class Esp extends Module {
                 Render3D.drawBox(interpBox, fillColor, 2, true, true, true);
                 Render3D.drawBox(interpBox, outlineColor, 2, true, true, true);
             } else if (boxType.isSelected("Skeleton") && playerSetting.isSelected("Box")) {
-                if (distance > DISTANCE) continue;
-                    renderSkeleton(player, tickDelta, baseColor);
+                renderSkeleton(player, tickDelta, baseColor);
             }
         }
     }
@@ -157,17 +162,25 @@ public class Esp extends Module {
                     float height = mc.textRenderer.fontHeight;
                     float posX = startX - width / 2f;
                     float posY = startY - 11F;
+
+                    int backgroundColor;
+                    if (friend) {
+                        backgroundColor = ColorAssist.getColor(0, 255, 0, 100); // Зелёный с прозрачностью
+                    } else {
+                        backgroundColor = ColorAssist.HALF_BLACK;
+                    }
+
                     blur.render(ShapeProperties.create(matrix,
                                     posX - 2f,
                                     posY - 0.75f,
                                     width + 4f,
-                                    height + 1.5f).quality(5).round(4f).softness(1)
-                            .round(height / 4f)
-                            .color(ColorAssist.HALF_BLACK)
+                                    height + 1.5f).quality(5).softness(1)
+                            .round(6f)
+                            .color(backgroundColor)
                             .build());
                     context.drawText(mc.textRenderer, text, (int)posX, (int)posY + 1, ColorAssist.getColor(255), false);
                 } else {
-                    drawText(matrix, text, Projection.centerX(vec4d), vec4d.y - 2, font);
+                    drawText(matrix, text, Projection.centerX(vec4d), vec4d.y - 2, font, friend);
                 }
             }
         }
@@ -184,11 +197,11 @@ public class Esp extends Module {
                 Text text = item.getStack().getName();
                 if (stack.getCount() > 1) text = text.copy().append(Formatting.RESET + " [" + Formatting.RED + stack.getCount() + Formatting.GRAY + "x" + Formatting.RESET + "]");
                 if (!list.isEmpty()) drawShulkerBox(context, stack, list, vec4d);
-                else drawText(matrix, text, Projection.centerX(vec4d), vec4d.y, text.getContent().toString().equals("empty") ? bigFont : font);
+                else drawText(matrix, text, Projection.centerX(vec4d), vec4d.y, text.getContent().toString().equals("empty") ? bigFont : font, false);
             } else if (entity instanceof TntEntity tnt && entityType.isSelected("TNT")) {
                 Vector4d vec4d = Projection.getVector4D(entity);
                 if (Projection.cantSee(vec4d)) continue;
-                drawText(matrix, tnt.getStyledDisplayName(), Projection.centerX(vec4d), vec4d.y, font);
+                drawText(matrix, tnt.getStyledDisplayName(), Projection.centerX(vec4d), vec4d.y, font, false);
             }
         }
     }
@@ -379,7 +392,7 @@ public class Esp extends Module {
             MutableText text = Text.empty().append(stack.getName());
             if (stack.getCount() > 1) text.append(Formatting.RESET + " [" + Formatting.RED + stack.getCount() + Formatting.GRAY + "x" + Formatting.RESET + "]");
             posY += font.getStringHeight(text) / 2 + 3;
-            drawText(matrix, text, Projection.centerX(vec), posY, font);
+            drawText(matrix, text, Projection.centerX(vec), posY, font, false);
         }
     }
 
@@ -405,17 +418,25 @@ public class Esp extends Module {
         matrix.pop();
     }
 
-    private void drawText(MatrixStack matrix, Text text, double startX, double startY, FontRenderer font) {
+    private void drawText(MatrixStack matrix, Text text, double startX, double startY, FontRenderer font, boolean friend) {
         int paddingX = 2;
         float paddingY = 0.75F;
         float height = font.getFont().getSize() / 1.5F;
         float width = font.getStringWidth(text);
         float posX = (float) (startX - width / 2);
         float posY = (float) startY - height;
+
+        int backgroundColor;
+        if (friend) {
+            backgroundColor = ColorAssist.getColor(0, 255, 0, 100); // Зелёный с прозрачностью
+        } else {
+            backgroundColor = ColorAssist.getRect(0.65f);
+        }
+
         rectangle.render(ShapeProperties.create(matrix, posX - paddingX, posY - paddingY, width + paddingX * 2, height + paddingY * 2)
-                .round(2f)
+                .round(6f)
                 .outlineColor(new Color(33, 33, 33, 0).getRGB())
-                .color(ColorAssist.getRect(0.65f))
+                .color(backgroundColor)
                 .build());
         font.drawText(matrix, text, posX, posY + 3);
     }

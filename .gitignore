@@ -33,6 +33,7 @@ bin/
 /workspace/logs
 /workspace/ide
 /.gradle/
+/.gradle-cache/
 /artifacts/
 /.idea/
 /build/

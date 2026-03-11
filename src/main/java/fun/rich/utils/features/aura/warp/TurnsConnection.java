@@ -1,6 +1,7 @@
 package fun.rich.utils.features.aura.warp;
 
 import fun.rich.utils.features.aura.utils.MathAngle;
+import fun.rich.utils.features.aura.rotations.RotationLogger;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
@@ -110,6 +111,7 @@ public class TurnsConnection implements QuickImports {
         Turns newAngle = activePlan.nextRotation(currentAngle != null ? currentAngle : clientAngle, rotationPlanTaskProcessor.fetchActiveTaskValue() == null).adjustSensitivity();
 
         setRotation(newAngle);
+        RotationLogger.get().onRotationApplied(this, activePlan, newAngle);
 
         lastRotationPlan = activePlan;
         rotationPlanTaskProcessor.tick(1);

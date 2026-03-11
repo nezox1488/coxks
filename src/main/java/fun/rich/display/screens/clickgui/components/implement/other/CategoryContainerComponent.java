@@ -5,6 +5,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.gui.DrawContext;
 
 import fun.rich.features.module.ModuleCategory;
+import fun.rich.display.screens.clickgui.MenuScreen;
 import fun.rich.display.screens.clickgui.components.implement.category.CategoryComponent;
 import fun.rich.display.screens.clickgui.components.implement.settings.TextComponent;
 import fun.rich.utils.interactions.inv.InventoryFlowManager;
@@ -16,26 +17,35 @@ import java.util.List;
 @Setter
 @Accessors(chain = true)
 public class CategoryContainerComponent extends AbstractComponent {
+    private static final int ICON_SIZE = 20;
+    private static final int GAP = 1;
+    /** Высота панели категорий: больше = выше над меню (в пикселях) */
+    private static final int MENU_OFFSET = 8;
+
     private final List<CategoryComponent> categoryComponents = new ArrayList<>();
 
     public void initializeCategoryComponents() {
         categoryComponents.clear();
         for (ModuleCategory category : ModuleCategory.values()) {
+            if (category == ModuleCategory.AUTOBUY) continue;
             categoryComponents.add(new CategoryComponent(category));
         }
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        float offset = 0;
+        MenuScreen menuScreen = MenuScreen.INSTANCE;
+        int totalWidth = categoryComponents.size() * ICON_SIZE + Math.max(0, categoryComponents.size() - 1) * GAP;
+        float startX = menuScreen.x + (menuScreen.width - totalWidth) / 2f;
+        float iconY = menuScreen.y - ICON_SIZE - GAP - MENU_OFFSET;
 
-        for (CategoryComponent component : categoryComponents) {
-            component.x = x + 6;
-            component.y = y + 40 + offset;
-            component.width = 73;
-            component.height = 17;
+        for (int i = 0; i < categoryComponents.size(); i++) {
+            CategoryComponent component = categoryComponents.get(i);
+            component.x = startX + i * (ICON_SIZE + GAP);
+            component.y = iconY;
+            component.width = ICON_SIZE;
+            component.height = ICON_SIZE;
             component.render(context, mouseX, mouseY, delta);
-            offset += component.height + 12;
         }
     }
 

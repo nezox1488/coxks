@@ -15,6 +15,18 @@ repositories {
         name = "meteor-maven-snapshots"
         url = "https://maven.meteordev.org/snapshots"
     }
+    maven {
+        name = "babbaj-repo"
+        url = "https://babbaj.github.io/maven/"
+    }
+    maven {
+        name = "ryanliptak"
+        url = "https://maven.ryanliptak.com/"
+    }
+    maven {
+        name = "shedaniel"
+        url = "https://maven.shedaniel.me/"
+    }
     mavenCentral()
 }
 
@@ -37,12 +49,22 @@ dependencies {
     implementation group: 'com.github.ben-manes.caffeine', name: 'caffeine', version: '3.1.8'
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    modCompileOnly "meteordevelopment:baritone:1.21.4-SNAPSHOT"
+    include(modImplementation("meteordevelopment:baritone:1.21.4-SNAPSHOT"))
+    include(implementation("dev.babbaj:nether-pathfinder:1.4.1"))
     libImpl fileTree(dir: 'libs', include: ['*.jar'])
     libImpl("org.jetbrains.kotlin:kotlin-stdlib:2.0.0")
     implementation 'com.google.code.gson:gson:2.10.1'
     modImplementation 'org.java-websocket:Java-WebSocket:1.5.6'
     modImplementation 'com.github.oshi:oshi-core:6.4.0'
+    // AppleSkin: локальная сборка под 1.21.4 (см. build-appleskin-1.21.4.ps1) или maven 1.21.3
+    if (file("libs/appleskin-fabric-mc1.21.4-3.0.6.jar").exists()) {
+        include(modImplementation(files("libs/appleskin-fabric-mc1.21.4-3.0.6.jar")))
+    } else {
+        modImplementation "squeek.appleskin:appleskin-fabric:mc1.21.3-3.0.6"
+    }
+    modImplementation("me.shedaniel.cloth:cloth-config-fabric:17.0.144") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
 
     configurations.libImpl.dependencies.each { implementation(it) }
     configurations.modImpl.dependencies.each { modImplementation(it) include(it) }
@@ -68,6 +90,13 @@ java {
 }
 
 compileKotlin {
+}
+
+task runBot(type: JavaExec) {
+    group = 'application'
+    description = 'Run Telegram bot (BOT_TOKEN or config.json required)'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'fun.rich.TelegramBot.Main'
 }
 
 jar {

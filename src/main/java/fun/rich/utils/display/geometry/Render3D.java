@@ -417,7 +417,7 @@ public class Render3D implements QuickImports {
         matrix.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(Calculate.interpolate(prevEspValue, espValue)));
 
         MatrixStack.Entry entry = matrix.peek().copy();
-        Render3D.drawTexture(entry, Identifier.of("textures/features/targetesp/capture" + png + ".png"), -size / 2, -size / 2, size, size, ColorAssist.multRedAndAlpha(new Vector4i(TargetESP.getInstance().colorSetting.getColor(), TargetESP.getInstance().colorSetting.getColor(), TargetESP.getInstance().colorSetting.getColor(), TargetESP.getInstance().colorSetting.getColor()), 1 + red * 10, anim), false);
+        Render3D.drawTexture(entry, Identifier.of("textures/features/targetesp/capture" + png + ".png"), -size / 2, -size / 2, size, size, ColorAssist.multRedAndAlpha(new Vector4i(TargetESP.getInstance().getEspColor(), TargetESP.getInstance().getEspColor(), TargetESP.getInstance().getEspColor(), TargetESP.getInstance().getEspColor()), 1 + red * 10, anim), false);
         matrix.pop();
     }
     private final Random random = new Random();
@@ -455,7 +455,7 @@ public class Render3D implements QuickImports {
             Vec3d cosSin = Calculate.cosSin(i, size, width);
             Vec3d nextCosSin = Calculate.cosSin(i + 1, size, width);
 
-            int color = ColorAssist.multRed(TargetESP.getInstance().colorSetting.getColor(), 1 + red * 125);
+            int color = ColorAssist.multRed(TargetESP.getInstance().getEspColor(), 1 + red * 125);
 
             Vec3d start = target.add(cosSin.x, cosSin.y + yAnim, cosSin.z);
             Vec3d end   = target.add(cosSin.x, cosSin.y + yAnim2, cosSin.z);
@@ -541,7 +541,7 @@ public class Render3D implements QuickImports {
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
                 MatrixStack.Entry entry = matrices.peek().copy();
-                int color = ColorAssist.multRedAndAlpha(TargetESP.getInstance().colorSetting.getColor(), 1 + red * 10, offset * anim);
+                int color = ColorAssist.multRedAndAlpha(TargetESP.getInstance().getEspColor(), 1 + red * 10, offset * anim);
                 float scale = 0.6f * offset * (0.6f + speed * 0.1f) + bany;
                 Render3D.drawTexture(entry, Identifier.of("textures/features/particles/bloom.png"), -scale / 2, -scale / 2, scale, scale, new Vector4i(color), canSee);
             }

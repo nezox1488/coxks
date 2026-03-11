@@ -30,7 +30,12 @@ public class MainMenu extends Screen implements QuickImports {
     private final Decelerate altFadeAnimation = new Decelerate();
     private final Decelerate mainFadeAnimation = new Decelerate();
     private AltScreen altScreen;
+    private UpdateList updateList;
     private long lastToggleTime = 0;
+
+    /** Позиция UpdateList на Main Menu — меняй здесь */
+    private static final float UPDATE_LIST_X = 5;
+    private static final float UPDATE_LIST_Y = 8;
     private static final long TOGGLE_DELAY = 500;
     private static final UserProfile userProfile = UserProfile.getInstance();
 
@@ -65,6 +70,8 @@ public class MainMenu extends Screen implements QuickImports {
         gifRender.render(context.getMatrices(), 0, 0, width, height);
         image.setTexture("textures/mainmenu/backmenu.png").render(ShapeProperties.create(context.getMatrices(), 0, 0, width, height).color(-1).build());
 
+        blur.prepareFrame();
+
         Double mainAlpha = mainFadeAnimation.getOutput();
         int mainAlphaInt = (int) (255 * mainAlpha);
 
@@ -80,9 +87,9 @@ public class MainMenu extends Screen implements QuickImports {
 
             Fonts.getSize(45, Fonts.Type.ICONS).drawCenteredString(context.getMatrices(), "A", width / 2, sy - 70, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
 
-            Fonts.getSize(18, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Rich Client, you made the right choice.", width / 2, sy - 40, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
+            Fonts.getSize(18, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "Roxsy Client", width / 2, sy - 40, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), textAnimation.getCurrentText(), width / 2, sy - 25, applyAlpha(new Color(200, 200, 200).getRGB(), mainAlphaInt));
-            Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "© 2025 RichClient. All rights reserved.", width / 2 + 2, height - 7, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
+            Fonts.getSize(12, Fonts.Type.DEFAULT).drawCenteredString(context.getMatrices(), "© 2026 RoxsyClient, Авторские права!", width / 2 + 2, height - 7, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
 
             rectangle.render(ShapeProperties.create(context.getMatrices(), 8, height - 27, 20, 20).thickness(2).round(10)
                     .outlineColor(applyAlpha(new Color(100, 100, 100, 95).getRGB(), mainAlphaInt))
@@ -104,9 +111,15 @@ public class MainMenu extends Screen implements QuickImports {
 
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Username ▸ " + userProfile.profile("username"), 35, height - 21.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), "Uid ▸ " + userProfile.profile("uid"), 35, height - 14.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
-            String text = "Build ▸ 0.3 alpha";
+            String text = "Build ▸ 0.5";
             float textWidth = Fonts.getSize(12, Fonts.Type.DEFAULT).getStringWidth(text);
             Fonts.getSize(12, Fonts.Type.DEFAULT).drawString(context.getMatrices(), text, context.getScaledWindowWidth() - textWidth - 3, context.getScaledWindowHeight() - 5.5f, applyAlpha(ColorAssist.getText(0.35f), mainAlphaInt));
+
+            float updateListX = UPDATE_LIST_X;
+            float updateListY = UPDATE_LIST_Y;
+            if (updateList == null) updateList = new UpdateList(updateListX, updateListY);
+            else updateList.updatePosition(updateListX, updateListY);
+            updateList.render(context, mainAlphaInt);
         }
 
         Double altAlpha = altFadeAnimation.getOutput();
@@ -180,6 +193,9 @@ public class MainMenu extends Screen implements QuickImports {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double h, double v) {
+        if (updateList != null && mainFadeAnimation.getOutput() > 0.5 && updateList.mouseScrolled(mx, my, v)) {
+            return true;
+        }
         if (altVisible && altFadeAnimation.getOutput() > 0.5 && altScreen != null) {
             return altScreen.mouseScrolled(mx, my, v);
         }

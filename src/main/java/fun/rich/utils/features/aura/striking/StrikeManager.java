@@ -1,5 +1,8 @@
 package fun.rich.utils.features.aura.striking;
-
+/**
+ * @author Sitoku
+ * @since 3/3/2026
+ */
 import fun.rich.features.impl.movement.Blink;
 import fun.rich.features.impl.movement.ElytraTarget;
 import fun.rich.utils.client.Instance;
@@ -118,6 +121,9 @@ public class StrikeManager implements QuickImports {
 
     private String getSprintMode() {
         if (Aura.getInstance().isState()) {
+            if (Aura.getInstance().getAimMode().getSelected().equals("SpookyTims")) {
+                return "Packet";
+            }
             return Aura.getInstance().getSprintReset().getSelected();
         } else if (TriggerBot.getInstance().isState()) {
             return TriggerBot.getInstance().sprintReset.getSelected();
@@ -210,23 +216,55 @@ public class StrikeManager implements QuickImports {
     }
 
     public boolean canAttack(StrikerConstructor.AttackPerpetratorConfigurable config, int ticks) {
-        for (int i = 0; i <= ticks; i++) {
+        int maxTicks = ticks;
+        if (config.getAimMode() != null && config.getAimMode().getSelected().equals("MX") && hasBadEffects()) {
+            maxTicks = Math.max(ticks, 15);
+        }
+        for (int i = 0; i <= maxTicks; i++) {
             if (canCrit(config, i)) {
                 return true;
             }
         }
         return false;
     }
+
+    private boolean hasBadEffects() {
+        return mc.player.hasStatusEffect(StatusEffects.SLOWNESS)
+                || mc.player.hasStatusEffect(StatusEffects.MINING_FATIGUE)
+                || mc.player.hasStatusEffect(StatusEffects.WEAKNESS)
+                || mc.player.hasStatusEffect(StatusEffects.NAUSEA);
+    }
+
     public boolean canCrit(StrikerConstructor.AttackPerpetratorConfigurable config, int ticks) {
         if (mc.player.isUsingItem() && !mc.player.getActiveItem().getItem().equals(Items.SHIELD) && config.isEatAndAttack()) {
             return false;
         }
 
-        if (!clickScheduler.isCooldownComplete(false, 1)) { return false; }
+        float cooldownThreshold = 0.9f;
+        long minDelayMs = 500L;
+
+        String aim = config.getAimMode() != null ? config.getAimMode().getSelected() : "";
+
+        boolean isMX = "MX".equals(aim);
+        if (isMX) {
+            minDelayMs = 280L;
+            cooldownThreshold = hasBadEffects() ? 0.75f : 0.85f;
+        }
+
+        boolean isFunTimeMode = "FunTime".equals(aim) || "FuntimeTest".equals(aim);
+        if (isFunTimeMode) {
+            float tps = fun.rich.utils.client.packet.network.Network.getTPS();
+            if (tps <= 0) tps = 20f;
+            double baseCdMs = 1000.0 / 12.0; // ~12 CPS
+            minDelayMs = (long) (baseCdMs * (20.0 / tps));
+        }
+
+        if (!clickScheduler.isCooldownComplete(false, 1, cooldownThreshold, minDelayMs)) { return false; }
 
         PlayerSimulation simulated = PlayerSimulation.simulateLocalPlayer(ticks);
         boolean noRestrict = !hasMovementRestrictions(simulated);
         boolean critState = isPlayerInCriticalState(simulated, ticks);
+        boolean mxBadEffects = config.getAimMode() != null && config.getAimMode().getSelected().equals("MX") && hasBadEffects();
         if (Aura.getInstance().getSmartCrits().isValue() && Aura.getInstance().isState()) {
             if (noRestrict) {
                 return critState || simulated.onGround;
@@ -242,6 +280,9 @@ public class StrikeManager implements QuickImports {
             }
         }
         if (config.isOnlyCritical() && !hasMovementRestrictions(simulated)) {
+            if (mxBadEffects) {
+                return critState || simulated.onGround;
+            }
             return isPlayerInCriticalState(simulated, ticks);
         }
         return true;
