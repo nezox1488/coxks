@@ -1,0 +1,119 @@
+plugins {
+    id 'fabric-loom' version '1.7-SNAPSHOT'
+    id 'maven-publish'
+    id("org.jetbrains.kotlin.jvm") version "2.1.20"
+}
+
+version = project.mod_version
+group = project.maven_group
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven {
+        name = "meteor-maven-snapshots"
+        url = "https://maven.meteordev.org/snapshots"
+    }
+    maven {
+        name = "babbaj-repo"
+        url = "https://babbaj.github.io/maven/"
+    }
+    maven {
+        name = "ryanliptak"
+        url = "https://maven.ryanliptak.com/"
+    }
+    maven {
+        name = "shedaniel"
+        url = "https://maven.shedaniel.me/"
+    }
+    mavenCentral()
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/accesswidener")
+}
+
+configurations {
+    libImpl
+    modImpl
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    include(modImplementation('io.netty:netty-handler-proxy:4.1.82.Final'))
+    include(modImplementation('io.netty:netty-codec-socks:4.1.82.Final'))
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation group: 'com.github.ben-manes.caffeine', name: 'caffeine', version: '3.1.8'
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    include(modImplementation("meteordevelopment:baritone:1.21.4-SNAPSHOT"))
+    include(implementation("dev.babbaj:nether-pathfinder:1.4.1"))
+    libImpl fileTree(dir: 'libs', include: ['*.jar'])
+    libImpl("org.jetbrains.kotlin:kotlin-stdlib:2.0.0")
+    implementation 'com.google.code.gson:gson:2.10.1'
+    modImplementation 'org.java-websocket:Java-WebSocket:1.5.6'
+    modImplementation 'com.github.oshi:oshi-core:6.4.0'
+    // AppleSkin: локальная сборка под 1.21.4 (см. build-appleskin-1.21.4.ps1) или maven 1.21.3
+    if (file("libs/appleskin-fabric-mc1.21.4-3.0.6.jar").exists()) {
+        include(modImplementation(files("libs/appleskin-fabric-mc1.21.4-3.0.6.jar")))
+    } else {
+        modImplementation "squeek.appleskin:appleskin-fabric:mc1.21.3-3.0.6"
+    }
+    modImplementation("me.shedaniel.cloth:cloth-config-fabric:17.0.144") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
+
+    configurations.libImpl.dependencies.each { implementation(it) }
+    configurations.modImpl.dependencies.each { modImplementation(it) include(it) }
+}
+
+processResources {
+}
+
+def targetJavaVersion = 21
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+        it.options.release.set(targetJavaVersion)
+    }
+}
+
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+    withSourcesJar()
+}
+
+compileKotlin {
+}
+
+task runBot(type: JavaExec) {
+    group = 'application'
+    description = 'Run Telegram bot (BOT_TOKEN or config.json required)'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'fun.rich.TelegramBot.Main'
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archivesBaseName}"}
+    }
+    from {
+        configurations.libImpl.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {}
+}
